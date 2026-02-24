@@ -1,6 +1,6 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useOrderStore } from '@/src/stores/orderStore';
 import { Navbar } from '@/components/navbar';
 import { Package, Truck, CheckCircle, MapPin } from 'lucide-react';
@@ -9,9 +9,22 @@ import { Suspense, useEffect, useState } from 'react';
 
 function TrackingContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const id = searchParams.get('id');
-    // Direct selector to avoid sync state updates in effects
-    const order = useOrderStore(state => state.orders.find(o => o.trackingNumber === id));
+    // phone logic: track by tracking number or order id
+    const order = useOrderStore(state =>
+        state.orders.find(o => o.trackingNumber === id || o.id === id)
+    );
+
+    const [input, setInput] = useState(id || '');
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (input.trim()) {
+            router.push(`/tracking?id=${encodeURIComponent(input.trim())}`);
+        }
+    }
+
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -24,7 +37,21 @@ function TrackingContent() {
     if (!id) {
         return (
             <div className="container mx-auto px-4 py-32 text-center text-slate-400">
-                <p>Please provide a tracking number.</p>
+                <form onSubmit={handleSearch} className="flex flex-col items-center gap-4">
+                    <input
+                        type="text"
+                        placeholder="Enter order or tracking ID"
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        className="w-full max-w-sm rounded-lg bg-white/5 border border-white/10 px-4 py-2 text-white placeholder-gray-500 outline-none"
+                    />
+                    <button
+                        type="submit"
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-lg"
+                    >
+                        Search
+                    </button>
+                </form>
             </div>
         );
     }

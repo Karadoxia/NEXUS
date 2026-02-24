@@ -29,7 +29,8 @@ export interface Order {
 
 interface OrderState {
     orders: Order[];
-    addOrder: (order: Order) => void;
+    addOrder: (order: Order) => void; // attempts backend create
+    storeOrder: (order: Order) => void; // local-only persistence
     updateStatus: (orderId: string, status: Order['status']) => void;
     updateShipment: (orderId: string, trackingNumber: string, carrier: string) => void;
     getOrdersByEmail: (email: string) => Order[];
@@ -55,6 +56,9 @@ export const useOrderStore = create<OrderState>()(
                     set((state) => ({ orders: [data.order, ...state.orders] }));
                 }
             },
+
+            // store order locally without contacting server
+            storeOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
 
             updateStatus: async (orderId, status) => {
                 const res = await fetch(`/api/orders/${orderId}`, {

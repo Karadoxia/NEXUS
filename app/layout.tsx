@@ -9,11 +9,11 @@ import { Navbar } from '../components/navbar';
 import { Footer } from '../components/footer';
 import { CartDrawer } from '../components/cart-drawer';
 import { PageTransition } from '../components/page-transition';
+import AuthProvider from '../components/auth-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-jetbrains-mono' });
-
 export const metadata: Metadata = {
     metadataBase: new URL('https://nexus-store.vercel.app'), // Placeholder URL
     title: {
@@ -45,10 +45,6 @@ export const viewport: Viewport = {
     themeColor: '#0A0F1E',
 };
 
-// ... (imports remain)
-
-// ... (metadata remains)
-
 export default function RootLayout({
     children,
 }: {
@@ -57,16 +53,18 @@ export default function RootLayout({
     return (
         <html lang="en" className="dark" suppressHydrationWarning>
             <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
-                <Navbar />
-                <PageTransition>
-                    {children}
-                </PageTransition>
-                <CartDrawer />
-                <Footer />
-                <AiAssistant />
-                <SocialProof />
-                <Toaster />
-                <MobileNav />
+                <AuthProvider>
+                    <Navbar />
+                    <PageTransition>
+                        {children}
+                    </PageTransition>
+                    <CartDrawer />
+                    <Footer />
+                    <AiAssistant />
+                    <SocialProof />
+                    <Toaster />
+                    <MobileNav />
+                </AuthProvider>
             </body>
         </html>
     );
