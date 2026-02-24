@@ -43,7 +43,7 @@ interface StoreContentProps {
   initialProducts: any[];
 }
 
-export function StoreContent({ initialProducts }: StoreContentProps) {
+export default function StoreContent({ initialProducts }: StoreContentProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { data: session } = useSession();

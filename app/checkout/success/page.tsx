@@ -97,7 +97,7 @@ function SuccessContent() {
                     <p className="text-slate-300 mb-2">Create an account to view orders anytime and checkout faster.</p>
                     <Link href="/signin" className="text-cyan-400 underline font-bold">Sign in / Sign up</Link>
                   </div>
-                )
+                )}
                 <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 max-w-md w-full mb-12">
                     <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-800">
                         <span className="text-slate-400">Order ID:</span>
