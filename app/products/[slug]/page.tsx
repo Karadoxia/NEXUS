@@ -28,6 +28,19 @@ export default function ProductPage() {
   const params = useParams();
   const slug = params?.slug || '';
   const [product, setProduct] = useState<any>(null);
+
+  // always declare these hooks unconditionally so order never changes
+  const [selectedImage, setSelectedImage] = useState(0)
+  const [show3D, setShow3D] = useState(false)
+  const [quantity, setQuantity] = useState(1)
+  const [addedFeedback, setAddedFeedback] = useState(false)
+  const [specsOpen, setSpecsOpen] = useState(true)
+  const [reviewsOpen, setReviewsOpen] = useState(false)
+
+  /* Hydration fix: Wait for client mount before checking localStorage */
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => setIsMounted(true), [])
+
   useEffect(() => {
     if (!slug) return;
     fetch(`/api/products/${slug}`)
@@ -41,63 +54,54 @@ export default function ProductPage() {
       });
   }, [slug]);
 
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p>Loading...</p>
-      </div>
-    );
-  }
+// store hooks – must be before any early returns
+    const addItem = useCartStore((s) => s.addItem)
+    const { toggleFavorite, isFavorite } = useFavoritesStore()
 
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [show3D, setShow3D] = useState(false)
-  const [quantity, setQuantity] = useState(1)
-  const [addedFeedback, setAddedFeedback] = useState(false)
-  const [specsOpen, setSpecsOpen] = useState(true)
-  const [reviewsOpen, setReviewsOpen] = useState(false)
+    // related products state even if product is null
+    const [related, setRelated] = useState<any[]>([]);
+    useEffect(() => {
+      if (!product) return;
+      fetch('/api/products')
+        .then((r) => r.json())
+        .then((all: any[]) => {
+          const scored = all
+            .filter((p) => p.id !== product.id)
+            .map((p) => {
+              let score = 0;
+              if (p.category === product.category) score += 3;
+              if (p.brand === product.brand) score += 1;
+              const commonTags = p.tags?.filter((tag: string) => product.tags?.includes(tag)).length || 0;
+              score += commonTags * 2;
+              return { ...p, relevance: score };
+            })
+            .sort((a, b) => b.relevance - a.relevance)
+            .slice(0, 4);
+          setRelated(scored);
+        });
+    }, [product]);
 
-  /* Hydration fix: Wait for client mount before checking localStorage */
-  const [isMounted, setIsMounted] = useState(false)
-  useEffect(() => setIsMounted(true), [])
+    if (!product) {
+      return (
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <p>Loading...</p>
+        </div>
+      );
+    }
 
-  const addItem = useCartStore((s) => s.addItem)
-  const { toggleFavorite, isFavorite } = useFavoritesStore()
-  const favorite = isMounted && product ? isFavorite(product.id) : false
-  const outOfStock = product?.stock === 0
-  const hasDiscount = !!product?.comparePrice
-  const discountPercent = hasDiscount
-    ? Math.round((1 - product.price / product.comparePrice!) * 100)
-    : 0
+    const favorite = isMounted && product ? isFavorite(product.id) : false
+    const outOfStock = product?.stock === 0
+    const hasDiscount = !!product?.comparePrice
+    const discountPercent = hasDiscount
+      ? Math.round((1 - product.price / product.comparePrice!) * 100)
+      : 0
 
-  const handleAddToCart = () => {
-    if (outOfStock) return
-    addItem(product, quantity)
-    setAddedFeedback(true)
-    setTimeout(() => setAddedFeedback(false), 2000)
-  }
-
-// Related products (fetched from API)
-  const [related, setRelated] = useState<any[]>([]);
-  useEffect(() => {
-    if (!product) return;
-    fetch('/api/products')
-      .then((r) => r.json())
-      .then((all: any[]) => {
-        const scored = all
-          .filter((p) => p.id !== product.id)
-          .map((p) => {
-            let score = 0;
-            if (p.category === product.category) score += 3;
-            if (p.brand === product.brand) score += 1;
-            const commonTags = p.tags?.filter((tag: string) => product.tags?.includes(tag)).length || 0;
-            score += commonTags * 2;
-            return { ...p, relevance: score };
-          })
-          .sort((a, b) => b.relevance - a.relevance)
-          .slice(0, 4);
-        setRelated(scored);
-      });
-  }, [product]);
+    const handleAddToCart = () => {
+      if (outOfStock) return
+      addItem(product, quantity)
+      setAddedFeedback(true)
+      setTimeout(() => setAddedFeedback(false), 2000)
+    }
 
   // Dummy reviews
   const reviews = [

@@ -31,7 +31,7 @@ export function MobileNav() {
                                 }`}
                         >
                             <div className={`p-1 rounded-lg ${isActive ? 'bg-[#00D4FF]/10' : ''}`}>
-                                <Icon className="h-5 w-5" />
+                                <Icon className="h-5 w-5" suppressHydrationWarning />
                             </div>
                             <span className="text-[10px] font-medium">{label}</span>
 

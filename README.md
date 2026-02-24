@@ -45,13 +45,17 @@
    npm install
    ```
 
-3. Run the development server:
+3. Run the development server (you can override the port if 3000 is in use):
 
    ```bash
-   npm run dev
+   # use PORT=3001 to avoid conflicts with other services like Grafana
+   PORT=3001 npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+   or set `PORT` in `.env.local` and then just run `npm run dev`.
+
+4. Open [http://localhost:3001](http://localhost:3001) (or your chosen port)
+   in your browser.
 
 ## 🔧 Environment Variables
 

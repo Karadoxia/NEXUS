@@ -10,30 +10,41 @@ export async function POST(request: Request) {
   });
 
   const session = await getServerSession(authOptions);
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { amount, items } = await request.json();
+  const { amount, items, customer } = await request.json();
   if (!amount) {
     return NextResponse.json({ error: 'Amount required' }, { status: 400 });
   }
+
+  // determine email from session or provided customer info
+  const email = session?.user?.email || customer?.email || '';
 
   try {
     // create a PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100),
       currency: 'eur',
-      metadata: { email: session.user.email },
+      metadata: { email },
     });
 
-    // create order record pending
-    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    // associate or create a user record if email exists
+    let userConnect;
+    if (session?.user?.email) {
+      const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+      if (user) userConnect = { connect: { id: user.id } };
+    } else if (email) {
+      const guest = await prisma.user.upsert({
+        where: { email },
+        update: {},
+        create: { email, name: customer?.name || 'Guest' },
+      });
+      userConnect = { connect: { id: guest.id } };
+    }
+
     const order = await prisma.order.create({
       data: {
         total: amount,
         status: 'pending',
-        user: user ? { connect: { id: user.id } } : undefined,
+        user: userConnect,
         items: {
           create: items.map((i: any) => ({
             product: { connect: { id: i.id } },

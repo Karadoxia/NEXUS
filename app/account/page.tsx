@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { useOrderStore } from '@/src/stores/orderStore';
 import { Navbar } from '@/components/navbar';
 import Link from 'next/link';
@@ -8,32 +9,52 @@ import Image from 'next/image';
 import { Package, Clock, CheckCircle, Truck, ChevronRight } from 'lucide-react';
 
 export default function AccountPage() {
-    // In a real app, we would filter by the logged-in user's email
-    // For this mock, we'll just show all orders for "guest@example.com" or all orders in local storage
-    const { orders } = useOrderStore();
+    const { data: session } = useSession();
+    const { orders, getOrdersByEmail } = useOrderStore();
     const [isMounted, setIsMounted] = useState(false);
+
+    const user = session?.user
+        ? { name: session.user.name || 'Customer', email: session.user.email || '', avatar: '👤' }
+        : { name: 'Guest User', email: 'guest@example.com', avatar: '👤' };
 
     useEffect(() => {
         setIsMounted(true);
-    }, []);
+        if (session?.user?.email) {
+            getOrdersByEmail(session.user.email);
+        } else {
+            getOrdersByEmail(user.email);
+        }
+    }, [session]);
 
     // Prevent hydration mismatch
     if (!isMounted) return null;
 
-    // Mock user for display
-    const user = {
-        name: 'Guest User',
-        email: 'guest@example.com',
-        avatar: '👤'
-    };
+    if (!session?.user) {
+        return (
+            <main className="min-h-screen bg-black text-white flex items-center justify-center">
+                <Navbar />
+                <div className="text-center">
+                    <p className="mb-4">You must be signed in to view your orders.</p>
+                    <Link href="/signin" className="text-cyan-400 underline">
+                        Sign in
+                    </Link>
+                </div>
+            </main>
+        );
+    }
 
     const StatusIcon = ({ status }: { status: string }) => {
         switch (status) {
-            case 'pending': return <Clock size={16} className="text-amber-400" />;
-            case 'processing': return <Package size={16} className="text-blue-400" />;
-            case 'shipped': return <Truck size={16} className="text-purple-400" />;
-            case 'delivered': return <CheckCircle size={16} className="text-green-400" />;
-            default: return <Clock size={16} className="text-gray-400" />;
+            case 'pending':
+                return <Clock size={16} className="text-amber-400" />;
+            case 'processing':
+                return <Package size={16} className="text-blue-400" />;
+            case 'shipped':
+                return <Truck size={16} className="text-purple-400" />;
+            case 'delivered':
+                return <CheckCircle size={16} className="text-green-400" />;
+            default:
+                return <Clock size={16} className="text-gray-400" />;
         }
     };
 
@@ -52,9 +73,11 @@ export default function AccountPage() {
                         <div>
                             <h1 className="text-3xl font-bold text-white">{user.name}</h1>
                             <p className="text-slate-400">{user.email}</p>
-                            <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs font-bold bg-white/10 text-slate-300 border border-white/10">
-                                MOCK ACCOUNT
-                            </span>
+                            {session?.user ? null : (
+                                <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs font-bold bg-white/10 text-slate-300 border border-white/10">
+                                    MOCK ACCOUNT
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -119,11 +142,13 @@ export default function AccountPage() {
                                             {/* Total & Action */}
                                             <div className="text-right min-w-[120px]">
                                                 <div className="font-bold text-white mb-1">€{order.total.toLocaleString()}</div>
-                                                <button className="text-xs text-cyan-400 flex items-center gap-1 ml-auto group-hover:underline">
-                                                    Details <ChevronRight size={12} />
-                                                </button>
+                                                <Link href={`/account/${order.id}`}> 
+                                                    <button className="text-xs text-cyan-400 flex items-center gap-1 ml-auto group-hover:underline">
+                                                        Details <ChevronRight size={12} />
+                                                    </button>
+                                                </Link>
                                                 {order.trackingNumber && (
-                                                    <Link href={`/tracking?id=${order.trackingNumber}`}>
+                                                    <Link href={`/tracking?id=${order.trackingNumber}`}> 
                                                         <button className="mt-2 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2 py-1 rounded flex items-center gap-1 ml-auto hover:bg-cyan-500/20">
                                                             <Truck size={10} /> TRACK PACKAGE
                                                         </button>

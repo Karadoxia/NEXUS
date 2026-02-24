@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronRight, RotateCcw, ShoppingCart } from 'lucide-react';
 import { PartSelector } from './part-selector';
 import { BuildSummary } from './build-summary';
+import { useCartStore } from '@/src/stores/cartStore';
 
 const STEPS: { type: PartType; label: string }[] = [
     { type: 'cpu', label: 'Processor' },
@@ -18,12 +19,33 @@ const STEPS: { type: PartType; label: string }[] = [
 ];
 
 export function BuilderWizard() {
-    const { step, nextStep, prevStep, resetBuild, parts } = useBuilderStore();
+    const { step, nextStep, prevStep, resetBuild, parts, totalPrice } = useBuilderStore();
+    const addItem = useCartStore(state => state.addItem);
     const currentStep = STEPS[step];
     const isLastStep = step === STEPS.length - 1;
 
     // Check if current step has a selection
     const canProceed = !!parts[currentStep.type];
+
+    // when finished, add custom build product to cart
+    const handleAddToCart = () => {
+        const product = {
+            id: `custom-${Date.now()}`,
+            slug: `custom-build-${Date.now()}`,
+            name: 'Custom NEXUS Build',
+            brand: 'NEXUS',
+            price: totalPrice,
+            description: 'A fully custom built configuration.',
+            category: 'components',
+            images: [],
+            specs: {},
+            stock: 1,
+            rating: 0,
+            reviewCount: 0,
+            tags: [],
+        };
+        addItem(product, 1);
+    };
 
     return (
         <div className="flex flex-col lg:flex-row gap-8">
@@ -94,6 +116,7 @@ export function BuilderWizard() {
 
                         {isLastStep ? (
                             <button
+                                onClick={handleAddToCart}
                                 disabled={!canProceed}
                                 className="bg-green-500 hover:bg-green-400 text-black px-8 py-2 rounded-lg font-bold uppercase tracking-widest flex items-center gap-2 disabled:opacity-50 disabled:grayscale transition-all"
                             >

@@ -33,7 +33,7 @@ export function Navbar() {
     return (
         <>
             {/* auth logic is client-only so we lazily load composed component below */}
-            <nav className="fixed top-0 w/full z-40 border-b border-white/10 bg-black/50 backdrop-blur-xl">
+            <nav className="fixed top-0 w-full z-40 border-b border-white/10 bg-black/50 backdrop-blur-xl">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
 
                     <div className="flex items-center gap-2">

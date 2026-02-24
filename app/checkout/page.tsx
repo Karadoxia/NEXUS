@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore } from '@/src/stores/cartStore';
@@ -67,7 +68,10 @@ function CheckoutForm({ total, orderId }: { total: number; orderId: string | nul
                     type="button"
                     onClick={async () => {
                         try {
-                            const order = await checkout({ name: 'Guest User', email: 'guest@example.com' });
+                            const user = session?.user
+                                ? { name: session.user.name || 'Customer', email: session.user.email || '' }
+                                : { name: 'Guest User', email: 'guest@example.com' };
+                            const order = await checkout(user);
                             router.push(`/checkout/success?orderId=${order.id}`);
                         } catch (e) {
                             console.error('checkout failed', e);
@@ -99,7 +103,7 @@ export default function CheckoutPage() {
             fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: total(), items }),
+                body: JSON.stringify({ amount: total(), items, customer: session?.user ? { name: session.user.name, email: session.user.email } : undefined }),
             })
                 .then((res) => {
                     if (!res.ok) throw new Error('Network response was not ok');
@@ -136,14 +140,14 @@ export default function CheckoutPage() {
         appearance,
     };
 
+    const { data: session, status } = useSession();
+
     useEffect(() => {
-        // check session via api since useSession caused prerender error
-        fetch('/api/auth/session').then(res => res.json()).then((data) => {
-            if (!data?.user) {
-                router.push('/signin');
-            }
-        });
-    }, []);
+        if (status === 'loading') return;
+        if (!session?.user) {
+            router.push('/signin');
+        }
+    }, [session, status, router]);
 
     if (items.length === 0) {
         return (
