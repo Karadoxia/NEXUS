@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: nexus_v2_db
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: nexus_v2
+    ports:
+      - "5433:5432" # Use 5433 to avoid collision with the prototype's 5432 port
+    volumes:
+      - nexus_v2_postgres_data:/var/lib/postgresql/data
+    networks:
+      - nexus_v2_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexus_v2_cache
+    ports:
+      - "6380:6379" # Use 6380 to avoid collision with the prototype's 6379 port
+    networks:
+      - nexus_v2_net
+
+volumes:
+  nexus_v2_postgres_data:
+
+networks:
+  nexus_v2_net:
+    driver: bridge

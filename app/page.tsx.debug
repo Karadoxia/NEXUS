@@ -1,0 +1,7 @@
+export default function Home() {
+  return (
+    <div style={{ padding: '100px', background: 'red', color: 'white', fontSize: '48px' }}>
+      TOP LEVEL HOME PAGE READY
+    </div>
+  )
+}
