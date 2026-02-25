@@ -26,8 +26,8 @@ export class PerformanceAnalyzer extends Agent {
         // suggest raising low stock threshold
         this.ctx.config.lowStockThreshold = (this.ctx.config.lowStockThreshold || 5) + 2;
         recommendation = recommendation
-          ? recommendation + ' Also raised low-stock threshold.
-'          : 'Raised low-stock threshold due to repeated shortages.';
+          ? recommendation + ' Also raised low-stock threshold.'
+          : 'Raised low-stock threshold due to repeated shortages.';
       }
 
       return { entriesCount: count, recent, avgReturns, recommendation, config: this.ctx.config };
