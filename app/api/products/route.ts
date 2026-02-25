@@ -9,10 +9,10 @@ export async function GET(request: Request) {
     if (q) {
         const keyword = q.toLowerCase();
         where.OR = [
-            { name: { contains: keyword, mode: 'insensitive' } },
-            { brand: { contains: keyword, mode: 'insensitive' } },
-            { description: { contains: keyword, mode: 'insensitive' } },
-            { category: { contains: keyword, mode: 'insensitive' } },
+            { name: { contains: keyword } },
+            { brand: { contains: keyword } },
+            { description: { contains: keyword } },
+            { category: { contains: keyword } },
         ];
     }
 

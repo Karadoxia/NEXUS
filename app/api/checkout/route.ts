@@ -5,7 +5,10 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import { prisma } from '@/src/lib/prisma';
 
 export async function POST(request: Request) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return NextResponse.json({ error: 'Payment not configured' }, { status: 503 });
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: '2026-01-28.clover',
   });
 
