@@ -1,6 +1,7 @@
 import { Agent, AgentContext } from './base';
 import { OrderProcessor } from './orderProcessor';
 import { SupplyChainAgent } from './supplyChain';
+import { SupplyChainManager } from './supplyChainManager';
 import { StockManager } from './stockManager';
 import { ProcurementAgent } from './procurement';
 import { SAVAgent } from './savService';
@@ -37,10 +38,14 @@ export class Leader extends Agent {
     const savReport = await sav.run();
     await report.run({ type: 'sav', data: savReport });
 
-    // supply chain monitoring
+    // supply chain monitoring (status + reorder suggestions)
     const sc = new SupplyChainAgent(this.ctx);
     const scReport = await sc.run();
     await report.run({ type: 'supplychain', data: scReport });
+
+    const scm = new SupplyChainManager(this.ctx);
+    const scmReport = await scm.run();
+    await report.run({ type: 'supplychain-manager', data: scmReport });
 
     // IT responsibilities
     const it = new ITAgent(this.ctx);
