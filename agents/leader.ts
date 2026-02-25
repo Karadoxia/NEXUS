@@ -4,6 +4,7 @@ import { SupplyChainAgent } from './supplyChain';
 import { StockManager } from './stockManager';
 import { ProcurementAgent } from './procurement';
 import { SAVAgent } from './savService';
+import { ITAgent } from './itAgent';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -34,6 +35,11 @@ export class Leader extends Agent {
     const sc = new SupplyChainAgent(this.ctx);
     const scReport = await sc.run();
     await report.run({ type: 'supplychain', data: scReport });
+
+    // IT responsibilities
+    const it = new ITAgent(this.ctx);
+    const itReport = await it.run();
+    await report.run({ type: 'it', data: itReport });
 
     // could spawn other workers…
 
