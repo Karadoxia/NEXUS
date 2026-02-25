@@ -30,6 +30,11 @@
 - Node.js 18+
 - npm or pnpm
 
+> **Note:** The development environment provided by this workspace does **not** include a running PostgreSQL
+> server or allow starting one via Docker due to sandbox restrictions. Any attempt to migrate or connect to
+> `localhost:5432` will fail with `P1001` errors until you point the project at a real database instance
+> (see "Database setup" below) or fall back to SQLite.
+
 ### Installation
 
 1. Clone the repository:
@@ -62,6 +67,24 @@
 Create a `.env.local` file in the project root. A few values are optional for
 mock mode, but the full experience (database, authentication, payments) requires
 real values:
+
+### Database setup
+
+If you want to use PostgreSQL (recommended for production and to exercise the
+Prisma migrations) you must have an accessible server. This can be a local
+installation (outside the sandbox), a Docker container running on your host, or
+any managed provider such as Supabase, Railway, ElephantSQL, or AWS RDS. Once
+it is running, set `DATABASE_URL` accordingly and run:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+If you do not have a Postgres instance handy, the project still works with the
+built-in SQLite database; set the variable to `file:./dev.db` or remove
+`DATABASE_URL` entirely. The codebase is already capable of using SQLite for
+the mock backend and the migration command will operate on `dev.db` by
+default.
 
 ```env
 # --- Database --------------------------------------------------------------
