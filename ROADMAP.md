@@ -34,7 +34,8 @@
 
 ## 🛠️ Phase 3: Real Backend Migration (in progress)
 
-- switched Prisma datasource to PostgreSQL; adjust `DATABASE_URL` accordingly and run `npx prisma migrate dev`.
+- switched Prisma datasource to PostgreSQL; adjust `DATABASE_URL` accordingly and run `npx prisma migrate dev --name init` (then `npx prisma generate`).
+- ensure the Postgres server is running and reachable; the CLI will error if it still points to SQLite.
 
 
 ### Core agent foundation
