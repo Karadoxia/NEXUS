@@ -10,9 +10,12 @@ generator client {
 }
 
 datasource db {
-  // switched to Postgres for production; update env var accordingly
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // default to sqlite for local development. To use Postgres, change the
+  // provider back to "postgresql" and update DATABASE_URL accordingly.
+  provider = "sqlite"
+
+  // connection URL is handled by prisma.config.ts; set DATABASE_URL in
+  // your environment (e.g. `file:./dev.db` for sqlite or a Postgres URL).
 }
 
 model User {
