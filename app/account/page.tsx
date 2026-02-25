@@ -135,6 +135,11 @@ export default function AccountPage() {
                                                 <p className="text-sm text-slate-400">
                                                     Placed on {new Date(order.date).toLocaleDateString()}
                                                 </p>
+                                                {order.shippingAddress && (
+                                                    <p className="text-xs text-slate-300">
+                                                        {order.shippingAddress.fullName || order.shippingAddress.line1}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Preview Images */}

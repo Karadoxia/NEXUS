@@ -28,8 +28,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const body = await request.json();
-  // expect items array and total, optionally userId
-  const { items, total } = body;
+  // expect items array and total, optionally shippingAddress
+  const { items, total, shippingAddress } = body;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     data: {
       total,
       status: 'pending',
+      shippingAddress: shippingAddress || undefined,
       user: user ? { connect: { id: user.id } } : undefined,
       items: {
         create: items.map((i: any) => ({

@@ -8,6 +8,7 @@ import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore } from '@/src/stores/cartStore';
+import { Address } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
@@ -15,13 +16,14 @@ import { Navbar } from '@/components/navbar';
 // Replace with your actual publishable key
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock');
 
-function CheckoutForm({ total, orderId }: { total: number; orderId: string | null }) {
+function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orderId: string | null; selectedAddress: Address | null }) {
     const stripe = useStripe();
     const elements = useElements();
     const [message, setMessage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const { checkout } = useCartStore();
     const router = useRouter();
+    const { data: session } = useSession();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -71,7 +73,7 @@ function CheckoutForm({ total, orderId }: { total: number; orderId: string | nul
                             const user = session?.user
                                 ? { name: session.user.name || 'Customer', email: session.user.email || '' }
                                 : { name: 'Guest User', email: 'guest@example.com' };
-                            const order = await checkout(user);
+                            const order = await checkout(user, selectedAddress || undefined);
                             router.push(`/checkout/success?orderId=${order.id}`);
                         } catch (e) {
                             console.error('checkout failed', e);
@@ -93,8 +95,20 @@ export default function CheckoutPage() {
     const [clientSecret, setClientSecret] = useState('');
     const [orderId, setOrderId] = useState<string | null>(null);
     const [isMockMode, setIsMockMode] = useState(false);
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
     useEffect(() => {
+        // fetch saved addresses for user
+        if (session?.user?.email) {
+            fetch('/api/user/addresses')
+                .then(r => r.json())
+                .then((list) => {
+                    setAddresses(list);
+                    if (list.length > 0) setSelectedAddress(list[0]);
+                });
+        }
+
         // Create PaymentIntent as soon as the page loads
         if (total() > 0) {
             // Set a timeout to fallback to mock mode if backend is slow/down
@@ -103,7 +117,12 @@ export default function CheckoutPage() {
             fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ amount: total(), items, customer: session?.user ? { name: session.user.name, email: session.user.email } : undefined }),
+                body: JSON.stringify({
+                    amount: total(),
+                    items,
+                    customer: session?.user ? { name: session.user.name, email: session.user.email } : undefined,
+                    address: selectedAddress,
+                }),
             })
                 .then((res) => {
                     if (!res.ok) throw new Error('Network response was not ok');
@@ -125,7 +144,7 @@ export default function CheckoutPage() {
 
             return () => clearTimeout(timeout);
         }
-    }, [total]);
+    }, [total, selectedAddress]);
 
     const appearance = {
         theme: 'night' as const,
@@ -206,9 +225,30 @@ export default function CheckoutPage() {
                     {/* Payment Form */}
                     <div className="bg-slate-900 p-8 rounded-2xl border border-cyan-900/30 shadow-2xl">
                         <h2 className="text-2xl font-bold text-white mb-6">SECURE PAYMENT</h2>
+                        {/* Address selection (if available) */}
+                        {addresses.length > 0 && (
+                            <div className="mb-6">
+                                <label className="block text-sm text-slate-400 mb-1">Shipping address</label>
+                                <select
+                                    value={selectedAddress?.id || ''}
+                                    onChange={(e) => {
+                                        const a = addresses.find(a => a.id === e.target.value);
+                                        setSelectedAddress(a || null);
+                                    }}
+                                    className="w-full bg-slate-800 p-2 rounded"
+                                >
+                                    {addresses.map(a => (
+                                        <option key={a.id} value={a.id}>{a.label} - {a.line1}, {a.city}</option>
+                                    ))}
+                                </select>
+                                <Link href="/account" className="text-xs text-cyan-400 underline">
+                                    Manage addresses
+                                </Link>
+                            </div>
+                        )}
                         {clientSecret ? (
                             <Elements options={options} stripe={stripePromise}>
-                                <CheckoutForm total={total()} orderId={orderId} />
+                                <CheckoutForm total={total()} orderId={orderId} selectedAddress={selectedAddress} />
                             </Elements>
                         ) : isMockMode ? (
                             <div className="text-center space-y-6">
