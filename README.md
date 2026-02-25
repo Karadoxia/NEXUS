@@ -117,6 +117,90 @@ Run `npm run test` to execute them. The suite currently covers adding items,
 adjusting quantities, and removing items; more tests can be added as features
 grow.
 
+
+## 🤖 Vision: Hierarchical Agentic AI Company
+
+Imagine your full‑stack online web shop as a living, intelligent digital company — a self‑orchestrating organism where a CEO‑level AI brain oversees specialized
+departments of expert agents. Orders flow seamlessly, stock never surprises you,
+suppliers get negotiated like pros, customers feel personally cared for (even in
+after‑sales/SAV), and the entire system learns and optimizes 24/7. Humans step in
+only for vision, big decisions, or creative sparks. This is **hierarchical agentic
+AI** in action — and in 2026 it’s production‑ready, cost‑effective, and
+transformative for e‑commerce.
+
+### Core Architecture: Hierarchical Multi-Agent System (HMAS)
+
+Think of it as a **corporate org chart made of AI**:
+
+- **Strategic Layer** (1 Lead Orchestrator) — high‑level planning, delegation,
+  KPI oversight, conflict resolution, escalation to human.
+- **Tactical Layer** (6–8 Departmental Manager Agents) — break down goals,
+  coordinate sub‑teams, report up.
+- **Execution Layer** (20+ Specialist Worker Agents) — handle granular tasks with
+autonomy.
+
+```mermaid
+flowchart TB
+  CEO([E-Commerce Orchestrator])
+  subgraph Managers
+    Ops(Operations Manager)
+    SC(Supply Chain Manager)
+    Fin(Finance & Payments Manager)
+    CX(Customer Experience Manager)
+    Mkt(Marketing & Catalog Manager)
+    Anal(Analytics & Insights Manager)
+    IT(IT & Security Manager)
+  end
+  CEO --> Managers
+  Ops --> Proc(Procurement)
+  Ops --> Ret(Retention Specialist)
+  SC --> Neg(Negotiation)
+  SC --> Log(Logistics)
+  Fin --> StockF(Stock Forecaster)
+  Fin --> LogF(Logistics)
+  CX --> PayProc(Payment Processor)
+  CX --> Sup(Customer Support)
+  Mkt --> SEO(SEO Optimizer)
+  Mkt --> PayProc2(Payment Processor)
+  Anal --> Fraud(Fraud Detection)
+  Anal --> Content(Content Lister)
+  IT --> Prod(Product Specialist)
+  IT --> Data(Data Analyst)
+```
+
+A visual version of this hierarchy is also saved to `docs/architecture.mmd`.
+
+**Benefits** include specialization, scalability (10k+ orders/day), resilience,
+modularity, and built‑in human‑in‑the‑loop for high‑stakes actions.
+
+### Communication Patterns
+
+Vertical delegation/reporting, horizontal collaboration (e.g. Stock ➜ Procurement),
+shared state via Vector DB + event bus, and event‑driven triggers.
+
+### Recommended 2026 Tech Stack
+
+Briefly:
+- **Orchestration**: CrewAI + LangGraph hybrids
+- **Backend**: Python/FastAPI or Node.js
+- **DBs**: PostgreSQL, Redis, VectorDB (Chroma/PGVector)
+- **LLMs**: mix of Grok‑4, Claude 3.5/4, Llama 3.1, Grok mini
+- **Tools**: LangChain/LlamaIndex, Celery/RabbitMQ, LangSmith/Grafana
+
+A full list of departments, agents, and implementation guidance is described
+in the project roadmap and associated architecture docs.
+
+### Implementation Path
+
+Start with a minimal crew (orchestrator + order/stock/support agents), then
+expand department by department. Use RAG for real‑time data, task decomposition
+for planning, and asynchronous event-driven execution. Monitor with LangSmith or
+your chosen observability stack.
+
+This system can outperform a 20‑person team while giving you god‑mode
+visibility and control. Prototype now, scale fast, and let AI handle the heavy
+lifting.
+
 ## 📄 License
 
 This project is licensed under the MIT License.
