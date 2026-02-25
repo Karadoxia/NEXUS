@@ -63,6 +63,7 @@ export default function AdminOrdersPage() {
               <th className="p-2">ID</th>
               <th className="p-2">Customer</th>
               <th className="p-2">Total</th>
+              <th className="p-2">Address</th>
               <th className="p-2">Status</th>
               <th className="p-2">Action</th>
             </tr>
@@ -73,6 +74,7 @@ export default function AdminOrdersPage() {
                 <td className="p-2 font-mono text-sm">{o.id}</td>
                 <td className="p-2 text-sm">{o.customer.email}</td>
                 <td className="p-2 text-sm">€{o.total.toFixed(2)}</td>
+                <td className="p-2 text-sm">{o.shippingAddress?.fullName || o.shippingAddress?.line1 || '-'}</td>
                 <td className="p-2 text-sm">{o.status}</td>
                 <td className="p-2">
                   <select

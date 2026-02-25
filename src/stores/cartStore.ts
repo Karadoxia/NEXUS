@@ -11,7 +11,7 @@ interface CartState {
     clearCart: () => void;
     openCart: () => void;
     closeCart: () => void;
-    checkout: (customer: { name: string; email: string }) => Promise<any>;
+    checkout: (customer: { name: string; email: string }, shippingAddress?: any) => Promise<any>;
     total: () => number;
     count: () => number;
 }
@@ -60,8 +60,8 @@ export const useCartStore = create<CartState>()(
             closeCart: () => set({ isOpen: false }),
 
             // send order to backend and clear
-            checkout: async (customer) => {
-                const order = {
+            checkout: async (customer, shippingAddress) => {
+                const order: any = {
                     id: crypto.randomUUID(),
                     items: get().items,
                     total: get().total(),
@@ -69,6 +69,7 @@ export const useCartStore = create<CartState>()(
                     date: new Date().toISOString(),
                     customer,
                 };
+                if (shippingAddress) order.shippingAddress = shippingAddress;
                 const res = await fetch('/api/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

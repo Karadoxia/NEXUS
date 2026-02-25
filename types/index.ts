@@ -24,6 +24,8 @@ export type CartItem = Product & {
 };
 
 export interface Address {
+    id?: string;
+    label?: string;
     fullName: string;
     line1: string;
     line2?: string;

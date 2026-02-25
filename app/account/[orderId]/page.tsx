@@ -76,6 +76,19 @@ export default function OrderDetailPage() {
             Status: <StatusIcon status={order.status} /> {order.status.toUpperCase()}
           </p>
 
+          {order.shippingAddress && (
+            <div className="mb-6">
+              <h2 className="font-bold mb-1">Shipping Address</h2>
+              <p className="text-sm">
+                {order.shippingAddress.fullName || order.shippingAddress.label}<br />
+                {order.shippingAddress.line1}<br />
+                {order.shippingAddress.line2 && <>{order.shippingAddress.line2}<br /></>}
+                {order.shippingAddress.city}, {order.shippingAddress.postal}<br />
+                {order.shippingAddress.country}
+              </p>
+            </div>
+          )}
+
           <div className="mb-6">
             <h2 className="font-bold mb-2">Items</h2>
             {order.items.map((item: any, idx: number) => (

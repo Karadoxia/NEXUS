@@ -107,6 +107,18 @@ function SuccessContent() {
                         <span className="text-slate-400">Estimated Delivery:</span>
                         <span className="text-white">3-5 Business Days</span>
                     </div>
+                    {order?.shippingAddress && (
+                      <div className="mb-4">
+                        <h3 className="text-sm text-slate-400 mb-1">Shipping to:</h3>
+                        <p className="text-sm text-white">
+                          {order.shippingAddress.fullName || order.shippingAddress.line1}<br />
+                          {order.shippingAddress.line1}<br />
+                          {order.shippingAddress.line2 && <>{order.shippingAddress.line2}<br /></>}
+                          {order.shippingAddress.city}, {order.shippingAddress.postal}<br />
+                          {order.shippingAddress.country}
+                        </p>
+                      </div>
+                    )}
                     <div className="flex justify-between items-center">
                         <span className="text-slate-400">Total:</span>
                         <span className="text-xl font-bold text-cyan-400">€{order ? order.total.toLocaleString() : '0.00'}</span>

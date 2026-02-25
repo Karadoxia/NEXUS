@@ -77,17 +77,18 @@ model Product {
 }
 
 model Order {
-  id              String   @id @default(cuid())
-  total           Float
-  status          String   @default("pending")
-  date            DateTime @default(now())
-  trackingNumber  String?  @unique
-  carrier         String?
+  id                String   @id @default(cuid())
+  total             Float
+  status            String   @default("pending")
+  date              DateTime @default(now())
+  trackingNumber    String?  @unique
+  carrier           String?
   estimatedDelivery DateTime?
-  items           CartItem[]
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull, name: "UserOrders")
-  cancelled       Boolean  @default(false)
+  shippingAddress   Json?
+  items             CartItem[]
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull, name: "UserOrders")
+  cancelled         Boolean  @default(false)
 }
 
 model Address {
