@@ -7,6 +7,7 @@ import { ProcurementAgent } from './procurement';
 import { SAVAgent } from './savService';
 import { ITAgent } from './itAgent';
 import { OperationsManager } from './operationsManager';
+import { FinanceManager } from './financeManager';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -27,6 +28,11 @@ export class Leader extends Agent {
     const stock = new StockManager(this.ctx);
     const stockReport = await stock.run();
     await report.run({ type: 'stock', data: stockReport });
+
+    // finance summary
+    const fin = new FinanceManager(this.ctx);
+    const finReport = await fin.run();
+    await report.run({ type: 'finance', data: finReport });
 
     // procurement checks
     const procurer = new ProcurementAgent(this.ctx);
