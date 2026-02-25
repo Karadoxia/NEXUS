@@ -1,0 +1,26 @@
+flowchart TB
+  CEO([E-Commerce Orchestrator])
+  subgraph Managers
+    Ops(Operations Manager)
+    SC(Supply Chain Manager)
+    Fin(Finance & Payments Manager)
+    CX(Customer Experience Manager)
+    Mkt(Marketing & Catalog Manager)
+    Anal(Analytics & Insights Manager)
+    IT(IT & Security Manager)
+  end
+  CEO --> Managers
+  Ops --> Proc(Procurement)
+  Ops --> Ret(Retention Specialist)
+  SC --> Neg(Negotiation)
+  SC --> Log(Logistics)
+  Fin --> StockF(Stock Forecaster)
+  Fin --> LogF(Logistics)
+  CX --> PayProc(Payment Processor)
+  CX --> Sup(Customer Support)
+  Mkt --> SEO(SEO Optimizer)
+  Mkt --> PayProc2(Payment Processor)
+  Anal --> Fraud(Fraud Detection)
+  Anal --> Content(Content Lister)
+  IT --> Prod(Product Specialist)
+  IT --> Data(Data Analyst)
