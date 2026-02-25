@@ -70,8 +70,15 @@ export class SupervisorAgent extends Agent {
   }
 
   private restartServices() {
-    // placeholder: in a real deployment you might invoke systemctl, docker
-    // commands, or call out to a process manager. Here we'll just log.
-    console.log('[Supervisor] restarting auxiliary services (noop)');
+    // try to restart a hypothetical service via shell; adapt to your
+    // environment. this example simply echoes to demonstrate the pattern.
+    const { exec } = require('child_process');
+    exec('echo restarting services', (err: any, stdout: string, stderr: string) => {
+      if (err) {
+        console.warn('[Supervisor] restart command failed', err);
+      } else {
+        console.log('[Supervisor] restart output', stdout.trim());
+      }
+    });
   }
 }
