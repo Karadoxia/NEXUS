@@ -129,10 +129,15 @@ The agent subsystem now includes built-in learning and recovery capabilities:
   `agents/config.json` (e.g. enabling a high‑return warning or increasing
   marketing spend) when thresholds are exceeded.
 - A **SupervisorAgent** health‑checks the storefront every minute. If it detects
-  downtime it logs an outage, tries restarting auxiliary services (no‑op stub),
-  sends a Slack alert if `SLACK_WEBHOOK` is configured, and triggers a recovery
-  leader run. This ensures the system can bounce back automatically after a
-  crash or reboot.
+  downtime it logs an outage, records the event in the performance table, sends a
+  Slack alert if `SLACK_WEBHOOK` is configured, and triggers a recovery leader run.
+  The restart behaviour is now configurable: add a `restartCommand` string to
+  `agents/config.json` (e.g. `systemctl restart nexus.service` or a Docker CLI
+  invocation) and the supervisor will execute it on failure.
+- An administrative UI at `/admin/config` allows you to view and edit
+  `agents/config.json` directly from the dashboard. You can change thresholds,
+  set the restart command, adjust marketing budgets, etc. Changes take effect on
+  the next agent cycle or immediately if the leader reads the config file again.
 - All of these behaviours are wired up via `initAgents()` in the layout, so
   restarting the server immediately brings the whole brain back online.
 
