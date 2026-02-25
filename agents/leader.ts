@@ -1,5 +1,6 @@
 import { Agent, AgentContext } from './base';
 import fetch from 'node-fetch';
+import fs from 'fs';
 import { OrderProcessor } from './orderProcessor';
 import { SupplyChainAgent } from './supplyChain';
 import { SupplyChainManager } from './supplyChainManager';
@@ -123,7 +124,23 @@ export class Leader extends Agent {
       console.log(
         `[Leader] discovered ${orders.length} total orders, ${returns.length} returns`
       );
-      // here you might update this.ctx.config or write to a db table
+      // persist the observation so the system has historical data
+      try {
+        await fetch(`${this.ctx.workspace}/api/agents/performance`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orders: orders.length, returns: returns.length, downtime: false }),
+        });
+      } catch (e) {
+        console.warn('[Leader] failed to persist performance metric', e);
+      }
+      // simple config adjustment example: if returns > 10% of orders, flag
+      if (orders > 0 && returns / orders > 0.1) {
+        console.log('[Leader] high return rate detected, adjusting config');
+        this.ctx.config.highReturnWarning = true;
+        // in a real system you might write this to a DB or file here
+        fs.writeFileSync('agents/config.json', JSON.stringify(this.ctx.config, null, 2));
+      }
       return { orders: orders.length, returns: returns.length }; 
     } catch (err) {
       console.warn('[Leader] selfImprove failed', err);

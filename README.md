@@ -111,6 +111,29 @@ During development you can rely on the embedded SQLite database and the mock
 checkout button; however, set `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 to test the real payment flow.
 
+## 🧠 Agent Intelligence & Self‑Improvement
+
+The agent subsystem now includes built-in learning and recovery capabilities:
+
+- A **`Performance`** database table records periodic metrics (orders, returns,
+  downtime) that the `Leader` agent uses to adjust its behaviour over time.
+  Metrics are stored via the new `/api/agents/performance` endpoint and can be
+  queried for analysis.
+- Every hour the scheduler runs the **Leader**; after finishing it invokes
+  `leader.selfImprove()`, which fetches current order/return counts, logs them,
+  persists the observation, and may modify `agents/config.json` if thresholds
+  (e.g. high return rate) are exceeded.
+- A **SupervisorAgent** health‑checks the storefront every minute. If it detects
+  downtime it logs an outage, tries restarting auxiliary services (no‑op stub),
+  sends a Slack alert if `SLACK_WEBHOOK` is configured, and triggers a recovery
+  leader run. This ensures the system can bounce back automatically after a
+  crash or reboot.
+- All of these behaviours are wired up via `initAgents()` in the layout, so
+  restarting the server immediately brings the whole brain back online.
+
+These enhancements make the platform not just autonomous but **self‑healing
+and capable of incremental self‑improvement**.
+
 ## 🏗️ Building for Production
 
 To create an optimized production build:
