@@ -25,6 +25,7 @@ export interface Order {
     carrier?: string;
     estimatedDelivery?: string;
     shipmentEvents?: ShipmentEvent[];
+    cancelled?: boolean;
 }
 
 interface OrderState {
@@ -33,9 +34,9 @@ interface OrderState {
     storeOrder: (order: Order) => void; // local-only persistence
     updateStatus: (orderId: string, status: Order['status']) => void;
     updateShipment: (orderId: string, trackingNumber: string, carrier: string) => void;
-    getOrdersByEmail: (email: string) => Order[];
+    getOrdersByEmail: (email: string) => Promise<Order[]>;
     getOrderByTracking: (trackingNumber: string) => Order | undefined;
-    getAllOrders: () => Order[];
+    getAllOrders: () => Promise<Order[]>;
     getRevenue: () => number;
 }
 

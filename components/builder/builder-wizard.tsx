@@ -7,6 +7,7 @@ import { Check, ChevronRight, RotateCcw, ShoppingCart } from 'lucide-react';
 import { PartSelector } from './part-selector';
 import { BuildSummary } from './build-summary';
 import { useCartStore } from '@/src/stores/cartStore';
+import { Product } from '@/types';
 
 const STEPS: { type: PartType; label: string }[] = [
     { type: 'cpu', label: 'Processor' },
@@ -29,7 +30,7 @@ export function BuilderWizard() {
 
     // when finished, add custom build product to cart
     const handleAddToCart = () => {
-        const product = {
+        const product: Product = {
             id: `custom-${Date.now()}`,
             slug: `custom-build-${Date.now()}`,
             name: 'Custom NEXUS Build',
