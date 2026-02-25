@@ -4,13 +4,25 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 // globalThis is typed as any so we cast to avoid TS errors
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
-// ensure we convert relative sqlite URL to absolute path so the
-// directory is always resolvable regardless of the current working directory.
+// ensure sqlite url is converted to an absolute path based on the project
+// root (rather than the runtime cwd which may change under Next.js). also
+// create the directory if it doesn't exist so sqlite won't complain.
+const path = require('path');
+const fs = require('fs');
 let dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
 if (dbUrl.startsWith('file:')) {
-  const p = dbUrl.slice(5);
-  const abs = require('path').resolve(process.cwd(), p);
-  dbUrl = `file:${abs}`;
+  let p = dbUrl.slice(5);
+  if (!path.isAbsolute(p)) {
+    // projectRoot is two levels up from this file (src/lib)
+    const projectRoot = path.resolve(__dirname, '../..');
+    p = path.resolve(projectRoot, p);
+  }
+  // ensure containing directory exists
+  const dir = path.dirname(p);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  dbUrl = `file:${p}`;
 }
 const adapter = new PrismaBetterSqlite3({
   url: dbUrl,
