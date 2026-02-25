@@ -5,11 +5,17 @@ import { StockManager } from './stockManager';
 import { ProcurementAgent } from './procurement';
 import { SAVAgent } from './savService';
 import { ITAgent } from './itAgent';
+import { OperationsManager } from './operationsManager';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
   async run() {
     const report = new Reporter(this.ctx);
+
+    // operations manager handles order intake/validation
+    const ops = new OperationsManager(this.ctx);
+    const opsReport = await ops.run();
+    await report.run({ type: 'operations', data: opsReport });
 
     // coordinate order processing
     const orderAgent = new OrderProcessor(this.ctx);
