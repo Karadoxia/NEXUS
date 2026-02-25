@@ -17,35 +17,38 @@ function SuccessContent() {
     const [orderId, setOrderId] = useState<string | null>(null);
     const [order, setOrder] = useState<any | null>(null);
 
-    useEffect(() => {
-        const id = searchParams.get('orderId');
-        const { checkout } = useCartStore.getState();
+    const orderIdParam = searchParams.get('orderId');
+    const { checkout } = useCartStore.getState();
 
-        async function loadOrderById(orderId: string) {
-            try {
-                const res = await fetch(`/api/orders/${orderId}`);
-                if (res.ok) {
-                    const o = await res.json();
-                    setOrder(o);
-                    addOrder(o);
-                    storeOrder(o);
-                    return;
-                }
-                throw new Error(`status ${res.status}`);
-            } catch {
-                const existing = getOrderByTracking(orderId);
-                if (existing) setOrder(existing);
+    async function loadOrderById(orderId: string) {
+        try {
+            const res = await fetch(`/api/orders/${orderId}`);
+            if (res.ok) {
+                const o = await res.json();
+                setOrder(o);
+                addOrder(o);
+                storeOrder(o);
+                return;
             }
+            throw new Error(`status ${res.status}`);
+        } catch {
+            const existing = getOrderByTracking(orderId);
+            if (existing) setOrder(existing);
         }
+    }
 
-        if (id) {
-            setOrderId(id);
-            loadOrderById(id);
+    // effect for URL query parameter, runs only when orderIdParam changes
+    useEffect(() => {
+        if (orderIdParam && orderIdParam !== orderId) {
+            setOrderId(orderIdParam);
+            loadOrderById(orderIdParam);
             clearCart();
-            return;
         }
+    }, [orderIdParam]);
 
-        if (items.length > 0) {
+    // effect for guest checkout when there is no query param
+    useEffect(() => {
+        if (!orderIdParam && items.length > 0) {
             (async () => {
                 try {
                     const newOrder = await checkout({ name: 'Guest User', email: 'guest@example.com' });
@@ -69,7 +72,7 @@ function SuccessContent() {
                 }
             })();
         }
-    }, [searchParams, clearCart, getOrderByTracking, items, addOrder]);
+    }, [orderIdParam, items]);
 
     if (!orderId && items.length === 0) {
         return (
