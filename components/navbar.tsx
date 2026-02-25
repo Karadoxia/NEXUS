@@ -54,6 +54,11 @@ export function Navbar() {
                             </span>
                             SYSTEM CONFIG
                         </Link>
+                        {mounted && session?.user && (
+                          <Link href="/profile" className="ml-6 text-sm font-medium text-white hover:text-cyan-200 hidden md:block">
+                            PROFILE
+                          </Link>
+                        )}
                         {mounted && session?.user?.email === 'admin@example.com' && (
                           <Link href="/admin/orders" className="ml-6 text-sm font-medium text-red-400 hover:text-red-300 hidden md:block">
                             ADMIN
