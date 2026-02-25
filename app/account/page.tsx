@@ -121,12 +121,13 @@ export default function AccountPage() {
                                                     </span>
                                                     {order.status === 'pending' && !order.cancelled && (
                                                         <button onClick={async () => {
+                                                            if (!confirm('Cancel this order?')) return;
                                                             await fetch('/api/orders', {
                                                                 method: 'PUT',
                                                                 headers: { 'Content-Type': 'application/json' },
-                                                                body: JSON.stringify({ id: order.id, status: 'cancelled', cancelled: true }),
+                                                                body: JSON.stringify({ id: order.id, cancelled: true }),
                                                             });
-                                                            getOrdersByEmail(user.email);
+                                                            window.location.reload();
                                                         }} className="ml-2 text-xs text-red-400 underline">
                                                             Cancel
                                                         </button>

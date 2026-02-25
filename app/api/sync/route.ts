@@ -4,7 +4,7 @@
 // vendor: 'fakestore' | 'ebay' | 'serpapi' | 'all'  (default: 'all')
 // q:      search query forwarded to eBay / SerpApi   (optional)
 //
-// Protected by SYNC_SECRET env var when set.
+// Requires SYNC_SECRET env var. Pass it as the x-sync-secret header.
 // e.g. POST /api/sync?vendor=ebay&q=gaming+laptop  -H "x-sync-secret: yourSecret"
 
 import { NextResponse } from 'next/server';
@@ -13,13 +13,17 @@ import { syncVendor, type SyncVendor } from '@/lib/vendors/sync';
 const VALID_VENDORS: SyncVendor[] = ['fakestore', 'ebay', 'serpapi', 'all'];
 
 export async function POST(request: Request) {
-  // Optional secret guard — set SYNC_SECRET in .env.local to protect this endpoint
+  // SYNC_SECRET is required — the endpoint is disabled until configured
   const secret = process.env.SYNC_SECRET;
-  if (secret) {
-    const provided = request.headers.get('x-sync-secret');
-    if (provided !== secret) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+  if (!secret) {
+    return NextResponse.json(
+      { error: 'Sync endpoint disabled: set SYNC_SECRET in your environment' },
+      { status: 503 },
+    );
+  }
+  const provided = request.headers.get('x-sync-secret');
+  if (provided !== secret) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -39,9 +43,9 @@ export async function POST(request: Request) {
     const errors  = results.reduce((s, r) => s + r.errors, 0);
 
     return NextResponse.json({ success: true, total, results, errors });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[sync route]', err);
-    return NextResponse.json({ error: err.message ?? 'Sync failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Sync failed' }, { status: 500 });
   }
 }
 

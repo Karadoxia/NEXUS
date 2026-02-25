@@ -54,7 +54,7 @@ export default function AdminProductsPage() {
     fetchProducts();
   };
 
-  if (session?.user?.email !== 'admin@example.com') {
+  if (!(session?.user as { isAdmin?: boolean })?.isAdmin) {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <Navbar />

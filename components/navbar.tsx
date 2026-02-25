@@ -59,7 +59,7 @@ export function Navbar() {
                             PROFILE
                           </Link>
                         )}
-                        {mounted && session?.user?.email === 'admin@example.com' && (
+                        {mounted && (session?.user as { isAdmin?: boolean })?.isAdmin && (
                           <Link href="/admin/orders" className="ml-6 text-sm font-medium text-red-400 hover:text-red-300 hidden md:block">
                             ADMIN
                           </Link>
@@ -118,12 +118,17 @@ function AuthButtons() {
   const { data: session, status } = useSession();
   if (status === 'loading') return null;
   if (session?.user) {
+    const displayName = session.user.name
+      ? `Hi, ${session.user.name.split(' ')[0]}`
+      : session.user.email;
     return (
       <div className="flex items-center gap-2">
-        <span className="text-sm text-white">{session.user.email}</span>
+        <Link href="/profile" className="text-sm text-cyan-300 hover:text-cyan-200 font-medium hidden md:block">
+          {displayName}
+        </Link>
         <button
           onClick={() => signOut({ callbackUrl: '/' })}
-          className="bg-white/10 hover:bg-white/20 text-white border border-white/10 py-1 px-3 rounded"
+          className="bg-white/10 hover:bg-white/20 text-white border border-white/10 py-1 px-3 rounded text-sm"
         >
           Sign Out
         </button>

@@ -139,6 +139,10 @@ model PaymentMethod {
   userId         String
   type           String   @default("card")   // "card" | "wallet"
   brand          String   // e.g. "Visa", "PayPal", "Apple Pay"
+  // When we tokenize with Stripe we store the payment_method ID here so the
+  // backend can charge the customer off‑session.  Older manually‑entered
+  // records will have this field null and are only usable in mock mode.
+  stripeId       String?  
   last4          String?  // cards only
   expMonth       Int?     // cards only
   expYear        Int?     // cards only

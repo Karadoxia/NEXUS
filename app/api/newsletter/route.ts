@@ -1,0 +1,35 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/src/lib/prisma';
+import { requireAdmin } from '@/lib/server-auth';
+
+// POST /api/newsletter — subscribe an email
+export async function POST(request: Request) {
+  try {
+    const { email } = await request.json();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+    }
+
+    await prisma.subscriber.upsert({
+      where: { email },
+      update: {}, // already subscribed — no-op
+      create: { email },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (e: unknown) {
+    console.error('[newsletter POST]', e);
+    return NextResponse.json({ error: 'Subscription failed' }, { status: 500 });
+  }
+}
+
+// GET /api/newsletter — list all subscribers (admin only)
+export async function GET() {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
+  const subscribers = await prisma.subscriber.findMany({
+    orderBy: { joinedAt: 'desc' },
+  });
+  return NextResponse.json(subscribers);
+}

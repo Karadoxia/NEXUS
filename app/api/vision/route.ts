@@ -14,7 +14,8 @@ export async function POST(request: Request) {
     });
     const data = await resp.json();
     return NextResponse.json({ analysis: data.outputText });
-  } catch (e) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    console.error('[vision]', e);
+    return NextResponse.json({ error: 'Vision analysis failed' }, { status: 500 });
   }
 }

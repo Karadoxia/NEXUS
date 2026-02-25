@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
@@ -16,7 +16,23 @@ import { Navbar } from '@/components/navbar';
 // Replace with your actual publishable key
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock');
 
-function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orderId: string | null; selectedAddress: Address | null }) {
+function CheckoutForm({
+    total,
+    orderId,
+    selectedAddress,
+    paymentMethods,
+    selectedPm,
+    setSelectedPm,
+    isMockMode,
+}: {
+    total: number;
+    orderId: string | null;
+    selectedAddress: Address | null;
+    paymentMethods: any[]; // kept loose since it's shared with page state
+    selectedPm: string | undefined;
+    setSelectedPm: React.Dispatch<React.SetStateAction<string | undefined>>;
+    isMockMode: boolean;
+}) {
     const stripe = useStripe();
     const elements = useElements();
     const [message, setMessage] = useState<string | null>(null);
@@ -27,6 +43,45 @@ function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orde
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // if a saved method is selected attempt the off‑session charge only if
+        // the record actually has a Stripe token associated with it.  Otherwise
+        // fall through and let the standard element flow run.
+        if (selectedPm) {
+            const pmRec = paymentMethods.find(pm => pm.id === selectedPm);
+            if (pmRec?.stripeId) {
+                setIsLoading(true);
+                try {
+                    const user = session?.user
+                        ? { name: session.user.name || 'Customer', email: session.user.email || '' }
+                        : { name: 'Guest User', email: 'guest@example.com' };
+                    const resp = await fetch('/api/checkout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            amount: total,
+                            items,
+                            paymentMethodId: selectedPm,
+                            customer: user,
+                            address: selectedAddress,
+                        }),
+                    });
+                    const data = await resp.json();
+                    if (resp.ok && data.orderId) {
+                        router.push(`/checkout/success?orderId=${data.orderId}`);
+                        return;
+                    }
+                    throw new Error(data.error || 'unknown');
+                } catch (err) {
+                    console.error('checkout failed', err);
+                    setMessage('Failed to process saved payment method.');
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+            // if there's no stripeId, don't intercept – the UI will still allow the
+            // user to type new card info and confirm below.
+        }
 
         if (!stripe || !elements) return;
 
@@ -56,7 +111,9 @@ function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orde
         <form id="payment-form" onSubmit={handleSubmit} className="space-y-6">
             {paymentMethods.length > 0 && (
               <div className="mb-4">
-                <label className="block text-sm text-slate-400 mb-1">Use saved payment method (mock mode only):</label>
+                <label className="block text-sm text-slate-400 mb-1">
+                  Select a saved payment method (for offline/demo use only)
+                </label>
                 <select
                   className="w-full bg-black border border-slate-700 rounded px-3 py-2 text-white"
                   value={selectedPm || ''}
@@ -68,12 +125,31 @@ function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orde
                         {pm.type === 'card'
                           ? `${pm.brand} •••• ${pm.last4}`
                           : `${pm.brand}${pm.accountEmail ? ' ('+pm.accountEmail+')' : ''}`}
+                        {pm.stripeId ? '' : ' (mock-only)'}
                       </option>
                   ))}
                 </select>
+                <p className="text-xs text-slate-500 mt-1">
+                  Choosing a saved method does not prefill the card input and has no
+                  effect on live Stripe payments – it only controls the mock mode
+                  simulation when the backend is unavailable.
+                </p>
               </div>
             )}
-            <PaymentElement id="payment-element" options={{ layout: 'tabs' }} />
+
+            {/* element is always visible so users can switch back to a new card
+                without waiting for a remount.  When a saved stripe-backed method
+                is chosen we render a semi-transparent overlay to indicate it will
+                be used, but the fields remain editable if the user wants to input
+                fresh details. */}
+            <div className="relative">
+                <PaymentElement id="payment-element" options={{ layout: 'tabs' }} />
+                {selectedPm && paymentMethods.find(pm => pm.id === selectedPm)?.stripeId && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-sm pointer-events-none">
+                        Using saved card — switch to “None” to enter a new one
+                    </div>
+                )}
+            </div>
             <button
                 disabled={isLoading || !stripe || !elements}
                 id="submit"
@@ -92,7 +168,7 @@ function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orde
                             const user = session?.user
                                 ? { name: session.user.name || 'Customer', email: session.user.email || '' }
                                 : { name: 'Guest User', email: 'guest@example.com' };
-                            const order = await checkout(user, selectedAddress || undefined);
+                            const order = await checkout(user, selectedAddress || undefined, selectedPm);
                             router.push(`/checkout/success?orderId=${order.id}`);
                         } catch (e) {
                             console.error('checkout failed', e);
@@ -100,7 +176,7 @@ function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orde
                     }}
                     className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold py-3 rounded-lg border border-slate-700 transition-all text-xs tracking-widest uppercase"
                 >
-                    [MOCK MODE] Simulate Successful Payment
+                    [MOCK MODE] Simulate Successful Payment{selectedPm ? ' (using saved method)' : ''}
                 </button>
                 <p className="text-[10px] text-center text-slate-500 mt-2">Use this if you don&apos;t have a valid Stripe key or backend running.</p>
             </div>
@@ -117,7 +193,7 @@ export default function CheckoutPage() {
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
     const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-    const [selectedPm, setSelectedPm] = useState<string | undefined>(undefined);
+    const [selectedPm, setSelectedPm] = useState<string | undefined>(undefined); // start with no selection
 
     useEffect(() => {
         // fetch saved addresses for user
@@ -133,13 +209,20 @@ export default function CheckoutPage() {
                 .then((pms) => {
                     if (Array.isArray(pms)) {
                         setPaymentMethods(pms);
-                        if (pms.length > 0) setSelectedPm(pms[0].id);
+                        // do not auto-select a saved method; let user choose so they
+                        // can easily switch to entering new card data.
+                        // if you want to preselect, uncomment next line:
+                        // if (pms.length > 0) setSelectedPm(pms[0].id);
                     }
                 });
         }
 
-        // Create PaymentIntent as soon as the page loads
-        if (total() > 0) {
+        // reset mock indicator any time inputs change
+        setIsMockMode(false);
+        // Create PaymentIntent as soon as the page loads or when critical inputs
+        // change – but only when no saved method is selected.  A saved method with
+        // a Stripe token bypasses the element altogether.
+        if (total() > 0 && !selectedPm) {
             // Set a timeout to fallback to mock mode if backend is slow/down
             const timeout = setTimeout(() => setIsMockMode(true), 2000);
 
@@ -149,7 +232,7 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     amount: total(),
                     items,
-                    paymentMethodId: selectedPm,
+                    // do not send paymentMethodId so Stripe intent is standard
                     customer: session?.user ? { name: session.user.name, email: session.user.email } : undefined,
                     address: selectedAddress,
                 }),
@@ -174,7 +257,7 @@ export default function CheckoutPage() {
 
             return () => clearTimeout(timeout);
         }
-    }, [total, selectedAddress]);
+    }, [total, selectedAddress, selectedPm]);
 
     const appearance = {
         theme: 'night' as const,
@@ -278,7 +361,15 @@ export default function CheckoutPage() {
                         )}
                         {clientSecret ? (
                             <Elements options={options} stripe={stripePromise}>
-                                <CheckoutForm total={total()} orderId={orderId} selectedAddress={selectedAddress} />
+                                <CheckoutForm
+                                    total={total()}
+                                    orderId={orderId}
+                                    selectedAddress={selectedAddress}
+                                    paymentMethods={paymentMethods}
+                                    selectedPm={selectedPm}
+                                    setSelectedPm={setSelectedPm}
+                                    isMockMode={isMockMode}
+                                />
                             </Elements>
                         ) : isMockMode ? (
                             <div className="text-center space-y-6">

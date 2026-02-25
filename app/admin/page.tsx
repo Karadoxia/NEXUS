@@ -9,14 +9,31 @@ export default function AdminPage() {
     const { orders, getRevenue, updateStatus, updateShipment } = useOrderStore();
     const [revenue, setRevenue] = useState(0);
     const [activeOrders, setActiveOrders] = useState(0);
+    const [userCount, setUserCount] = useState<number | null>(null);
 
     // Hydration fix
     const [mounted, setMounted] = useState(false);
+    const { data: session, status } = useSession();
+    const router = useRouter();
+
+    useEffect(() => {
+        // redirect if signed in and not admin
+        if (status === 'authenticated' && !(session?.user as any)?.isAdmin) {
+          router.push('/signin');
+        }
+    }, [status, session, router]);
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
         setRevenue(getRevenue());
         setActiveOrders(orders.filter(o => o.status !== 'delivered').length);
+
+        // fetch user count for admin card
+        fetch('/api/admin/user-count')
+          .then(r => r.json())
+          .then(d => setUserCount(d.count))
+          .catch(() => setUserCount(null));
     }, [orders, getRevenue]);
 
     if (!mounted) return null;
@@ -83,11 +100,13 @@ export default function AdminPage() {
                     </div>
                     <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
                         <div className="flex justify-between items-start mb-4">
-                            <h3 className="text-slate-400 text-sm font-medium">Mock Customers</h3>
+                            <h3 className="text-slate-400 text-sm font-medium">Customers</h3>
                             <Users className="text-purple-400" size={20} />
                         </div>
-                        <p className="text-3xl font-bold text-white">1</p>
-                        <span className="text-slate-500 text-xs">Guest User</span>
+                        <p className="text-3xl font-bold text-white">{userCount ?? '-'}</p>
+                        {userCount !== null && (
+                          <a href="/admin/users" className="text-cyan-400 text-xs underline">View all</a>
+                        )}
                     </div>
                 </div>
 

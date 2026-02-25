@@ -7,6 +7,7 @@ export const authOptions = {
   adapter: PrismaAdapter(prisma as any),
   session: {
     strategy: 'jwt' as const,
+    maxAge: 24 * 60 * 60, // 24 hours
   },
   providers: [
     CredentialsProvider({
@@ -14,9 +15,11 @@ export const authOptions = {
       credentials: {
         email: { label: 'Email', type: 'text' },
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         // simple passwordless login: if user exists, return it; otherwise create
         if (!credentials?.email) return null;
+        // basic email format guard
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) return null;
         let user = await prisma.user.findUnique({ where: { email: credentials.email } });
         if (!user) {
           user = await prisma.user.create({ data: { email: credentials.email } });
@@ -26,10 +29,18 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, token, user }: { session: any; token: any; user: any }) {
+    async jwt({ token, user }: { token: any; user: any }) {
+      if (user) {
+        // stamp isAdmin once at sign-in time using the server-only ADMIN_EMAIL var
+        token.isAdmin = user.email === process.env.ADMIN_EMAIL;
+      }
+      return token;
+    },
+    async session({ session, token }: { session: any; token: any }) {
       if (session?.user) {
         session.user.id = token.sub;
         session.user.email = token.email;
+        session.user.isAdmin = token.isAdmin ?? false;
       }
       return session;
     },

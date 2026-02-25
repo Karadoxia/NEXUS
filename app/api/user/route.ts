@@ -17,8 +17,21 @@ export async function PUT(request: Request) {
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const body = await request.json();
-  const { name, image } = body;
-  const user = await prisma.user.update({ where: { email: session.user.email }, data: { name, image } });
-  return NextResponse.json(user);
+  try {
+    const body = await request.json();
+    console.log('[user PUT] session email', session.user.email, 'body', body);
+    const { name, image, phone } = body;
+    const user = await prisma.user.update({
+      where: { email: session.user.email },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(image !== undefined && { image }),
+        ...(phone !== undefined && { phone }),
+      },
+    });
+    return NextResponse.json(user);
+  } catch (e: unknown) {
+    console.error('[user PUT]', e);
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+  }
 }
