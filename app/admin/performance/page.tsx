@@ -3,6 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Navbar } from '@/components/navbar';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface PerfEntry {
   id: string;
@@ -49,6 +62,33 @@ export default function AdminPerformancePage() {
       <div className="container mx-auto px-4 py-24">
         <h1 className="text-3xl font-bold mb-6">Performance History</h1>
         {loading && <p>Loading...</p>}
+        {/* chart visualization */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Trend</h2>
+          <Line
+            data={{
+              labels: entries.map((e) => new Date(e.timestamp).toLocaleTimeString()),
+              datasets: [
+                {
+                  label: 'Orders',
+                  data: entries.map((e) => e.orders),
+                  borderColor: 'rgba(56, 189, 248, 1)',
+                  backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                },
+                {
+                  label: 'Returns',
+                  data: entries.map((e) => e.returns),
+                  borderColor: 'rgba(239, 68, 68, 1)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                },
+              ],
+            }}
+            options={{
+              responsive: true,
+              plugins: { legend: { position: 'bottom' } },
+            }}
+          />
+        </div>
         <table className="w-full table-auto text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-700">

@@ -118,11 +118,18 @@ The agent subsystem now includes built-in learning and recovery capabilities:
 - A **`Performance`** database table records periodic metrics (orders, returns,
   downtime) that the `Leader` agent uses to adjust its behaviour over time.
   Metrics are stored via the new `/api/agents/performance` endpoint and can be
-  queried for analysis via the admin performance UI.
+  queried for analysis via the admin performance UI, which now includes a Chart.js
+  line chart showing orders and returns over time.
 - The **PerformanceAnalyzer** worker now examines historical entries each cycle
   and produces optimization suggestions (e.g. raising low‑stock thresholds,
   bumping marketing budgets). It updates `agents/config.json` automatically so
   changes persist across restarts.
+- New specialist agents:
+  - **MarketingOptimizer** adjusts or recommends marketing budgets based on
+    recent order volume.
+  - **StockForecaster** reviews product stock levels, predicts shortages, and
+    suggests SKUs to reorder.
+  Both integrate with the shared configuration file.
 - Every hour the scheduler runs the **Leader**; after finishing it invokes
   `leader.selfImprove()`, which fetches current order/return counts, logs them,
   persists the observation, inspects history for trends, and may modify
