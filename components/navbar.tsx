@@ -58,7 +58,7 @@ export function Navbar() {
                           <Link href="/admin/orders" className="ml-6 text-sm font-medium text-red-400 hover:text-red-300 hidden md:block">
                             ADMIN
                           </Link>
-                        )
+                        )}
                     </div>
 
                     <div className="flex items-center gap-4">
