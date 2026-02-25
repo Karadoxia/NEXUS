@@ -118,3 +118,13 @@ model CartItem {
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 }
+
+/// persisted agent performance metrics that the leader uses for learning
+model Performance {
+  id         String   @id @default(cuid())
+  timestamp  DateTime @default(now())
+  orders     Int
+  returns    Int
+  downtime   Boolean  @default(false)
+  notes      String?
+}
