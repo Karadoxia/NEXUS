@@ -62,4 +62,4 @@
 
 - Continue building departmental managers (SupplyChain, Finance, CX, etc.)
 - Integrate Gemini vision tools for inventory & SAV agents.
-- Add scheduling, observability, and SLAs for leader orchestration.
+- Add scheduling, observability, and SLAs for leader orchestration. ✅ scheduler added (hourly leader run).
