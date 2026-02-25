@@ -158,6 +158,25 @@ transformative for e‑commerce.
 
 ### Core Architecture: Hierarchical Multi-Agent System (HMAS)
 
+> **Self‑orchestration & resilience**
+>
+> The agent layer is designed to start automatically when the server renders the
+> root layout (`initAgents()` in `app/layout.tsx`). A lightweight scheduler
+> spins up the `Leader` orchestrator every hour and a `SupervisorAgent` every
+> minute. The supervisor pings the site and, if it detects downtime, triggers a
+> recovery run of the leader so that the system can attempt to heal itself after
+> a crash or reboot. This means that simply redeploying or restarting the
+> application brings the entire corporate brain back online with no manual
+> intervention.
+>
+> Each leader cycle concludes with a `selfImprove()` step, where agents can
+> introspect past performance metrics and adjust their internal configs. The
+> current implementation is rudimentary (it counts orders and returns) but it
+> illustrates the pattern; future work might include automated tuning, model
+> retraining, and configuration evolution driven by real data.
+
+### Core Architecture: Hierarchical Multi-Agent System (HMAS)
+
 Think of it as a **corporate org chart made of AI**:
 
 - **Strategic Layer** (1 Lead Orchestrator) — high‑level planning, delegation,
