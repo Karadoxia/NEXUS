@@ -14,6 +14,7 @@ export function Navbar() {
     const { count, openCart } = useCartStore();
     const { items: favItems } = useFavoritesStore();
     const cartCount = count();
+    const { data: session } = useSession();
     const [mounted, setMounted] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
 
@@ -53,6 +54,11 @@ export function Navbar() {
                             </span>
                             SYSTEM CONFIG
                         </Link>
+                        {mounted && session?.user?.email === 'admin@example.com' && (
+                          <Link href="/admin/orders" className="ml-6 text-sm font-medium text-red-400 hover:text-red-300 hidden md:block">
+                            ADMIN
+                          </Link>
+                        )
                     </div>
 
                     <div className="flex items-center gap-4">
