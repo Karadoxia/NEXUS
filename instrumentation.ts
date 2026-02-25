@@ -10,8 +10,15 @@ export async function register() {
     const dbPath = (process.env.DATABASE_URL || 'file:./dev.db').replace(/^file:/, '');
     const fs = require('fs');
     if (!fs.existsSync(dbPath)) {
-      console.log('[startup] FakeStore sync skipped (database missing)');
-      return;
+      console.log('[startup] database file missing, creating empty sqlite');
+      try {
+        fs.mkdirSync(require('path').dirname(dbPath), { recursive: true });
+        fs.writeFileSync(dbPath, '');
+      } catch (e) {
+        console.warn('[startup] failed to create db file', e);
+        console.log('[startup] FakeStore sync skipped (database missing)');
+        return;
+      }
     }
     try {
       const { syncVendor } = await import('./lib/vendors/sync');
