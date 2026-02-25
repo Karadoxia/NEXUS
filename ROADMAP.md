@@ -32,7 +32,10 @@
 - **Cart**: Particle effect added on "Add to Cart" button; simple CSS animation.
 - **Buttons**: Magnetic/hover effects built in via Tailwind transitions; further polish available.
 
-## 🛠️ Phase 3: Real Backend Migration (pending)
+## 🛠️ Phase 3: Real Backend Migration (in progress)
+
+- switched Prisma datasource to PostgreSQL; adjust `DATABASE_URL` accordingly and run `npx prisma migrate dev`.
+
 
 ### Core agent foundation
 - Added `OperationsManager` to handle order intake & validation as part of the agent hierarchy.
