@@ -42,6 +42,7 @@ export default function AdminPage() {
             <div className="container mx-auto px-4 py-24">
                 <div className="flex items-center justify-between mb-8">
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4">
                         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
                         <a
                           href="/admin/performance"
@@ -49,6 +50,13 @@ export default function AdminPage() {
                         >
                           View Performance History
                         </a>
+                        <a
+                          href="/admin/config"
+                          className="text-sm text-cyan-400 underline"
+                        >
+                          Edit Agent Config
+                        </a>
+                    </div>
                     </div>
                     <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold border border-red-500/30 flex items-center gap-2">
                         <AlertCircle size={12} /> MOCK MODE ACTIVE
