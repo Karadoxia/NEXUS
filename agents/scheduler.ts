@@ -10,8 +10,11 @@ export function startScheduler(ctx: any) {
   })();
 
   // health‑check the site every minute; if the site is down the supervisor
-  // will attempt to re‑invoke the leader and log what happened.
-  cron.schedule('* * * * *', async () => {
+  // will attempt to re‑invoke the leader and log what happened. in development
+  // we throttle this to every 5 minutes to avoid spamming the logs and slowing
+  // the server.
+  const scheduleSpec = process.env.NODE_ENV === 'development' ? '*/5 * * * *' : '* * * * *';
+  cron.schedule(scheduleSpec, async () => {
     const sup = new SupervisorAgent(ctx);
     const res = await sup.run();
     console.log('[scheduler] supervisor run finished', res);
