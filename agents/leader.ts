@@ -1,4 +1,5 @@
 import { Agent, AgentContext } from './base';
+import fetch from 'node-fetch';
 import { OrderProcessor } from './orderProcessor';
 import { SupplyChainAgent } from './supplyChain';
 import { SupplyChainManager } from './supplyChainManager';
@@ -103,5 +104,30 @@ export class Leader extends Agent {
     // could spawn other workers…
 
     return 'leader done';
+  }
+
+  /**
+   * A very simplistic self‑improvement placeholder. In a production system this
+   * could query the database for historical KPIs, evaluate which strategies
+   * worked best, and then update internal configuration or retrain models. For
+   * now it just logs that the leader "learned" and persists a timestamp.
+   */
+  async selfImprove() {
+    console.log('[Leader] running self‑improvement');
+    try {
+      // example metric: count total orders and returns
+      const resp = await fetch(`${this.ctx.workspace}/api/orders`);
+      const orders = await resp.json();
+      const returnResp = await fetch(`${this.ctx.workspace}/api/orders?status=returned`);
+      const returns = await returnResp.json();
+      console.log(
+        `[Leader] discovered ${orders.length} total orders, ${returns.length} returns`
+      );
+      // here you might update this.ctx.config or write to a db table
+      return { orders: orders.length, returns: returns.length }; 
+    } catch (err) {
+      console.warn('[Leader] selfImprove failed', err);
+      throw err;
+    }
   }
 }
