@@ -10,6 +10,8 @@ import { Footer } from '../components/footer';
 import { CartDrawer } from '../components/cart-drawer';
 import { PageTransition } from '../components/page-transition';
 import AuthProvider from '../components/auth-provider';
+import ChatWrapper from '../components/chat-wrapper';
+import { initAgents } from '../src/lib/agents';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
@@ -61,7 +63,10 @@ export default function RootLayout({
                     <CartDrawer />
                     <Footer />
                     <AiAssistant />
+                    <ChatWrapper />
                     <SocialProof />
+                    {/* initialize background agents once server renders layout */}
+                    {initAgents()}
                     <Toaster />
                     <MobileNav />
                 </AuthProvider>
