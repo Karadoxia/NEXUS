@@ -41,7 +41,7 @@ export default function AdminOrdersPage() {
     } catch {}
   };
 
-  if (session?.user?.email !== 'admin@example.com') {
+  if (session?.user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <Navbar />
@@ -81,6 +81,7 @@ export default function AdminOrdersPage() {
                     value={o.status}
                     onChange={(e) => updateStatus(o.id, e.target.value)}
                     className="bg-slate-800 text-white rounded px-2 py-1 text-sm"
+                    aria-label="Order status"
                   >
                     <option value="pending">Pending</option>
                     <option value="processing">Processing</option>

@@ -18,6 +18,8 @@ import { NegotiationAgent } from './negotiationAgent';
 import { FraudAgent } from './fraudAgent';
 import { ReturnsAgent } from './returnsAgent';
 import { PerformanceAnalyzer } from './performanceAnalyzer';
+import { MarketingOptimizer } from './marketingOptimizer';
+import { StockForecaster } from './stockForecaster';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -83,6 +85,15 @@ export class Leader extends Agent {
     const perfAnalyzer = new PerformanceAnalyzer(this.ctx);
     const perfReport = await perfAnalyzer.run();
     await report.run({ type: 'performance-analysis', data: perfReport });
+
+    // specialized optimizers
+    const marketing = new MarketingOptimizer(this.ctx);
+    const marketingReport = await marketing.run();
+    await report.run({ type: 'marketing-opt', data: marketingReport });
+
+    const forecaster = new StockForecaster(this.ctx);
+    const forecastReport = await forecaster.run();
+    await report.run({ type: 'stock-forecast', data: forecastReport });
 
     // procurement checks
     const procurer = new ProcurementAgent(this.ctx);

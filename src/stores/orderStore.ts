@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem } from '@/types';
+import { CartItem, Address } from '@/types';
 
 export interface ShipmentEvent {
     id: string;
@@ -26,6 +26,7 @@ export interface Order {
     estimatedDelivery?: string;
     shipmentEvents?: ShipmentEvent[];
     cancelled?: boolean;
+    shippingAddress?: Address;
 }
 
 interface OrderState {

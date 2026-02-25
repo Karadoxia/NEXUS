@@ -69,6 +69,8 @@ export default function AdminConfigPage() {
                   className="flex-1 bg-slate-800 text-white rounded px-2 py-1"
                   value={config[key] ?? ''}
                   onChange={(e) => updateField(key, e.target.value)}
+                  placeholder={`Enter ${key}`}
+                  title={key}
                 />
               </div>
             ))}

@@ -18,6 +18,18 @@ export function ProductCard({ product }: ProductCardProps) {
     const [isHovered, setIsHovered] = useState(false);
 
     const isFav = isFavorite(product.id);
+    const [particles, setParticles] = useState<Array<{id:number; x:number; y:number}>>([]);
+
+    const spawnParticles = (e: React.MouseEvent) => {
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        const baseX = rect.left + rect.width/2;
+        const baseY = rect.top + rect.height/2;
+        const newParticles = Array.from({length:5},(_,i)=>({id:Date.now()+i, x:baseX, y:baseY}));
+        setParticles(p=>[...p,...newParticles]);
+        setTimeout(()=>{
+            setParticles(p=>p.filter(pt=>!newParticles.find(np=>np.id===pt.id)));
+        }, 800);
+    };
 
     return (
         <div
@@ -77,6 +89,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     <button
                         onClick={(e) => {
                             e.preventDefault();
+                            spawnParticles(e);
                             addItem(product);
                         }}
                         className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-cyan-500/20 transition-all"
@@ -86,6 +99,10 @@ export function ProductCard({ product }: ProductCardProps) {
                     </button>
                 </div>
             </Link>
+            {/* particle effects */}
+            {particles.map(p=> (
+                <span key={p.id} className="absolute w-2 h-2 bg-cyan-400 rounded-full animate-particle" style={{left:p.x, top:p.y}} />
+            ))}
 
             {/* Content */}
             <div className="p-5">
