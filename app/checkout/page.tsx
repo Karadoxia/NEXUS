@@ -54,6 +54,25 @@ function CheckoutForm({ total, orderId, selectedAddress }: { total: number; orde
 
     return (
         <form id="payment-form" onSubmit={handleSubmit} className="space-y-6">
+            {paymentMethods.length > 0 && (
+              <div className="mb-4">
+                <label className="block text-sm text-slate-400 mb-1">Use saved payment method (mock mode only):</label>
+                <select
+                  className="w-full bg-black border border-slate-700 rounded px-3 py-2 text-white"
+                  value={selectedPm || ''}
+                  onChange={e => setSelectedPm(e.target.value || undefined)}
+                >
+                  <option value="">-- none --</option>
+                  {paymentMethods.map(pm => (
+                      <option key={pm.id} value={pm.id}>
+                        {pm.type === 'card'
+                          ? `${pm.brand} •••• ${pm.last4}`
+                          : `${pm.brand}${pm.accountEmail ? ' ('+pm.accountEmail+')' : ''}`}
+                      </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <PaymentElement id="payment-element" options={{ layout: 'tabs' }} />
             <button
                 disabled={isLoading || !stripe || !elements}
@@ -97,6 +116,8 @@ export default function CheckoutPage() {
     const [isMockMode, setIsMockMode] = useState(false);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+    const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+    const [selectedPm, setSelectedPm] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         // fetch saved addresses for user
@@ -106,6 +127,14 @@ export default function CheckoutPage() {
                 .then((list) => {
                     setAddresses(list);
                     if (list.length > 0) setSelectedAddress(list[0]);
+                });
+            fetch('/api/user/payment-methods')
+                .then(r => r.json())
+                .then((pms) => {
+                    if (Array.isArray(pms)) {
+                        setPaymentMethods(pms);
+                        if (pms.length > 0) setSelectedPm(pms[0].id);
+                    }
                 });
         }
 
@@ -120,6 +149,7 @@ export default function CheckoutPage() {
                 body: JSON.stringify({
                     amount: total(),
                     items,
+                    paymentMethodId: selectedPm,
                     customer: session?.user ? { name: session.user.name, email: session.user.email } : undefined,
                     address: selectedAddress,
                 }),
