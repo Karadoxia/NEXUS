@@ -23,6 +23,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   orders        Order[]  @relation("UserOrders")
+  addresses     Address[]
 }
 
 // NextAuth tables
@@ -86,6 +87,20 @@ model Order {
   items           CartItem[]
   userId          String?
   user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull, name: "UserOrders")
+  cancelled       Boolean  @default(false)
+}
+
+model Address {
+  id        String @id @default(cuid())
+  user      User   @relation(fields: [userId], references: [id])
+  userId    String
+  label     String
+  line1     String
+  line2     String?
+  city      String
+  state     String?
+  postal    String
+  country   String
 }
 
 model CartItem {

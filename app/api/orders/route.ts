@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   const body = await request.json();
-  const { id, status, trackingNumber, carrier } = body;
+  const { id, status, trackingNumber, carrier, cancelled } = body;
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -66,6 +66,7 @@ export async function PUT(request: Request) {
   if (status) updateData.status = status;
   if (trackingNumber) updateData.trackingNumber = trackingNumber;
   if (carrier) updateData.carrier = carrier;
+  if (typeof cancelled === 'boolean') updateData.cancelled = cancelled;
 
   const order = await prisma.order.update({
     where: { id },

@@ -7,6 +7,7 @@ import { Navbar } from '@/components/navbar';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Package, Clock, CheckCircle, Truck, ChevronRight } from 'lucide-react';
+import ProfileSection from '@/components/profile-section';
 
 export default function AccountPage() {
     const { data: session } = useSession();
@@ -81,6 +82,9 @@ export default function AccountPage() {
                         </div>
                     </div>
 
+                    {/* Profile & Addresses */}
+                    <ProfileSection />
+
                     {/* Orders */}
                     <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
                         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
@@ -115,6 +119,18 @@ export default function AccountPage() {
                                                         <StatusIcon status={order.status} />
                                                         {order.status.toUpperCase()}
                                                     </span>
+                                                    {order.status === 'pending' && !order.cancelled && (
+                                                        <button onClick={async () => {
+                                                            await fetch('/api/orders', {
+                                                                method: 'PUT',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ id: order.id, status: 'cancelled', cancelled: true }),
+                                                            });
+                                                            getOrdersByEmail(user.email);
+                                                        }} className="ml-2 text-xs text-red-400 underline">
+                                                            Cancel
+                                                        </button>
+                                                    )}
                                                 </div>
                                                 <p className="text-sm text-slate-400">
                                                     Placed on {new Date(order.date).toLocaleDateString()}
