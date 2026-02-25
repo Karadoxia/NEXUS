@@ -13,8 +13,8 @@ let dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
 if (dbUrl.startsWith('file:')) {
   let p = dbUrl.slice(5);
   if (!path.isAbsolute(p)) {
-    // projectRoot is two levels up from this file (src/lib)
-    const projectRoot = path.resolve(__dirname, '../..');
+    // use current working directory as project root; this should be stable
+    const projectRoot = path.resolve(process.cwd());
     p = path.resolve(projectRoot, p);
   }
   // ensure containing directory exists
