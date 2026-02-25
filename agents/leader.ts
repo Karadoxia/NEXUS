@@ -13,6 +13,8 @@ import { MarketingManager } from './marketingManager';
 import { AnalyticsManager } from './analyticsManager';
 import { QAAgent } from './qaAgent';
 import { NegotiationAgent } from './negotiationAgent';
+import { FraudAgent } from './fraudAgent';
+import { ReturnsAgent } from './returnsAgent';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -63,6 +65,16 @@ export class Leader extends Agent {
     const neg = new NegotiationAgent(this.ctx);
     const negReport = await neg.run();
     await report.run({ type: 'negotiation', data: negReport });
+
+    // fraud detection
+    const fraud = new FraudAgent(this.ctx);
+    const fraudReport = await fraud.run();
+    await report.run({ type: 'fraud', data: fraudReport });
+
+    // returns handling
+    const ret = new ReturnsAgent(this.ctx);
+    const retReport = await ret.run();
+    await report.run({ type: 'returns', data: retReport });
 
     // procurement checks
     const procurer = new ProcurementAgent(this.ctx);
