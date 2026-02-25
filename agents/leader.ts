@@ -11,6 +11,8 @@ import { FinanceManager } from './financeManager';
 import { CustomerExperienceManager } from './customerExperienceManager';
 import { MarketingManager } from './marketingManager';
 import { AnalyticsManager } from './analyticsManager';
+import { QAAgent } from './qaAgent';
+import { NegotiationAgent } from './negotiationAgent';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -51,6 +53,16 @@ export class Leader extends Agent {
     const an = new AnalyticsManager(this.ctx);
     const anReport = await an.run();
     await report.run({ type: 'analytics', data: anReport });
+
+    // quality assurance check
+    const qa = new QAAgent(this.ctx);
+    const qaReport = await qa.run();
+    await report.run({ type: 'qa', data: qaReport });
+
+    // negotiation specialist
+    const neg = new NegotiationAgent(this.ctx);
+    const negReport = await neg.run();
+    await report.run({ type: 'negotiation', data: negReport });
 
     // procurement checks
     const procurer = new ProcurementAgent(this.ctx);

@@ -10,8 +10,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  // connection URL is configured in prisma.config.ts via environment variable
+  // switched to Postgres for production; update env var accordingly
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
