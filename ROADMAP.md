@@ -38,6 +38,9 @@
 - Added `OperationsManager` to handle order intake & validation as part of the agent hierarchy.
 - Added `SupplyChainManager` to generate reorder suggestions and inventory insights.
 - Added `FinanceManager` to summarise revenue/refunds.
+- Added `CustomerExperienceManager` to monitor tickets.
+- Added `MarketingManager` to generate recommendations.
+- Added `AnalyticsManager` for basic order trends.
 
 ### 1. Database
 
