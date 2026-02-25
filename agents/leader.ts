@@ -17,6 +17,7 @@ import { QAAgent } from './qaAgent';
 import { NegotiationAgent } from './negotiationAgent';
 import { FraudAgent } from './fraudAgent';
 import { ReturnsAgent } from './returnsAgent';
+import { PerformanceAnalyzer } from './performanceAnalyzer';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -78,6 +79,11 @@ export class Leader extends Agent {
     const retReport = await ret.run();
     await report.run({ type: 'returns', data: retReport });
 
+    // performance analysis (historical) and optimization suggestions
+    const perfAnalyzer = new PerformanceAnalyzer(this.ctx);
+    const perfReport = await perfAnalyzer.run();
+    await report.run({ type: 'performance-analysis', data: perfReport });
+
     // procurement checks
     const procurer = new ProcurementAgent(this.ctx);
     const procReport = await procurer.run();
@@ -134,6 +140,24 @@ export class Leader extends Agent {
       } catch (e) {
         console.warn('[Leader] failed to persist performance metric', e);
       }
+
+      // fetch past entries to guide config changes
+      try {
+        const histRes = await fetch(`${this.ctx.workspace}/api/agents/performance`);
+        const history = await histRes.json();
+        const avgOrders = history.reduce((sum:any, e:any) => sum + e.orders, 0) / (history.length || 1);
+        const avgReturns = history.reduce((sum:any, e:any) => sum + e.returns, 0) / (history.length || 1);
+        // example: if average orders exceed 100, increase marketing budget
+        if (avgOrders > 100 && !this.ctx.config.marketingBudget) {
+          console.log('[Leader] increasing marketing budget due to high demand');
+          this.ctx.config.marketingBudget = 5000; // hypothetical units
+        }
+        // persist updated config
+        fs.writeFileSync('agents/config.json', JSON.stringify(this.ctx.config, null, 2));
+      } catch (historyErr) {
+        console.warn('[Leader] could not analyse history', historyErr);
+      }
+
       // simple config adjustment example: if returns > 10% of orders, flag
       if (orders > 0 && returns / orders > 0.1) {
         console.log('[Leader] high return rate detected, adjusting config');

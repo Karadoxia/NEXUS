@@ -118,11 +118,16 @@ The agent subsystem now includes built-in learning and recovery capabilities:
 - A **`Performance`** database table records periodic metrics (orders, returns,
   downtime) that the `Leader` agent uses to adjust its behaviour over time.
   Metrics are stored via the new `/api/agents/performance` endpoint and can be
-  queried for analysis.
+  queried for analysis via the admin performance UI.
+- The **PerformanceAnalyzer** worker now examines historical entries each cycle
+  and produces optimization suggestions (e.g. raising low‑stock thresholds,
+  bumping marketing budgets). It updates `agents/config.json` automatically so
+  changes persist across restarts.
 - Every hour the scheduler runs the **Leader**; after finishing it invokes
   `leader.selfImprove()`, which fetches current order/return counts, logs them,
-  persists the observation, and may modify `agents/config.json` if thresholds
-  (e.g. high return rate) are exceeded.
+  persists the observation, inspects history for trends, and may modify
+  `agents/config.json` (e.g. enabling a high‑return warning or increasing
+  marketing spend) when thresholds are exceeded.
 - A **SupervisorAgent** health‑checks the storefront every minute. If it detects
   downtime it logs an outage, tries restarting auxiliary services (no‑op stub),
   sends a Slack alert if `SLACK_WEBHOOK` is configured, and triggers a recovery
