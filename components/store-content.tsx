@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search, SlidersHorizontal, Grid3X3, List,
-  ChevronDown, X, Star
+  ChevronDown, X, Star, Loader2, Globe
 } from 'lucide-react';
 import { ProductCard } from '@/components/product-card';
 import { ProductCategory } from '@/types';
@@ -71,6 +71,34 @@ export default function StoreContent({ initialProducts }: StoreContentProps) {
   );
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Live vendor search state
+  const [vendorGroups, setVendorGroups] = useState<Record<string, any[]>>({});
+  const [liveLoading, setLiveLoading] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced live search — fires 650ms after the user stops typing
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!query || query.length < 2) {
+      setVendorGroups({});
+      setLiveLoading(false);
+      return;
+    }
+    setLiveLoading(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res  = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        setVendorGroups(data.groups ?? {});
+      } catch {
+        setVendorGroups({});
+      } finally {
+        setLiveLoading(false);
+      }
+    }, 650);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query]);
 
   // update URL whenever filters change
   useEffect(() => {
@@ -416,6 +444,58 @@ export default function StoreContent({ initialProducts }: StoreContentProps) {
             ))}
           </div>
         )}
+        {/* ── LIVE VENDOR CATALOGUES ──────────────────── */}
+        {query && query.length >= 2 && (
+          <div className="mt-12 space-y-10">
+
+            {/* Loading shimmer */}
+            {liveLoading && (
+              <div className="flex items-center gap-3 text-gray-400 text-sm">
+                <Loader2 className="h-4 w-4 animate-spin text-cyan-500" />
+                Searching across vendors…
+              </div>
+            )}
+
+            {/* Vendor sections */}
+            {!liveLoading && Object.entries(vendorGroups).map(([source, items]) => {
+              if (!items.length) return null;
+              const label    = (items[0] as any)?._label ?? source;
+              const sourceColors: Record<string, string> = {
+                nexus:             'text-cyan-400 border-cyan-500/30 bg-cyan-950/20',
+                ebay:              'text-red-400 border-red-500/30 bg-red-950/20',
+                'google-shopping': 'text-blue-400 border-blue-500/30 bg-blue-950/20',
+              };
+              const color = sourceColors[source] ?? 'text-gray-400 border-white/10 bg-white/5';
+              return (
+                <div key={source}>
+                  {/* Section header */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <Globe className="h-4 w-4 text-gray-500" suppressHydrationWarning />
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${color}`}>
+                      {label}
+                    </span>
+                    <span className="text-xs text-gray-600">{items.length} results</span>
+                    <div className="flex-1 h-px bg-white/5" />
+                  </div>
+
+                  {/* Product grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {items.slice(0, 8).map((product: any, i: number) => (
+                      <div
+                        key={product.id ?? i}
+                        style={{ animationDelay: `${i * 40}ms` }}
+                        className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+                      >
+                        <ProductCard product={product} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
       </div>
     </div>
   );

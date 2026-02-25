@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   if (!id) {
     return NextResponse.json({ error: 'ID required' }, { status: 400 });
   }
@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     where: {
       OR: [{ trackingNumber: id }, { id }],
     },
-    include: { items: true, shipmentEvents: true },
+    include: { items: true },
   });
 
   if (!order) {
