@@ -24,6 +24,9 @@ if (dbUrl.startsWith('file:')) {
   }
   dbUrl = `file:${p}`;
 }
+if (process.env.NODE_ENV !== 'production') {
+  console.log('[prisma] connecting to', dbUrl);
+}
 const adapter = new PrismaBetterSqlite3({
   url: dbUrl,
 });

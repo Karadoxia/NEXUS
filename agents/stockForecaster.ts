@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { Agent, AgentContext } from './base';
+import { Agent } from './base';
 
 export class StockForecaster extends Agent {
   async run() {

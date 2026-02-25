@@ -82,3 +82,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* particle effect animation for add-to-cart */
+@layer utilities {
+  .animate-particle {
+    animation: particle-fall 0.8s ease-out forwards;
+  }
+  @keyframes particle-fall {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-40px) scale(0.5); }
+  }
+}

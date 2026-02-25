@@ -26,7 +26,10 @@ export default function AdminProductsPage() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    const fetch = async () => {
+      await fetchProducts();
+    };
+    fetch();
   }, []);
 
   const save = async () => {

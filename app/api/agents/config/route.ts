@@ -10,9 +10,10 @@ export async function GET() {
     const data = fs.readFileSync(CONFIG_PATH, 'utf-8');
     const json = JSON.parse(data);
     return NextResponse.json(json);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('failed to read config', e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -21,8 +22,9 @@ export async function PUT(request: Request) {
     const body = await request.json();
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(body, null, 2));
     return NextResponse.json(body);
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('failed to write config', e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
