@@ -2,78 +2,125 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
+import { requireAdmin } from '@/lib/server-auth';
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json([], { status: 401 });
   }
 
-  const email = searchParams.get('email');
-  if (email) {
-    const orders = await prisma.order.findMany({
-      where: { user: { email } },
-      include: { items: true },
-    });
-    return NextResponse.json(orders);
-  }
+  // Always scope to the authenticated user — never trust a client-supplied email param
+  const { searchParams } = new URL(request.url);
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
+  const limit = Math.min(100, parseInt(searchParams.get('limit') ?? '50', 10));
 
   const orders = await prisma.order.findMany({
     where: { user: { email: session.user.email } },
     include: { items: true },
+    orderBy: { date: 'desc' },
+    skip: (page - 1) * limit,
+    take: limit,
   });
   return NextResponse.json(orders);
 }
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  // expect items array and total, optionally shippingAddress
-  const { items, total, shippingAddress } = body;
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
+
+  const body = await request.json();
+  const { items, total, shippingAddress, paymentMethodId } = body;
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ success: false, message: 'items must be a non-empty array' }, { status: 400 });
+  }
+  if (typeof total !== 'number' || total < 0) {
+    return NextResponse.json({ success: false, message: 'total must be a non-negative number' }, { status: 400 });
+  }
+
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
 
-  const order = await prisma.order.create({
-    data: {
-      total,
-      status: 'pending',
-      shippingAddress: shippingAddress || undefined,
-      user: user ? { connect: { id: user.id } } : undefined,
-      items: {
-        create: items.map((i: any) => ({
-          product: { connect: { id: i.id } },
-          quantity: i.quantity,
-          price: i.price,
-        })),
+  try {
+    const order = await prisma.order.create({
+      data: {
+        total,
+        status: 'pending',
+        shippingAddress: shippingAddress || undefined,
+        paymentMethodId: paymentMethodId || undefined,
+        user: user ? { connect: { id: user.id } } : undefined,
+        items: {
+          create: items.map((i: any) => ({
+            product: { connect: { id: i.id } },
+            quantity: i.quantity,
+            price: i.price,
+          })),
+        },
       },
-    },
-    include: { items: true },
-  });
-
-  return NextResponse.json({ success: true, order });
+      include: { items: true },
+    });
+    return NextResponse.json({ success: true, order });
+  } catch (e: unknown) {
+    console.error('[orders POST]', e);
+    return NextResponse.json({ success: false, message: 'Failed to create order' }, { status: 500 });
+  }
 }
 
 export async function PUT(request: Request) {
-  const body = await request.json();
-  const { id, status, trackingNumber, carrier, cancelled } = body;
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session?.user?.email) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
-  const updateData: any = {};
+
+  const body = await request.json();
+  const { id, status, trackingNumber, carrier, cancelled } = body;
+  if (!id) return NextResponse.json({ success: false, message: 'id required' }, { status: 400 });
+
+  const isAdmin = (session.user as any).isAdmin === true;
+
+  // Non-admin users may only cancel their own pending orders
+  if (!isAdmin) {
+    if (cancelled !== true || status !== undefined || trackingNumber !== undefined || carrier !== undefined) {
+      return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+    // Verify the order belongs to this user and is still pending
+    const existing = await prisma.order.findFirst({
+      where: { id, user: { email: session.user.email }, status: 'pending', cancelled: false },
+    });
+    if (!existing) {
+      return NextResponse.json({ success: false, message: 'Order not found or cannot be cancelled' }, { status: 404 });
+    }
+    try {
+      const order = await prisma.order.update({
+        where: { id },
+        data: { cancelled: true, status: 'cancelled' },
+        include: { items: true },
+      });
+      return NextResponse.json({ success: true, order });
+    } catch (e: unknown) {
+      console.error('[orders PUT cancel]', e);
+      return NextResponse.json({ success: false, message: 'Failed to cancel order' }, { status: 500 });
+    }
+  }
+
+  // Admin: full update
+  const updateData: Record<string, unknown> = {};
   if (status) updateData.status = status;
   if (trackingNumber) updateData.trackingNumber = trackingNumber;
   if (carrier) updateData.carrier = carrier;
   if (typeof cancelled === 'boolean') updateData.cancelled = cancelled;
 
-  const order = await prisma.order.update({
-    where: { id },
-    data: updateData,
-    include: { items: true },
-  });
-
-  return NextResponse.json({ success: true, order });
+  try {
+    const order = await prisma.order.update({
+      where: { id },
+      data: updateData,
+      include: { items: true },
+    });
+    return NextResponse.json({ success: true, order });
+  } catch (e: unknown) {
+    console.error('[orders PUT]', e);
+    return NextResponse.json({ success: false, message: 'Failed to update order' }, { status: 500 });
+  }
 }

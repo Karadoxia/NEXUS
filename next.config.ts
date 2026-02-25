@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
       // Generic fallback for any product image CDN
       { protocol: 'https', hostname: '**.cloudfront.net' },
       { protocol: 'https', hostname: '**.amazonaws.com' },
+      // BunnyCDN
+      { protocol: 'https', hostname: '**.b-cdn.net' },
     ],
   },
 };

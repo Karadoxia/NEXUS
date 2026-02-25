@@ -47,7 +47,7 @@ export default function AdminPerformancePage() {
     fetchData();
   }, []);
 
-  if (session?.user?.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
+  if (!(session?.user as { isAdmin?: boolean })?.isAdmin) {
     return (
       <main className="min-h-screen bg-black text-white flex items-center justify-center">
         <Navbar />

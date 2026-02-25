@@ -22,12 +22,33 @@ export async function POST(request: Request) {
   const email = session?.user?.email || customer?.email || '';
 
   try {
-    // create a PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
+    // build parameters for the PaymentIntent; normally we charge whatever card
+    // details the frontend collects, but when the user has selected a saved
+    // method we look up its Stripe token.
+    const piParams: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100),
       currency: 'eur',
       metadata: { email },
-    });
+    };
+
+    if (paymentMethodId) {
+      const stored = await prisma.paymentMethod.findUnique({
+        where: { id: paymentMethodId },
+        select: { stripeId: true },
+      });
+      if (stored?.stripeId) {
+        // attach+confirm with the real Stripe payment ID
+        piParams.payment_method = stored.stripeId;
+        piParams.confirm = true;
+        piParams.off_session = true;
+      } else {
+        // no stripe token available; ignore the selection and continue creating
+        // an unconfirmed intent. the frontend will then do normal confirm.
+        console.warn('selected payment method has no stripeId, falling back to element');
+      }
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     // associate or create a user record if email exists
     let userConnect;
