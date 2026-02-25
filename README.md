@@ -70,6 +70,24 @@ real values:
 
 ### Database setup
 
+> **Agent scheduler URL**
+>
+> The agents run in the background using `initAgents()`, which needs to know the
+> base URL of the store so it can call `/api/...` endpoints. By default it
+> assumes `http://localhost:3040`, which is why you’ve seen connection refused
+> messages if you start the server on port 3030. Set one of the following
+> environment variables to the correct address before starting the app:
+>
+> ```env
+> NEXT_PUBLIC_BASE_URL=http://localhost:3030   # preferred
+> NEXT_PUBLIC_APP_URL=http://localhost:3030    # fallback
+> PORT=3030                                    # used only if above are unset
+> ```
+>
+> Remember to restart the dev server after changing these values.
+
+### Database setup
+
 If you want to use PostgreSQL (recommended for production and to exercise the
 Prisma migrations) you must have an accessible server. This can be a local
 installation (outside the sandbox), a Docker container running on your host, or
