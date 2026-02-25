@@ -8,6 +8,9 @@ import { SAVAgent } from './savService';
 import { ITAgent } from './itAgent';
 import { OperationsManager } from './operationsManager';
 import { FinanceManager } from './financeManager';
+import { CustomerExperienceManager } from './customerExperienceManager';
+import { MarketingManager } from './marketingManager';
+import { AnalyticsManager } from './analyticsManager';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
@@ -33,6 +36,21 @@ export class Leader extends Agent {
     const fin = new FinanceManager(this.ctx);
     const finReport = await fin.run();
     await report.run({ type: 'finance', data: finReport });
+
+    // customer experience overview
+    const cx = new CustomerExperienceManager(this.ctx);
+    const cxReport = await cx.run();
+    await report.run({ type: 'customer', data: cxReport });
+
+    // marketing recommendations
+    const mk = new MarketingManager(this.ctx);
+    const mkReport = await mk.run();
+    await report.run({ type: 'marketing', data: mkReport });
+
+    // analytics summary
+    const an = new AnalyticsManager(this.ctx);
+    const anReport = await an.run();
+    await report.run({ type: 'analytics', data: anReport });
 
     // procurement checks
     const procurer = new ProcurementAgent(this.ctx);
