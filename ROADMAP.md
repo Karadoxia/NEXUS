@@ -36,6 +36,7 @@
 
 ### Core agent foundation
 - Added `OperationsManager` to handle order intake & validation as part of the agent hierarchy.
+- Added `SupplyChainManager` to generate reorder suggestions and inventory insights.
 
 ### 1. Database
 
