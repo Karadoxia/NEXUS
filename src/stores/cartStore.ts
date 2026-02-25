@@ -60,7 +60,7 @@ export const useCartStore = create<CartState>()(
             closeCart: () => set({ isOpen: false }),
 
             // send order to backend and clear
-            checkout: async (customer, shippingAddress) => {
+            checkout: async (customer, shippingAddress, paymentMethodId) => {
                 const order: any = {
                     id: crypto.randomUUID(),
                     items: get().items,
@@ -68,6 +68,7 @@ export const useCartStore = create<CartState>()(
                     status: 'pending',
                     date: new Date().toISOString(),
                     customer,
+                    paymentMethodId,
                 };
                 if (shippingAddress) order.shippingAddress = shippingAddress;
                 const res = await fetch('/api/orders', {

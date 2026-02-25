@@ -19,15 +19,17 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(cuid())
-  name          String?
-  email         String   @unique
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  orders        Order[]  @relation("UserOrders")
-  addresses     Address[]
+  id             String          @id @default(cuid())
+  name           String?
+  email          String          @unique
+  emailVerified  DateTime?
+  image          String?
+  phone          String?
+  accounts       Account[]
+  sessions       Session[]
+  orders         Order[]         @relation("UserOrders")
+  addresses      Address[]
+  paymentMethods PaymentMethod[]
 }
 
 // NextAuth tables
@@ -78,6 +80,9 @@ model Product {
   tags        Json     @default("[]")
   createdAt   DateTime @default(now())
   cartItems   CartItem[]
+
+  @@index([category])
+  @@index([featured])
 }
 
 model Order {
@@ -89,10 +94,17 @@ model Order {
   carrier           String?
   estimatedDelivery DateTime?
   shippingAddress   Json?
+  paymentMethodId   String?
+  paymentMethod     PaymentMethod? @relation("PaymentOrder", fields: [paymentMethodId], references: [id])
   items             CartItem[]
   userId            String?
   user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull, name: "UserOrders")
   cancelled         Boolean  @default(false)
+
+  @@index([userId])
+  @@index([status])
+  @@index([date])
+  @@index([paymentMethodId])
 }
 
 model Address {
@@ -106,6 +118,8 @@ model Address {
   state     String?
   postal    String
   country   String
+
+  @@index([userId])
 }
 
 model CartItem {
@@ -117,6 +131,31 @@ model CartItem {
 
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+}
+
+model PaymentMethod {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  type           String   @default("card")   // "card" | "wallet"
+  brand          String   // e.g. "Visa", "PayPal", "Apple Pay"
+  last4          String?  // cards only
+  expMonth       Int?     // cards only
+  expYear        Int?     // cards only
+  cardholderName String?  // cards only
+  accountEmail   String?  // wallets only
+  createdAt      DateTime @default(now())
+
+  orders         Order[]  @relation("PaymentOrder")
+
+  @@index([userId])
+}
+
+/// newsletter / early-access subscribers
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  joinedAt  DateTime @default(now())
 }
 
 /// persisted agent performance metrics that the leader uses for learning

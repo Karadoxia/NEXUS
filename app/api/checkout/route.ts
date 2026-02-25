@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   });
 
   const session = await getServerSession(authOptions);
-  const { amount, items, customer, address } = await request.json();
+  const { amount, items, customer, address, paymentMethodId } = await request.json();
   if (!amount) {
     return NextResponse.json({ error: 'Amount required' }, { status: 400 });
   }
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         total: amount,
         status: 'pending',
         shippingAddress: address ? address : undefined,
+        paymentMethodId: paymentMethodId || undefined,
         user: userConnect,
         items: {
           create: items.map((i: any) => ({
