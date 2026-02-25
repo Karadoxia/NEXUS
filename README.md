@@ -65,7 +65,11 @@ real values:
 
 ```env
 # --- Database --------------------------------------------------------------
-DATABASE_URL="file:./dev.db"            # Or your Postgres/Mongo connection
+# switch to Postgres for production; then run `npx prisma migrate dev`
+DATABASE_URL="postgresql://user:password@localhost:5432/nexus"
+
+# --- Admin ---------------------------------------------------------------
+NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
 
 # --- Stripe (required for real checkout) ----------------------------------
 STRIPE_SECRET_KEY=sk_test_...
@@ -77,6 +81,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 # --- Optional 3rd-party services ------------------------------------------
 RESEND_API_KEY=re_...
+GEMINI_API_KEY=AIzaSyBypwgh3aX5BQQ_Xeq-Mxwtvt5o6M9F7d0
 ```
 
 During development you can rely on the embedded SQLite database and the mock
