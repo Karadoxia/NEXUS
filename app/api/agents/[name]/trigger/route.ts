@@ -18,7 +18,22 @@ function loadConfig() {
 export async function POST(req: NextRequest, { params }: { params: { name: string } }) {
   const { name } = params;
   const config = loadConfig();
-  const prompt = config.agentPrompts?.[name];
+
+  // try DB first
+  let prompt: string | undefined;
+  try {
+    const dbCfg = await prisma.agentConfig.findUnique({ where: { agentName: name } });
+    if (dbCfg?.config) {
+      const cfg = typeof dbCfg.config === 'string' ? JSON.parse(dbCfg.config) : dbCfg.config;
+      prompt = cfg.prompt || cfg.systemPrompt || cfg;
+    }
+  } catch {}
+
+  // fallback to file-based config
+  if (!prompt) {
+    prompt = config.agentPrompts?.[name];
+  }
+
   if (!prompt) {
     return NextResponse.json({ error: 'Agent not configured' }, { status: 404 });
   }

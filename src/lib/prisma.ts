@@ -10,14 +10,14 @@ const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 const path = require('path');
 const fs = require('fs');
 let dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
+
+// If we're pointing at sqlite, convert to absolute path as before
 if (dbUrl.startsWith('file:')) {
   let p = dbUrl.slice(5);
   if (!path.isAbsolute(p)) {
-    // use current working directory as project root; this should be stable
     const projectRoot = path.resolve(process.cwd());
     p = path.resolve(projectRoot, p);
   }
-  // ensure containing directory exists
   const dir = path.dirname(p);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -27,14 +27,32 @@ if (dbUrl.startsWith('file:')) {
 if (process.env.NODE_ENV !== 'production') {
   console.log('[prisma] connecting to', dbUrl);
 }
-const adapter = new PrismaBetterSqlite3({
-  url: dbUrl,
-});
+
+let adapter: any;
+if (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://')) {
+  // Prisma's client engine still expects an adapter object when using the
+  // "client" engine type.  We provide a harmless empty object instead of
+  // undefined to satisfy the constructor validation.
+  adapter = {};
+} else {
+  adapter = new PrismaBetterSqlite3({
+    url: dbUrl,
+  });
+}
+
+// If you want a separate database connection for agent management, you
+// can set AGENT_DATABASE_URL in env and create a second PrismaClient below.
+// const agentDbUrl = process.env.AGENT_DATABASE_URL;
+// export const agentPrisma = agentDbUrl ? new PrismaClient({
+//   datasources: { db: { url: agentDbUrl } },
+// }) : prisma;
+
+const usingPostgres = dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://');
 
 export const prisma =
   globalForPrisma.prisma ?? new PrismaClient({
     log: process.env.NODE_ENV !== 'production' ? ['query'] : [],
-    adapter,
+    ...(usingPostgres ? {} : { adapter }),
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
