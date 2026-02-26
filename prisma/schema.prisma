@@ -1,21 +1,19 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
-  // default to sqlite for local development. To use Postgres, change the
-  // provider back to "postgresql" and update DATABASE_URL accordingly.
-  provider = "sqlite"
+  // PostgreSQL — set DATABASE_URL in your .env to the connection string.
+  // docker-compose.yml already defines a `postgres` service on port 5433:
+  //   DATABASE_URL="postgresql://nexus:password@localhost:5433/nexus_v2"
+  // Then run: npx prisma migrate dev --name init
+  provider = "postgresql"
 
-  // connection URL is handled by prisma.config.ts; set DATABASE_URL in
-  // your environment (e.g. `file:./dev.db` for sqlite or a Postgres URL).
+  // connection URL is handled by prisma.config.ts
 }
 
 model User {
@@ -25,11 +23,16 @@ model User {
   emailVerified  DateTime?
   image          String?
   phone          String?
+  role           String          @default("user")   // "user" | "editor" | "support" | "admin"
+  createdAt      DateTime        @default(now())
   accounts       Account[]
   sessions       Session[]
   orders         Order[]         @relation("UserOrders")
   addresses      Address[]
   paymentMethods PaymentMethod[]
+  logs           Log[]
+
+  @@index([role])
 }
 
 // NextAuth tables
@@ -61,36 +64,37 @@ model Session {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  name        String
-  brand       String?
-  description String
-  price       Float
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  name         String
+  brand        String?
+  description  String
+  price        Float
   comparePrice Float?
-  category    String
-  image       String?
-  images      Json     @default("[]")
-  specs       Json?
-  stock       Int      @default(0)
-  featured    Boolean  @default(false)
-  rating      Float    @default(0)
-  reviewCount Int      @default(0)
-  isNew       Boolean  @default(false)
-  tags        Json     @default("[]")
-  createdAt   DateTime @default(now())
-  cartItems   CartItem[]
+  category     String
+  image        String?
+  images       Json       @default("[]")
+  specs        Json?
+  stock        Int        @default(0)
+  featured     Boolean    @default(false)
+  rating       Float      @default(0)
+  reviewCount  Int        @default(0)
+  isNew        Boolean    @default(false)
+  tags         Json       @default("[]")
+  createdAt    DateTime   @default(now())
+  cartItems    CartItem[]
 
   @@index([category])
   @@index([featured])
+  @@index([stock])
 }
 
 model Order {
-  id                String   @id @default(cuid())
+  id                String         @id @default(cuid())
   total             Float
-  status            String   @default("pending")
-  date              DateTime @default(now())
-  trackingNumber    String?  @unique
+  status            String         @default("pending")
+  date              DateTime       @default(now())
+  trackingNumber    String?        @unique
   carrier           String?
   estimatedDelivery DateTime?
   shippingAddress   Json?
@@ -98,8 +102,8 @@ model Order {
   paymentMethod     PaymentMethod? @relation("PaymentOrder", fields: [paymentMethodId], references: [id])
   items             CartItem[]
   userId            String?
-  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull, name: "UserOrders")
-  cancelled         Boolean  @default(false)
+  user              User?          @relation(fields: [userId], references: [id], onDelete: SetNull, name: "UserOrders")
+  cancelled         Boolean        @default(false)
 
   @@index([userId])
   @@index([status])
@@ -108,16 +112,16 @@ model Order {
 }
 
 model Address {
-  id        String @id @default(cuid())
-  user      User   @relation(fields: [userId], references: [id])
-  userId    String
-  label     String
-  line1     String
-  line2     String?
-  city      String
-  state     String?
-  postal    String
-  country   String
+  id      String  @id @default(cuid())
+  user    User    @relation(fields: [userId], references: [id])
+  userId  String
+  label   String
+  line1   String
+  line2   String?
+  city    String
+  state   String?
+  postal  String
+  country String
 
   @@index([userId])
 }
@@ -137,37 +141,50 @@ model PaymentMethod {
   id             String   @id @default(cuid())
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId         String
-  type           String   @default("card")   // "card" | "wallet"
-  brand          String   // e.g. "Visa", "PayPal", "Apple Pay"
-  // When we tokenize with Stripe we store the payment_method ID here so the
-  // backend can charge the customer off‑session.  Older manually‑entered
-  // records will have this field null and are only usable in mock mode.
-  stripeId       String?  
-  last4          String?  // cards only
-  expMonth       Int?     // cards only
-  expYear        Int?     // cards only
-  cardholderName String?  // cards only
-  accountEmail   String?  // wallets only
+  type           String   @default("card")
+  brand          String
+  stripeId       String?
+  last4          String?
+  expMonth       Int?
+  expYear        Int?
+  cardholderName String?
+  accountEmail   String?
   createdAt      DateTime @default(now())
 
-  orders         Order[]  @relation("PaymentOrder")
+  orders Order[] @relation("PaymentOrder")
 
   @@index([userId])
 }
 
 /// newsletter / early-access subscribers
 model Subscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  email    String   @unique
+  joinedAt DateTime @default(now())
 }
 
 /// persisted agent performance metrics that the leader uses for learning
 model Performance {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  orders    Int
+  returns   Int
+  downtime  Boolean  @default(false)
+  notes     String?
+}
+
+/// admin audit log — who changed what and when
+model Log {
   id         String   @id @default(cuid())
   timestamp  DateTime @default(now())
-  orders     Int
-  returns    Int
-  downtime   Boolean  @default(false)
-  notes      String?
+  adminEmail String
+  action     String   // "create" | "update" | "delete"
+  entity     String   // "product" | "order" | "user" | ...
+  entityId   String?
+  detail     String?
+  admin      User     @relation(fields: [adminEmail], references: [email], onDelete: Cascade)
+
+  @@index([timestamp])
+  @@index([adminEmail])
+  @@index([entity])
 }

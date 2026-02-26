@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { redirect } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Product } from '@/types';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Search, AlertTriangle } from 'lucide-react';
 
 type ProductForm = {
   name: string;
@@ -25,7 +24,11 @@ const EMPTY_FORM: ProductForm = {
 };
 
 export default function AdminProductsPage() {
-  const { data: session } = useSession();
+  const searchParams  = useSearchParams();
+  const router        = useRouter();
+  const stockFilter   = searchParams.get('stock');       // "low" | null
+  const qParam        = searchParams.get('q') ?? '';
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
@@ -33,31 +36,37 @@ export default function AdminProductsPage() {
   const [form, setForm]         = useState<ProductForm>(EMPTY_FORM);
   const [open, setOpen]         = useState(false);
   const [saving, setSaving]     = useState(false);
+  const [search, setSearch]     = useState(qParam);
+  const [bulkStock, setBulkStock] = useState<Record<string, number>>({});
+  const [bulkSaving, setBulkSaving] = useState(false);
 
-  if (session && !(session.user as { isAdmin?: boolean })?.isAdmin) {
-    redirect('/signin');
-  }
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const res  = await fetch('/api/products?limit=100');
+      const params = new URLSearchParams({ limit: '200' });
+      if (stockFilter === 'low') params.set('stock', 'low');
+      if (qParam) params.set('q', qParam);
+      const res  = await fetch(`/api/products?${params}`);
       const data = await res.json();
       setProducts(Array.isArray(data) ? data : []);
     } catch {
       setError('Failed to load products');
     }
     setLoading(false);
+  }, [stockFilter, qParam]);
+
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (stockFilter) params.set('stock', stockFilter);
+    router.push(`/admin/products${params.toString() ? `?${params}` : ''}`);
   };
 
-  useEffect(() => { fetchProducts(); }, []);
-
-  const openNew = () => {
-    setEditing(null);
-    setForm(EMPTY_FORM);
-    setOpen(true);
-  };
+  const openNew = () => { setEditing(null); setForm(EMPTY_FORM); setOpen(true); };
 
   const openEdit = (p: Product) => {
     setEditing(p);
@@ -81,7 +90,7 @@ export default function AdminProductsPage() {
     try {
       const method  = editing ? 'PUT' : 'POST';
       const payload = editing ? { id: editing.id, ...form } : form;
-      const res     = await fetch('/api/products', {
+      const res = await fetch('/api/products', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -99,6 +108,27 @@ export default function AdminProductsPage() {
     if (!confirm('Delete this product?')) return;
     await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
     fetchProducts();
+  };
+
+  const saveBulkStock = async () => {
+    if (Object.keys(bulkStock).length === 0) return;
+    setBulkSaving(true);
+    try {
+      await Promise.all(
+        Object.entries(bulkStock).map(([id, stock]) =>
+          fetch('/api/products', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, stock }),
+          })
+        )
+      );
+      setBulkStock({});
+      fetchProducts();
+    } catch {
+      setError('Bulk stock update failed');
+    }
+    setBulkSaving(false);
   };
 
   const field = (
@@ -133,22 +163,72 @@ export default function AdminProductsPage() {
     );
   };
 
+  const isLowStock = stockFilter === 'low';
+  const pendingBulk = Object.keys(bulkStock).length;
+
   return (
     <div className="p-8 max-w-screen-xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Products</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{products.length} products in catalogue</p>
+          <p className="text-slate-500 text-sm mt-0.5">{products.length} product{products.length !== 1 ? 's' : ''} {isLowStock ? 'low on stock' : 'in catalogue'}</p>
         </div>
-        <button
-          type="button"
-          onClick={openNew}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-semibold rounded-xl transition-colors"
+        <div className="flex items-center gap-3">
+          {isLowStock && pendingBulk > 0 && (
+            <button
+              type="button"
+              onClick={saveBulkStock}
+              disabled={bulkSaving}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+            >
+              {bulkSaving ? 'Saving…' : `Save ${pendingBulk} change${pendingBulk > 1 ? 's' : ''}`}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={openNew}
+            className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-semibold rounded-xl transition-colors"
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            New Product
+          </button>
+        </div>
+      </div>
+
+      {/* Search + filter row */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search products…"
+              className="bg-slate-800 border border-slate-700 text-white rounded-xl pl-9 pr-3 py-2 text-sm w-64 focus:border-cyan-500 focus:outline-none transition-colors placeholder:text-slate-500"
+            />
+          </div>
+          <button type="submit" className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-semibold rounded-xl transition-colors">
+            Search
+          </button>
+          {(qParam || isLowStock) && (
+            <a href="/admin/products" className="px-4 py-2 text-sm text-slate-400 border border-slate-700 rounded-xl hover:border-slate-500 hover:text-white transition-colors">
+              Clear
+            </a>
+          )}
+        </form>
+
+        <a
+          href={isLowStock ? '/admin/products' : '/admin/products?stock=low'}
+          className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+            isLowStock
+              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              : 'text-slate-400 border-slate-700 hover:border-slate-600 hover:text-white'
+          }`}
         >
-          <Plus size={15} strokeWidth={2.5} />
-          New Product
-        </button>
+          <AlertTriangle size={11} />
+          Low Stock
+        </a>
       </div>
 
       {error && (
@@ -163,7 +243,7 @@ export default function AdminProductsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800 bg-slate-900/70">
-                {['Product', 'Category', 'Price', 'Stock', 'Featured', 'Actions'].map((h) => (
+                {['Product', 'Category', 'Price', isLowStock ? 'Adjust Stock' : 'Stock', 'Featured', 'Actions'].map((h) => (
                   <th
                     key={h}
                     className="px-5 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider"
@@ -180,7 +260,9 @@ export default function AdminProductsPage() {
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-14 text-center text-slate-500">No products yet</td>
+                  <td colSpan={6} className="px-5 py-14 text-center text-slate-500">
+                    {isLowStock ? 'All products are well-stocked' : 'No products yet'}
+                  </td>
                 </tr>
               ) : (
                 products.map((p) => (
@@ -192,11 +274,23 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3 text-slate-400 text-xs">{p.category}</td>
                     <td className="px-5 py-3 font-semibold text-white tabular-nums">€{p.price.toFixed(2)}</td>
                     <td className="px-5 py-3">
-                      <span
-                        className={`text-xs font-semibold tabular-nums ${p.stock < 10 ? 'text-amber-400' : 'text-slate-300'}`}
-                      >
-                        {p.stock}
-                      </span>
+                      {isLowStock ? (
+                        <input
+                          type="number"
+                          min={0}
+                          defaultValue={p.stock}
+                          title={`Stock for ${p.name}`}
+                          placeholder="0"
+                          onChange={(e) =>
+                            setBulkStock((prev) => ({ ...prev, [p.id]: Number(e.target.value) }))
+                          }
+                          className="w-20 bg-slate-800 border border-slate-700 text-white rounded-lg px-2 py-1 text-sm focus:border-cyan-500 focus:outline-none"
+                        />
+                      ) : (
+                        <span className={`text-xs font-semibold tabular-nums ${p.stock < 10 ? 'text-amber-400' : 'text-slate-300'}`}>
+                          {p.stock}
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       {p.featured ? (

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -12,17 +13,22 @@ import {
   LogOut,
   Zap,
   Mail,
+  Bot,
+  ScrollText,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
 const NAV_ITEMS = [
-  { href: '/admin',             label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/admin/orders',      label: 'Orders',       icon: ShoppingCart    },
-  { href: '/admin/products',    label: 'Products',     icon: Package         },
-  { href: '/admin/users',       label: 'Clients',      icon: Users           },
-  { href: '/admin/performance', label: 'Performance',  icon: TrendingUp      },
-  { href: '/admin/config',      label: 'Agent Config', icon: Cpu             },
-];
+  { href: '/admin',             label: 'Dashboard',    icon: LayoutDashboard                },
+  { href: '/admin/orders',      label: 'Orders',       icon: ShoppingCart,   badge: true    },
+  { href: '/admin/products',    label: 'Products',     icon: Package                        },
+  { href: '/admin/users',       label: 'Clients',      icon: Users                          },
+  { href: '/admin/newsletter',  label: 'Newsletter',   icon: Mail                           },
+  { href: '/admin/performance', label: 'Performance',  icon: TrendingUp                     },
+  { href: '/admin/agents',      label: 'Agent Cycles', icon: Bot                            },
+  { href: '/admin/config',      label: 'Agent Config', icon: Cpu                            },
+  { href: '/admin/logs',        label: 'Audit Log',    icon: ScrollText                     },
+] as const;
 
 function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(' ');
@@ -30,6 +36,23 @@ function cn(...classes: (string | boolean | undefined)[]) {
 
 export default function AdminSidebar({ userEmail }: { userEmail: string }) {
   const pathname = usePathname();
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  // Poll for pending order count every 30 s
+  useEffect(() => {
+    let active = true;
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/admin/stats');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active) setPendingOrders(data.pending ?? 0);
+      } catch { /* swallow network errors */ }
+    };
+    fetchStats();
+    const id = setInterval(fetchStats, 30_000);
+    return () => { active = false; clearInterval(id); };
+  }, []);
 
   return (
     <aside className="fixed left-0 top-0 h-full w-60 bg-[#060d1a] border-r border-slate-800/80 flex flex-col z-40">
@@ -51,8 +74,9 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
         <p className="px-3 mb-2 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">
           Main Menu
         </p>
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+        {NAV_ITEMS.map(({ href, label, icon: Icon, ...rest }) => {
+          const active     = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+          const showBadge  = 'badge' in rest && rest.badge && pendingOrders > 0;
           return (
             <Link
               key={href}
@@ -66,9 +90,16 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
             >
               <Icon size={16} strokeWidth={active ? 2.5 : 1.8} />
               {label}
-              {active && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/60" />
-              )}
+              <span className="ml-auto flex items-center gap-1">
+                {showBadge && (
+                  <span className="min-w-[18px] h-[18px] flex items-center justify-center text-[10px] font-bold bg-amber-500 text-black rounded-full px-1">
+                    {pendingOrders > 99 ? '99+' : pendingOrders}
+                  </span>
+                )}
+                {active && !showBadge && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/60" />
+                )}
+              </span>
             </Link>
           );
         })}
@@ -83,6 +114,7 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => signOut({ callbackUrl: '/' })}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent"
         >
