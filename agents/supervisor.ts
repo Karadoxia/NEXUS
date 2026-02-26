@@ -70,14 +70,10 @@ export class SupervisorAgent extends Agent {
   }
 
   private restartServices() {
-    const { exec } = require('child_process');
-    const cmd = this.ctx.config?.restartCommand || 'echo restarting services';
-    exec(cmd, (err: any, stdout: string, stderr: string) => {
-      if (err) {
-        console.warn('[Supervisor] restart command failed', err);
-      } else {
-        console.log('[Supervisor] restart output', stdout.trim());
-      }
-    });
+    // Arbitrary shell command execution removed — delegating service restarts to
+    // the process manager (systemd, PM2, Docker health-checks, etc.) is the safe
+    // and operationally correct approach.  A configurable shell command would
+    // allow remote code execution if the agent config were ever compromised.
+    console.log('[Supervisor] service restart requested — handled by process manager');
   }
 }

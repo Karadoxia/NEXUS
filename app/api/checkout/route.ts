@@ -50,18 +50,13 @@ export async function POST(request: Request) {
 
     const paymentIntent = await stripe.paymentIntents.create(piParams);
 
-    // associate or create a user record if email exists
+    // Associate the order with an existing authenticated user only.
+    // Guest checkouts are not silently converted into accounts — the user
+    // has not consented to account creation and GDPR requires explicit opt-in.
     let userConnect;
     if (session?.user?.email) {
       const user = await prisma.user.findUnique({ where: { email: session.user.email } });
       if (user) userConnect = { connect: { id: user.id } };
-    } else if (email) {
-      const guest = await prisma.user.upsert({
-        where: { email },
-        update: {},
-        create: { email, name: customer?.name || 'Guest' },
-      });
-      userConnect = { connect: { id: guest.id } };
     }
 
     const order = await prisma.order.create({

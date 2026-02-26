@@ -80,8 +80,27 @@ export async function PUT(request: Request) {
     if (error) return error;
 
     const body = await request.json();
-    const { id, ...data } = body;
+    const { id, name, slug, brand, description, price, comparePrice, category, image, images, specs, stock, featured, rating, reviewCount, isNew, tags } = body;
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+    // Whitelist fields explicitly to prevent mass-assignment of internal columns
+    const data: Record<string, unknown> = {};
+    if (name       !== undefined) data.name         = name;
+    if (slug       !== undefined) data.slug          = slug;
+    if (brand      !== undefined) data.brand         = brand;
+    if (description !== undefined) data.description  = description;
+    if (price      !== undefined) data.price         = price;
+    if (comparePrice !== undefined) data.comparePrice = comparePrice;
+    if (category   !== undefined) data.category      = category;
+    if (image      !== undefined) data.image         = image;
+    if (images     !== undefined) data.images        = images;
+    if (specs      !== undefined) data.specs         = specs;
+    if (stock      !== undefined) data.stock         = stock;
+    if (featured   !== undefined) data.featured      = featured;
+    if (rating     !== undefined) data.rating        = rating;
+    if (reviewCount !== undefined) data.reviewCount  = reviewCount;
+    if (isNew      !== undefined) data.isNew         = isNew;
+    if (tags       !== undefined) data.tags          = tags;
 
     try {
         const product = await prisma.product.update({
