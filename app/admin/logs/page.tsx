@@ -21,15 +21,45 @@ export default async function AdminLogsPage({ searchParams }: Props) {
   if (entity) where.entity     = entity;
   if (admin)  where.adminEmail = { contains: admin, mode: 'insensitive' };
 
-  const [logs, total] = await Promise.all([
-    prisma.log.findMany({
-      where,
-      orderBy: { timestamp: 'desc' },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-    prisma.log.count({ where }),
-  ]);
+  if (!('log' in prisma)) {
+    // client was generated before Log model existed
+    return (
+      <div className="p-8">
+        <p className="text-red-400 font-semibold mb-2">Audit table missing.</p>
+        <p className="text-sm">
+          Run <code className="bg-slate-800 px-1 py-0.5 rounded">npx prisma migrate dev</code> and
+          <code className="bg-slate-800 px-1 py-0.5 rounded">npx prisma generate</code>, then restart the
+          server.
+        </p>
+      </div>
+    );
+  }
+
+  let logs: any[] = [];
+  let total = 0;
+  try {
+    [logs, total] = await Promise.all([
+      prisma.log.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+      prisma.log.count({ where }),
+    ]);
+  } catch (err: any) {
+    console.error('Prisma error fetching logs:', err);
+    return (
+      <div className="p-8">
+        <p className="text-red-400 font-semibold mb-2">Failed to load audit log.</p>
+        <p className="text-sm">
+          Make sure your database is migrated and the Prisma client is up to date
+          (<code className="bg-slate-800 px-1 py-0.5 rounded">npx prisma migrate dev</code>).<br />
+          Check the server logs for details.
+        </p>
+      </div>
+    );
+  }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 

@@ -14,6 +14,8 @@ const ALLOWED_CONFIG_KEYS = new Set([
   'enableLeader',
   'leadInterval',
   'defaultVendor',
+  'agentPrompts', // map of agentName: prompt
+  'agentList',    // array of agent definitions
 ]);
 
 export async function GET() {

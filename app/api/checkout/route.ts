@@ -22,13 +22,18 @@ export async function POST(request: Request) {
   const email = session?.user?.email || customer?.email || '';
 
   try {
-    // build parameters for the PaymentIntent; normally we charge whatever card
-    // details the frontend collects, but when the user has selected a saved
-    // method we look up its Stripe token.
+    // build parameters for the PaymentIntent.  By default we accept cards,
+    // but Stripe can surface additional wallets (PayPal, Apple Pay, etc.) as
+    // separate “payment method types” when the element is rendered.  The
+    // frontend passes the required `clientSecret` and the element handles the
+    // UI.
     const piParams: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100),
       currency: 'eur',
       metadata: { email },
+      // ensure Stripe knows which types to show; your Stripe dashboard controls
+      // which are actually available on your account.
+      payment_method_types: ['card', 'paypal'],
     };
 
     if (paymentMethodId) {
