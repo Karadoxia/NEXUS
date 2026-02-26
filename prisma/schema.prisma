@@ -7,13 +7,14 @@ generator client {
 }
 
 datasource db {
-  // PostgreSQL — set DATABASE_URL in your .env to the connection string.
-  // docker-compose.yml already defines a `postgres` service on port 5433:
-  //   DATABASE_URL="postgresql://nexus:password@localhost:5433/nexus_v2"
-  // Then run: npx prisma migrate dev --name init
-  provider = "postgresql"
+  // development uses SQLite by default; change to "postgresql" before
+  // deploying to a real server.  The existing migration history was created
+  // against an SQLite file so staying on sqlite keeps things simple.
+  provider = "sqlite"
 
-  // connection URL is handled by prisma.config.ts
+  // connection URL is supplied via prisma.config.ts (DATABASE_URL env var).
+  // for sqlite use `file:./dev.db`; for postgres use
+  // `postgresql://user:pass@host:port/dbname`.
 }
 
 model User {
@@ -187,4 +188,41 @@ model Log {
   @@index([timestamp])
   @@index([adminEmail])
   @@index([entity])
+}
+
+// Jobs submitted from the admin panel or scheduler.  Results may be stored in
+// AgentResult, but the existing agents simply run immediately for now.
+model AgentJob {
+  id          String   @id @default(cuid())
+  agentName   String
+  status      AgentStatus @default(PENDING)
+  triggeredBy String
+  triggeredAt DateTime @default(now())
+  completedAt DateTime?
+  result      Json?
+  error       String?
+  durationMs  Int?
+  metadata    Json?
+  results     AgentResult?
+
+  @@index([agentName, status])
+  @@index([triggeredAt])
+}
+
+enum AgentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  APPROVED
+  REJECTED
+}
+
+model AgentResult {
+  id        String   @id @default(cuid())
+  job       AgentJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId     String   @unique
+  output    Json
+  error     String?
+  createdAt DateTime @default(now())
 }

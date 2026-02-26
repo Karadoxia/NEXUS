@@ -62,7 +62,17 @@
 4. Open [http://localhost:3001](http://localhost:3001) (or your chosen port)
    in your browser.
 
-## 🔧 Environment Variables
+## � Architecture
+
+![Agents architecture](/images/Agents-Arch.png)
+## 🧠 AI Agents
+
+An admin section at **/admin/agents** lets you manually trigger the central
+"Leader" cycle and review recent job history. Jobs are recorded in the database
+(`AgentJob` and `AgentResult` models) so you can audit what ran and capture
+outputs or errors.  The `Performance` page (linked from the sidebar) shows the
+BI agent's historical metrics and recommendations.
+## �🔧 Environment Variables
 
 Create a `.env.local` file in the project root. A few values are optional for
 mock mode, but the full experience (database, authentication, payments) requires
@@ -88,20 +98,36 @@ real values:
 
 ### Database setup
 
-If you want to use PostgreSQL (recommended for production and to exercise the
-Prisma migrations) you must have an accessible server. This can be a local
-installation (outside the sandbox), a Docker container running on your host, or
-any managed provider such as Supabase, Railway, ElephantSQL, or AWS RDS. Once
-it is running, set `DATABASE_URL` accordingly and run:
+The application uses Prisma to manage the schema.  You can run against a
+Postgres server or a local SQLite file; the provider is controlled by the
+`DB_PROVIDER` environment variable.  When working locally set
+`DB_PROVIDER=sqlite` (the `.env.local` shipped with this repo already does this).
+
+**Any time the `schema.prisma` file changes you must run the following commands and restart the dev server:**
 
 ```bash
-npx prisma migrate dev --name init
+# create or apply new migrations (dev.db will be created automatically if you
+# are using SQLite)
+npx prisma migrate dev --name <meaningful-name>
+
+# regenerate the client so TypeScript and the running server understand the
+# new models/fields
+npx prisma generate
 ```
+
+The `migrate dev` command will prompt you to reset the database if structural
+changes are incompatible; resetting in development is fine, but **do not reset
+your production database**.
+
+If you want to use PostgreSQL (recommended for production) you must have an
+accessible server. This can be a local installation (outside the sandbox), a
+Docker container running on your host, or any managed provider such as Supabase,
+Railway, ElephantSQL, or AWS RDS. Once it is running, set `DB_PROVIDER=postgresql`
+and `DATABASE_URL` accordingly before running the migrations above.
 
 If you do not have a Postgres instance handy, the project still works with the
 built-in SQLite database; set the variable to `file:./dev.db` or remove
-`DATABASE_URL` entirely. The codebase is already capable of using SQLite for
-the mock backend and the migration command will operate on `dev.db` by
+`DATABASE_URL` entirely. The migration command will operate on `dev.db` by
 default.
 
 ```env

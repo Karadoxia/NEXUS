@@ -130,26 +130,58 @@ function CheckoutForm({
                   ))}
                 </select>
                 <p className="text-xs text-slate-500 mt-1">
-                  Choosing a saved method does not prefill the card input and has no
-                  effect on live Stripe payments – it only controls the mock mode
-                  simulation when the backend is unavailable.
+                  When a saved Stripe‑backed method is selected the card element is
+                  hidden and a summary of the masked details is shown below; this
+                  works for wallet methods such as PayPal as well. No sensitive
+                  information is ever stored.
                 </p>
               </div>
             )}
 
-            {/* element is always visible so users can switch back to a new card
-                without waiting for a remount.  When a saved stripe-backed method
-                is chosen we render a semi-transparent overlay to indicate it will
-                be used, but the fields remain editable if the user wants to input
-                fresh details. */}
-            <div className="relative">
-                <PaymentElement id="payment-element" options={{ layout: 'tabs' }} />
-                {selectedPm && paymentMethods.find(pm => pm.id === selectedPm)?.stripeId && (
-                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-sm pointer-events-none">
-                        Using saved card — switch to “None” to enter a new one
-                    </div>
-                )}
-            </div>
+            {/* either show the element or a summary, never both */}
+            {!(selectedPm && paymentMethods.find(pm => pm.id === selectedPm)?.stripeId) ? (
+              <PaymentElement
+                id="payment-element"
+                options={{
+                  layout: 'tabs',
+                  defaultValues: {
+                    billingDetails: {
+                      name: session?.user?.name,
+                      email: session?.user?.email,
+                    },
+                  },
+                }}
+              />
+            ) : (
+              <div className="p-4 bg-slate-800 rounded">
+                {(() => {
+                  const chosen = paymentMethods.find(pm => pm.id === selectedPm);
+                  if (!chosen) return null;
+                  const isCard = chosen.type === 'card';
+                  return (
+                    <>
+                      <p className="text-sm text-white">
+                        {isCard
+                          ? `${chosen.brand} •••• ${chosen.last4}`
+                          : `Using ${chosen.brand}`}
+                      </p>
+                      {isCard && (
+                        <p className="text-xs text-slate-400">
+                          exp {chosen.expMonth}/{chosen.expYear}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        className="mt-2 text-xs underline text-cyan-400"
+                        onClick={() => setSelectedPm(undefined)}
+                      >
+                        Use different method
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
             <button
                 disabled={isLoading || !stripe || !elements}
                 id="submit"

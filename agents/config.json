@@ -1,1 +1,12 @@
-{}
+{
+  "agentList": [
+    {
+      "name": "TestAgent",
+      "prompt": "You are a test",
+      "enabled": true
+    }
+  ],
+  "agentPrompts": {
+    "TestAgent": "You are a testxw"
+  }
+}

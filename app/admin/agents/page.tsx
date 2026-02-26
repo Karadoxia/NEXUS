@@ -1,7 +1,18 @@
 import { prisma } from '@/src/lib/prisma';
 import { Activity, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
+import AgentControls from './AgentControls';
 
 const PAGE_SIZE = 30;
+
+// simplified shape of agent job returned by the API
+type Job = {
+  id: string;
+  agentName: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  results?: { output: any; error?: string };
+};
 
 type Props = {
   searchParams: Promise<{ page?: string }>;
@@ -11,14 +22,19 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
   const { page: pageStr } = await searchParams;
   const page = Math.max(1, parseInt(pageStr ?? '1', 10));
 
-  const [entries, total] = await Promise.all([
+  const [entries, total, jobs] = (await Promise.all([
     prisma.performance.findMany({
       orderBy: { timestamp: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
     prisma.performance.count(),
-  ]);
+    prisma.agentJob.findMany({
+      orderBy: { triggeredAt: 'desc' },
+      take: 10,
+      include: { results: true },
+    }),
+  ])) as [any, number, Job[]];
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -40,6 +56,68 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
           {total.toLocaleString()} cycle{total !== 1 ? 's' : ''} recorded
         </p>
       </div>
+
+      {/* control button */}
+      <div className="mb-6">
+        <AgentControls />
+      </div>
+
+      {/* recent job history */}
+      {jobs.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-white mb-2">Recent Agent Jobs</h2>
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-800 bg-slate-900/70">
+                    {['Time', 'Agent', 'Status', 'Result'].map((h) => (
+                      <th
+                        key={h}
+                        className="px-5 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/50">
+                  {jobs.map((j) => (
+                    <tr key={j.id} className="hover:bg-slate-800/20 transition-colors">
+                      <td className="px-5 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">
+                        {new Date(j.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                      </td>
+                      <td className="px-5 py-3 text-slate-300 text-xs capitalize">{j.agentName || j.agent}</td>
+                      <td className="px-5 py-3">
+                        <span
+                          className={`px-2 py-0.5 text-[11px] font-bold rounded border uppercase ${
+                            j.status === 'COMPLETED'
+                              ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                              : j.status === 'RUNNING'
+                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                              : j.status === 'FAILED'
+                              ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                              : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                          }`}
+                        >
+                          {j.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-xs text-slate-400 max-w-[240px] truncate">
+                        {j.results?.error
+                          ? `ERROR: ${j.results.error}`
+                          : j.results?.output
+                          ? JSON.stringify(j.results.output).slice(0, 80)
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">

@@ -34,16 +34,36 @@ export default async function AdminUsersPage({ searchParams }: Props) {
     ];
   }
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-    prisma.user.count({ where }),
-  ]);
+  let users: any[] = [];
+  let total = 0;
+  // If the Prisma client is out‑of‑sync with the schema (migrations not
+  // applied / client not regenerated) the call below will throw.  We catch
+  // that error and render an actionable message instead of crashing the
+  // entire admin panel.
+  try {
+    [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: { id: true, email: true, name: true, phone: true, role: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
+      }),
+      prisma.user.count({ where }),
+    ]);
+  } catch (err: any) {
+    console.error('Unable to fetch users (Prisma error):', err);
+    return (
+      <div className="p-8">
+        <p className="text-red-400 font-semibold mb-2">Database schema is out of date.</p>
+        <p className="text-sm">
+          Please run <code className="bg-slate-800 px-1 py-0.5 rounded">npx prisma migrate dev</code> and then
+          <code className="bg-slate-800 px-1 py-0.5 rounded">npx prisma generate</code>,
+          restart the dev server and reload this page.
+        </p>
+      </div>
+    );
+  }
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
