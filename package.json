@@ -9,10 +9,21 @@
     "lint": "eslint",
     "test": "vitest",
     "coverage": "vitest run --coverage",
-    "seed:db": "ts-node prisma/seed.ts"
+    "seed:db": "ts-node prisma/seed.ts",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:push": "npx prisma db push",
+    "prisma:generate": "npx prisma generate",
+    "seed:agents": "ts-node scripts/seedAgents.ts",
+    "rust:build:wasm": "cd rust-agents/crates/compute && wasm-pack build --target web --out-dir ../../pkg --release",    "postinstall": "npm run rust:build:wasm",
+    "dev:rust": "npm run rust:build:wasm && npm run dev"
   },
   "dependencies": {
     "@clerk/nextjs": "6.37.5",
+    "@langchain/core": "^0.3.12",
+    "@langchain/langgraph": "^0.2.0",
+    "@langchain/groq": "^0.1.0",
+    "redis": "^4.7.0",
+    "@sentry/nextjs": "^8.0.0",
     "@next-auth/prisma-adapter": "^1.0.7",
     "@prisma/adapter-better-sqlite3": "^7.4.1",
     "@prisma/client": "^7.4.1",
