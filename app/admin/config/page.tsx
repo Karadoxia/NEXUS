@@ -1,89 +1,113 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { Navbar } from '@/components/navbar';
+
+type AgentConfig = Record<string, string>;
 
 export default function AdminConfigPage() {
-  const { data: session } = useSession();
-  const [config, setConfig] = useState<any>({});
+  const [config, setConfig]   = useState<AgentConfig>({});
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState('');
+  const [saved, setSaved]     = useState(false);
 
   useEffect(() => {
-    async function fetchConfig() {
+    const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/agents/config');
-        if (!res.ok) throw new Error('failed');
-        setConfig(await res.json());
-      } catch (e) {
-        console.error(e);
+        const r = await fetch('/api/agents/config');
+        if (!r.ok) throw new Error('failed');
+        setConfig(await r.json());
+      } catch {
+        setError('Failed to load config');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }
-    fetchConfig();
+    };
+    load();
   }, []);
 
-  const updateField = (key: string, value: any) => {
-    setConfig((c: any) => ({ ...c, [key]: value }));
+  const updateField = (key: string, value: string) => {
+    setSaved(false);
+    setConfig((c) => ({ ...c, [key]: value }));
   };
 
   const save = async () => {
     setSaving(true);
+    setError('');
     try {
-      const res = await fetch('/api/agents/config', {
+      const r = await fetch('/api/agents/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
       });
-      if (!res.ok) throw new Error('save failed');
-      setConfig(await res.json());
-    } catch (e) {
-      console.error(e);
+      if (!r.ok) throw new Error('save failed');
+      setConfig(await r.json());
+      setSaved(true);
+    } catch {
+      setError('Failed to save config');
     }
     setSaving(false);
   };
 
-  if (!(session?.user as { isAdmin?: boolean })?.isAdmin) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Navbar />
-        <p className="text-red-400">Unauthorized</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
-      <Navbar />
-      <div className="container mx-auto px-4 py-24">
-        <h1 className="text-3xl font-bold mb-6">Agent Configuration</h1>
-        {loading && <p>Loading...</p>}
-        {!loading && (
+    <div className="p-8 max-w-2xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Agent Configuration</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Edit and save agent runtime settings</p>
+      </div>
+
+      {error && (
+        <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+      {saved && (
+        <div className="mb-6 px-4 py-3 bg-green-500/10 border border-green-500/20 rounded-xl text-green-400 text-sm">
+          Config saved successfully
+        </div>
+      )}
+
+      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
+        {loading ? (
+          <p className="text-slate-500 text-sm text-center py-8">Loading…</p>
+        ) : Object.keys(config).length === 0 ? (
+          <p className="text-slate-500 text-sm text-center py-8">No config keys found</p>
+        ) : (
           <div className="space-y-4">
-            {Object.keys(config).map((key) => (
-              <div key={key} className="flex items-center gap-4">
-                <label className="w-48 text-sm text-slate-400">{key}</label>
+            {Object.entries(config).map(([key, val]) => (
+              <div key={key}>
+                <label
+                  htmlFor={`cfg-${key}`}
+                  className="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider"
+                >
+                  {key}
+                </label>
                 <input
-                  className="flex-1 bg-slate-800 text-white rounded px-2 py-1"
-                  value={config[key] ?? ''}
+                  id={`cfg-${key}`}
+                  value={val ?? ''}
                   onChange={(e) => updateField(key, e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:border-cyan-500 focus:outline-none transition-colors placeholder:text-slate-500"
                   placeholder={`Enter ${key}`}
-                  title={key}
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        {!loading && Object.keys(config).length > 0 && (
+          <div className="mt-6 flex justify-end">
             <button
-              className="mt-4 bg-cyan-500 hover:bg-cyan-600 text-black px-4 py-2 rounded"
+              type="button"
               onClick={save}
               disabled={saving}
+              className="px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
             >
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : 'Save Config'}
             </button>
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

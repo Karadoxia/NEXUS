@@ -2,15 +2,8 @@ import { prisma } from '@/src/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import OrderStatusSelect from '../_components/order-status-select';
-
-const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-amber-500/10  text-amber-400   border-amber-500/20',
-  processing: 'bg-blue-500/10   text-blue-400    border-blue-500/20',
-  shipped:    'bg-purple-500/10 text-purple-400  border-purple-500/20',
-  delivered:  'bg-green-500/10  text-green-400   border-green-500/20',
-  cancelled:  'bg-red-500/10    text-red-400     border-red-500/20',
-};
+import { Search } from 'lucide-react';
+import OrdersTableClient from '../_components/orders-table-client';
 
 const STATUSES = ['', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const PAGE_SIZE = 20;
@@ -32,8 +25,8 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   if (status) where.status = status;
   if (q) {
     where.OR = [
-      { id: { contains: q } },
-      { user: { email: { contains: q } } },
+      { id: { contains: q, mode: 'insensitive' } },
+      { user: { email: { contains: q, mode: 'insensitive' } } },
     ];
   }
 
@@ -73,21 +66,52 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
         </div>
       </div>
 
-      {/* Status filter pills */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        {STATUSES.map((s) => (
-          <a
-            key={s}
-            href={buildHref({ status: s || undefined, page: '1' })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-              (status ?? '') === s
-                ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-                : 'text-slate-400 border-slate-700 hover:border-slate-600 hover:text-white'
-            }`}
+      {/* Search + status filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        {/* Search box */}
+        <form method="get" action="/admin/orders" className="flex gap-2">
+          {status && <input type="hidden" name="status" value={status} />}
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              name="q"
+              defaultValue={q ?? ''}
+              placeholder="Search order ID or email…"
+              className="bg-slate-800 border border-slate-700 text-white rounded-xl pl-9 pr-3 py-2 text-sm w-72 focus:border-cyan-500 focus:outline-none transition-colors placeholder:text-slate-500"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-black text-sm font-semibold rounded-xl transition-colors"
           >
-            {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
-          </a>
-        ))}
+            Search
+          </button>
+          {q && (
+            <a
+              href={buildHref({ q: undefined, page: '1' })}
+              className="px-4 py-2 text-sm text-slate-400 border border-slate-700 rounded-xl hover:border-slate-500 hover:text-white transition-colors"
+            >
+              Clear
+            </a>
+          )}
+        </form>
+
+        {/* Status pills */}
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
+          {STATUSES.map((s) => (
+            <a
+              key={s}
+              href={buildHref({ status: s || undefined, page: '1' })}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                (status ?? '') === s
+                  ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                  : 'text-slate-400 border-slate-700 hover:border-slate-600 hover:text-white'
+              }`}
+            >
+              {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
@@ -106,47 +130,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/50">
-              {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-14 text-center text-slate-500 text-sm">
-                    No orders match this filter
-                  </td>
-                </tr>
-              ) : (
-                orders.map((o) => (
-                  <tr key={o.id} className="hover:bg-slate-800/20 transition-colors group">
-                    <td className="px-5 py-3 font-mono text-xs text-slate-500 group-hover:text-slate-400">
-                      #{o.id.slice(-8).toUpperCase()}
-                    </td>
-                    <td className="px-5 py-3 text-slate-300 text-sm max-w-[180px] truncate">
-                      {o.user?.email ?? <span className="text-slate-600">Guest</span>}
-                    </td>
-                    <td className="px-5 py-3 text-slate-400 text-sm tabular-nums">
-                      {o.items.reduce((s, i) => s + i.quantity, 0)}
-                    </td>
-                    <td className="px-5 py-3 font-semibold text-white tabular-nums">
-                      €{o.total.toFixed(2)}
-                    </td>
-                    <td className="px-5 py-3 text-slate-500 text-xs whitespace-nowrap">
-                      {new Date(o.date).toLocaleDateString('en', {
-                        month: 'short', day: 'numeric', year: 'numeric',
-                      })}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`px-2 py-0.5 text-[11px] font-bold rounded border uppercase ${STATUS_COLORS[o.status] ?? 'bg-slate-800 text-slate-400 border-slate-700'}`}
-                      >
-                        {o.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3">
-                      <OrderStatusSelect orderId={o.id} currentStatus={o.status} />
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
+            <OrdersTableClient orders={orders.map((o) => ({ ...o, date: o.date.toISOString() }))} />
           </table>
         </div>
 

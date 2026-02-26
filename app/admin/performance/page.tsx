@@ -1,21 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { Navbar } from '@/components/navbar';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 interface PerfEntry {
   id: string;
@@ -27,91 +12,99 @@ interface PerfEntry {
 }
 
 export default function AdminPerformancePage() {
-  const { data: session } = useSession();
   const [entries, setEntries] = useState<PerfEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
 
   useEffect(() => {
-    async function fetchData() {
+    const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/agents/performance');
-        if (!res.ok) throw new Error('failed');
-        const data = await res.json();
+        const r = await fetch('/api/agents/performance');
+        if (!r.ok) throw new Error('Failed to load');
+        const data: PerfEntry[] = await r.json();
         setEntries(data);
-      } catch (e) {
-        console.error(e);
+      } catch {
+        setError('Failed to load performance data');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }
-    fetchData();
+    };
+    load();
   }, []);
 
-  if (!(session?.user as { isAdmin?: boolean })?.isAdmin) {
-    return (
-      <main className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Navbar />
-        <p className="text-red-400">Unauthorized</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
-      <Navbar />
-      <div className="container mx-auto px-4 py-24">
-        <h1 className="text-3xl font-bold mb-6">Performance History</h1>
-        {loading && <p>Loading...</p>}
-        {/* chart visualization */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4">Trend</h2>
-          <Line
-            data={{
-              labels: entries.map((e) => new Date(e.timestamp).toLocaleTimeString()),
-              datasets: [
-                {
-                  label: 'Orders',
-                  data: entries.map((e) => e.orders),
-                  borderColor: 'rgba(56, 189, 248, 1)',
-                  backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                },
-                {
-                  label: 'Returns',
-                  data: entries.map((e) => e.returns),
-                  borderColor: 'rgba(239, 68, 68, 1)',
-                  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-                },
-              ],
-            }}
-            options={{
-              responsive: true,
-              plugins: { legend: { position: 'bottom' } },
-            }}
-          />
-        </div>
-        <table className="w-full table-auto text-left border-collapse">
-          <thead>
-            <tr className="border-b border-slate-700">
-              <th className="p-2">Time</th>
-              <th className="p-2">Orders</th>
-              <th className="p-2">Returns</th>
-              <th className="p-2">Downtime</th>
-              <th className="p-2">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) => (
-              <tr key={e.id} className="border-b border-slate-800 hover:bg-slate-900">
-                <td className="p-2 font-mono text-sm">{new Date(e.timestamp).toLocaleString()}</td>
-                <td className="p-2 text-sm">{e.orders}</td>
-                <td className="p-2 text-sm">{e.returns}</td>
-                <td className="p-2 text-sm">{e.downtime ? 'YES' : 'no'}</td>
-                <td className="p-2 text-sm">{e.notes || '-'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="p-8 max-w-screen-xl">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Performance History</h1>
+        <p className="text-slate-500 text-sm mt-0.5">Agent cycle metrics over time</p>
       </div>
-    </main>
+
+      {error && (
+        <div className="mb-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-800 bg-slate-900/70">
+                {['Time', 'Orders', 'Returns', 'Return %', 'Downtime', 'Notes'].map((h) => (
+                  <th
+                    key={h}
+                    className="px-5 py-3.5 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/50">
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-14 text-center text-slate-500">Loading…</td>
+                </tr>
+              ) : entries.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-14 text-center text-slate-500">No data yet</td>
+                </tr>
+              ) : (
+                entries.map((e) => {
+                  const rate = e.orders > 0 ? ((e.returns / e.orders) * 100).toFixed(1) : '—';
+                  return (
+                    <tr key={e.id} className="hover:bg-slate-800/20 transition-colors">
+                      <td className="px-5 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">
+                        {new Date(e.timestamp).toLocaleString('en', {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-5 py-3 text-white font-semibold tabular-nums">{e.orders}</td>
+                      <td className="px-5 py-3 text-slate-300 tabular-nums">{e.returns}</td>
+                      <td className="px-5 py-3 tabular-nums">
+                        <span className={parseFloat(rate) > 10 ? 'text-red-400' : 'text-slate-400'}>
+                          {rate !== '—' ? `${rate}%` : rate}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        {e.downtime ? (
+                          <span className="text-xs font-semibold text-red-400 bg-red-400/10 border border-red-400/20 px-2 py-0.5 rounded">YES</span>
+                        ) : (
+                          <span className="text-slate-600 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-slate-500 text-xs max-w-[240px] truncate">
+                        {e.notes ?? '—'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }

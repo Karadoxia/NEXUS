@@ -8,9 +8,11 @@ import {
   Activity,
   Mail,
   TrendingUp,
+  BarChart2,
 } from 'lucide-react';
 import AdminRevenueChart from './_components/revenue-chart';
 import ProgressBar from './_components/progress-bar';
+import CategoryBarChart from './_components/category-chart';
 
 const STATUS_COLORS: Record<string, string> = {
   pending:    'bg-amber-500/10  text-amber-400   border-amber-500/20',
@@ -21,9 +23,9 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function AdminDashboard() {
-  const now         = new Date();
-  const startToday  = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const start7      = new Date(startToday);
+  const now        = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start7     = new Date(startToday);
   start7.setDate(start7.getDate() - 6);
 
   const [
@@ -37,6 +39,7 @@ export default async function AdminDashboard() {
     subscribers,
     recentOrders,
     ordersLast7,
+    categoryItems,
   ] = await Promise.all([
     prisma.order.aggregate({ _sum: { total: true } }),
     prisma.order.aggregate({ where: { date: { gte: startToday } }, _sum: { total: true } }),
@@ -56,9 +59,13 @@ export default async function AdminDashboard() {
       select: { date: true, total: true },
       orderBy: { date: 'asc' },
     }),
+    // Category revenue: join CartItem → Product to group by category
+    prisma.cartItem.findMany({
+      include: { product: { select: { category: true } } },
+    }),
   ]);
 
-  // Build daily buckets for the chart (oldest → newest)
+  // Build daily buckets (oldest → newest)
   const salesByDay = Array.from({ length: 7 }, (_, i) => {
     const d    = new Date(startToday);
     d.setDate(d.getDate() - (6 - i));
@@ -72,9 +79,19 @@ export default async function AdminDashboard() {
     };
   });
 
+  // Build category revenue map
+  const catMap: Record<string, number> = {};
+  for (const item of categoryItems) {
+    const cat = item.product.category;
+    catMap[cat] = (catMap[cat] ?? 0) + item.price * item.quantity;
+  }
+  const categoryRevenue = Object.entries(catMap)
+    .map(([category, revenue]) => ({ category, revenue }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8);
+
   const revenue      = revenueAgg._sum.total ?? 0;
   const revenueToday = revenueTodayAgg._sum.total ?? 0;
-  const fulfillPct   = productCount > 0 ? Math.min(Math.round((lowStock / productCount) * 100), 100) : 0;
 
   const kpis = [
     {
@@ -109,7 +126,7 @@ export default async function AdminDashboard() {
 
   return (
     <div className="p-8 max-w-screen-xl">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-white">Dashboard</h1>
         <p className="text-slate-500 text-sm mt-0.5">
@@ -117,7 +134,7 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
         {kpis.map(({ label, value, sub, icon: Icon, ring }) => (
           <div
@@ -136,10 +153,8 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      {/* ── Charts row ── */}
+      {/* Charts row — Revenue + Store Health */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-
-        {/* Revenue Area Chart */}
         <div className="xl:col-span-2 bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -154,7 +169,6 @@ export default async function AdminDashboard() {
           <AdminRevenueChart data={salesByDay} />
         </div>
 
-        {/* Store Health */}
         <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-sm font-semibold text-white">Store Health</h2>
@@ -163,10 +177,10 @@ export default async function AdminDashboard() {
 
           <div className="space-y-5">
             {[
-              { label: 'Active Orders',     value: ordersActive,    total: Math.max(ordersActive + ordersToday, 1), color: 'bg-cyan-500'   },
-              { label: 'Low Stock %',       value: lowStock,        total: Math.max(productCount, 1),               color: 'bg-amber-500'  },
-              { label: 'Newsletter Subs',   value: subscribers,     total: Math.max(subscribers, 1),                color: 'bg-green-500'  },
-              { label: 'Customers',         value: customers,       total: Math.max(customers, 1),                  color: 'bg-blue-500'   },
+              { label: 'Active Orders',   value: ordersActive, total: Math.max(ordersActive + ordersToday, 1), color: 'bg-cyan-500'  },
+              { label: 'Low Stock %',     value: lowStock,     total: Math.max(productCount, 1),               color: 'bg-amber-500' },
+              { label: 'Newsletter Subs', value: subscribers,  total: Math.max(subscribers, 1),                color: 'bg-green-500' },
+              { label: 'Customers',       value: customers,    total: Math.max(customers, 1),                  color: 'bg-blue-500'  },
             ].map(({ label, value, total, color }) => {
               const pct = Math.round((value / total) * 100);
               return (
@@ -199,14 +213,23 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── Recent Orders ── */}
+      {/* Category Revenue BarChart */}
+      <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 mb-6">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-sm font-semibold text-white">Revenue by Category</h2>
+            <p className="text-xs text-slate-500 mt-0.5">All-time, top 8 categories</p>
+          </div>
+          <BarChart2 size={14} className="text-slate-500" />
+        </div>
+        <CategoryBarChart data={categoryRevenue} />
+      </div>
+
+      {/* Recent Orders */}
       <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
           <h2 className="text-sm font-semibold text-white">Recent Orders</h2>
-          <a
-            href="/admin/orders"
-            className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
-          >
+          <a href="/admin/orders" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">
             View all →
           </a>
         </div>
