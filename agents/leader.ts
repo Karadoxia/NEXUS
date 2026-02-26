@@ -23,103 +23,39 @@ import { StockForecaster } from './stockForecaster';
 import { Reporter } from './reporter';
 
 export class Leader extends Agent {
+  /** Run an agent safely — a failure in one agent must not abort the full cycle. */
+  private async runAgent(label: string, agent: { run: () => Promise<unknown> }, report: Reporter) {
+    try {
+      const data = await agent.run();
+      await report.run({ type: label, data });
+    } catch (err) {
+      console.error(`[Leader] agent "${label}" failed`, err);
+      await report.run({ type: label, data: { error: String(err) } });
+    }
+  }
+
   async run() {
     const report = new Reporter(this.ctx);
 
-    // operations manager handles order intake/validation
-    const ops = new OperationsManager(this.ctx);
-    const opsReport = await ops.run();
-    await report.run({ type: 'operations', data: opsReport });
-
-    // coordinate order processing
-    const orderAgent = new OrderProcessor(this.ctx);
-    const orderResult = await orderAgent.run();
-    await report.run({ type: 'orders', data: orderResult });
-
-    // update inventory via stock manager
-    const stock = new StockManager(this.ctx);
-    const stockReport = await stock.run();
-    await report.run({ type: 'stock', data: stockReport });
-
-    // finance summary
-    const fin = new FinanceManager(this.ctx);
-    const finReport = await fin.run();
-    await report.run({ type: 'finance', data: finReport });
-
-    // customer experience overview
-    const cx = new CustomerExperienceManager(this.ctx);
-    const cxReport = await cx.run();
-    await report.run({ type: 'customer', data: cxReport });
-
-    // marketing recommendations
-    const mk = new MarketingManager(this.ctx);
-    const mkReport = await mk.run();
-    await report.run({ type: 'marketing', data: mkReport });
-
-    // analytics summary
-    const an = new AnalyticsManager(this.ctx);
-    const anReport = await an.run();
-    await report.run({ type: 'analytics', data: anReport });
-
-    // quality assurance check
-    const qa = new QAAgent(this.ctx);
-    const qaReport = await qa.run();
-    await report.run({ type: 'qa', data: qaReport });
-
-    // negotiation specialist
-    const neg = new NegotiationAgent(this.ctx);
-    const negReport = await neg.run();
-    await report.run({ type: 'negotiation', data: negReport });
-
-    // fraud detection
-    const fraud = new FraudAgent(this.ctx);
-    const fraudReport = await fraud.run();
-    await report.run({ type: 'fraud', data: fraudReport });
-
-    // returns handling
-    const ret = new ReturnsAgent(this.ctx);
-    const retReport = await ret.run();
-    await report.run({ type: 'returns', data: retReport });
-
-    // performance analysis (historical) and optimization suggestions
-    const perfAnalyzer = new PerformanceAnalyzer(this.ctx);
-    const perfReport = await perfAnalyzer.run();
-    await report.run({ type: 'performance-analysis', data: perfReport });
-
-    // specialized optimizers
-    const marketing = new MarketingOptimizer(this.ctx);
-    const marketingReport = await marketing.run();
-    await report.run({ type: 'marketing-opt', data: marketingReport });
-
-    const forecaster = new StockForecaster(this.ctx);
-    const forecastReport = await forecaster.run();
-    await report.run({ type: 'stock-forecast', data: forecastReport });
-
-    // procurement checks
-    const procurer = new ProcurementAgent(this.ctx);
-    const procReport = await procurer.run();
-    await report.run({ type: 'procurement', data: procReport });
-
-    // service tickets
-    const sav = new SAVAgent(this.ctx);
-    const savReport = await sav.run();
-    await report.run({ type: 'sav', data: savReport });
-
-    // supply chain monitoring (status + reorder suggestions)
-    const sc = new SupplyChainAgent(this.ctx);
-    const scReport = await sc.run();
-    await report.run({ type: 'supplychain', data: scReport });
-
-    const scm = new SupplyChainManager(this.ctx);
-    const scmReport = await scm.run();
-    await report.run({ type: 'supplychain-manager', data: scmReport });
-
-    // IT responsibilities
-    const it = new ITAgent(this.ctx);
-    const itReport = await it.run();
-    await report.run({ type: 'it', data: itReport });
-
-    // could spawn other workers…
+    await this.runAgent('operations',           new OperationsManager(this.ctx),      report);
+    await this.runAgent('orders',               new OrderProcessor(this.ctx),         report);
+    await this.runAgent('stock',                new StockManager(this.ctx),           report);
+    await this.runAgent('finance',              new FinanceManager(this.ctx),         report);
+    await this.runAgent('customer',             new CustomerExperienceManager(this.ctx), report);
+    await this.runAgent('marketing',            new MarketingManager(this.ctx),       report);
+    await this.runAgent('analytics',            new AnalyticsManager(this.ctx),       report);
+    await this.runAgent('qa',                   new QAAgent(this.ctx),                report);
+    await this.runAgent('negotiation',          new NegotiationAgent(this.ctx),       report);
+    await this.runAgent('fraud',                new FraudAgent(this.ctx),             report);
+    await this.runAgent('returns',              new ReturnsAgent(this.ctx),           report);
+    await this.runAgent('performance-analysis', new PerformanceAnalyzer(this.ctx),    report);
+    await this.runAgent('marketing-opt',        new MarketingOptimizer(this.ctx),     report);
+    await this.runAgent('stock-forecast',       new StockForecaster(this.ctx),        report);
+    await this.runAgent('procurement',          new ProcurementAgent(this.ctx),       report);
+    await this.runAgent('sav',                  new SAVAgent(this.ctx),               report);
+    await this.runAgent('supplychain',          new SupplyChainAgent(this.ctx),       report);
+    await this.runAgent('supplychain-manager',  new SupplyChainManager(this.ctx),     report);
+    await this.runAgent('it',                   new ITAgent(this.ctx),                report);
 
     return 'leader done';
   }
@@ -164,19 +100,25 @@ export class Leader extends Agent {
           this.ctx.config.marketingBudget = 5000; // hypothetical units
         }
         // persist updated config
-        fs.writeFileSync('agents/config.json', JSON.stringify(this.ctx.config, null, 2));
+        fs.writeFileSync(
+          require('path').join(__dirname, '..', 'agents', 'config.json'),
+          JSON.stringify(this.ctx.config, null, 2),
+        );
       } catch (historyErr) {
         console.warn('[Leader] could not analyse history', historyErr);
       }
 
-      // simple config adjustment example: if returns > 10% of orders, flag
-      if (orders > 0 && returns / orders > 0.1) {
+      // if returns exceed 10% of orders, flag it in config
+      if (Array.isArray(orders) && orders.length > 0 &&
+          Array.isArray(returns) && returns.length / orders.length > 0.1) {
         console.log('[Leader] high return rate detected, adjusting config');
         this.ctx.config.highReturnWarning = true;
-        // in a real system you might write this to a DB or file here
-        fs.writeFileSync('agents/config.json', JSON.stringify(this.ctx.config, null, 2));
+        fs.writeFileSync(
+          require('path').join(__dirname, '..', 'agents', 'config.json'),
+          JSON.stringify(this.ctx.config, null, 2),
+        );
       }
-      return { orders: orders.length, returns: returns.length }; 
+      return { orders: orders.length, returns: returns.length };
     } catch (err) {
       console.warn('[Leader] selfImprove failed', err);
       throw err;

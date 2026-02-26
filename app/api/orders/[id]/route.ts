@@ -22,12 +22,23 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ id
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session?.user?.email) {
     return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
   }
+
+  // Verify ownership or admin before allowing any update
+  const existing = await prisma.order.findUnique({ where: { id }, include: { user: true } });
+  if (!existing) {
+    return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
+  }
+  const isAdmin = (session.user as { isAdmin?: boolean }).isAdmin;
+  if (!isAdmin && existing.user?.email !== session.user.email) {
+    return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+  }
+
   const body = await request.json();
   const { status, trackingNumber, carrier } = body;
-  const updateData: any = {};
+  const updateData: Partial<{ status: string; trackingNumber: string; carrier: string }> = {};
   if (status) updateData.status = status;
   if (trackingNumber) updateData.trackingNumber = trackingNumber;
   if (carrier) updateData.carrier = carrier;

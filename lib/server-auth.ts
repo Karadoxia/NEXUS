@@ -34,7 +34,7 @@ export async function requireAdmin() {
       error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
     };
   }
-  if (!(session.user as any).isAdmin) {
+  if (!(session.user as { isAdmin?: boolean }).isAdmin) {
     return {
       session: null,
       error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),

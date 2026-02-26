@@ -32,14 +32,20 @@ export async function register() {
       }
     }
 
-    // make sure migrations are applied to whatever file we're using
-    try {
-      console.log('[startup] running prisma migrations');
-      const { execSync } = require('child_process');
-      // use deploy so it works in dev and prod; add cwd just in case
-      execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: process.cwd() });
-    } catch (merr) {
-      console.warn('[startup] prisma migrate deploy encountered error', merr);
+    // Apply pending migrations at startup only when explicitly requested.
+    // Running migrations on every cold start can cause issues in clustered or
+    // serverless deployments — set RUN_MIGRATIONS=true only in controlled
+    // environments (e.g. a dedicated migration init container).
+    if (process.env.RUN_MIGRATIONS === 'true') {
+      try {
+        console.log('[startup] running prisma migrations');
+        const { execSync } = require('child_process');
+        execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: process.cwd() });
+      } catch (merr) {
+        console.warn('[startup] prisma migrate deploy encountered error', merr);
+      }
+    } else {
+      console.log('[startup] skipping migrations (set RUN_MIGRATIONS=true to enable)');
     }
 
     try {

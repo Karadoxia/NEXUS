@@ -2,6 +2,7 @@ import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/src/lib/prisma';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const authOptions = {
   adapter: PrismaAdapter(prisma as any),
@@ -16,10 +17,15 @@ export const authOptions = {
         email: { label: 'Email', type: 'text' },
       },
       async authorize(credentials) {
-        // simple passwordless login: if user exists, return it; otherwise create
         if (!credentials?.email) return null;
-        // basic email format guard
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) return null;
+
+        // 5 login attempts per email per minute to slow brute-force / enumeration
+        if (!checkRateLimit(`auth:${credentials.email}`, 5, 60_000)) {
+          throw new Error('Too many login attempts. Please wait a minute and try again.');
+        }
+
+        // simple passwordless login: if user exists, return it; otherwise create
         let user = await prisma.user.findUnique({ where: { email: credentials.email } });
         if (!user) {
           user = await prisma.user.create({ data: { email: credentials.email } });
