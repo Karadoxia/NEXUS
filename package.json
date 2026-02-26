@@ -58,6 +58,6 @@
     "ts-node": "^10.9.2",
     "typescript": "^5",
     "vercel": "^50.18.2",
-    "vitest": "^0.34.1"
+    "vitest": "^4.0.18"
   }
 }
