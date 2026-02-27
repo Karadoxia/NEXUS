@@ -1,5 +1,5 @@
-import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
@@ -12,14 +12,10 @@ if (process.env.NODE_ENV !== 'production') {
   console.log('[prisma] connecting to', dbUrl.replace(/:\/\/[^@]+@/, '://***@'));
 }
 
-function createClient() {
-  const adapter = new PrismaPg({ connectionString: dbUrl! });
-  return new PrismaClient({
-    adapter,
+export const prisma =
+  globalForPrisma.prisma ?? new PrismaClient({
     log: process.env.NODE_ENV !== 'production' ? ['query'] : [],
+    adapter: new PrismaPg({ connectionString: dbUrl }),
   });
-}
-
-export const prisma = globalForPrisma.prisma ?? createClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
