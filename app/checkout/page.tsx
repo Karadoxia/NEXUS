@@ -338,6 +338,7 @@ export default function CheckoutPage() {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   // undefined = "new card" (default)
   const [selectedPm, setSelectedPm] = useState<string | undefined>(undefined);
+  const [mockError, setMockError] = useState<string | null>(null);
 
   // Redirect to sign-in if not authenticated
   useEffect(() => {
@@ -414,14 +415,16 @@ export default function CheckoutPage() {
   }, [total, selectedAddress, selectedPm, paymentMethods]);
 
   const handleMock = async () => {
+    setMockError(null);
     try {
       const user = session?.user
         ? { name: session.user.name || 'Customer', email: session.user.email || '' }
         : { name: 'Guest', email: '' };
-      const order = await checkout(user, selectedAddress || undefined, selectedPm);
+      const order = await (checkout as any)(user, selectedAddress || undefined, selectedPm);
       router.push(`/checkout/success?orderId=${order.id}`);
-    } catch (e) {
+    } catch (e: any) {
       console.error('mock checkout failed', e);
+      setMockError(e?.message ?? 'Checkout failed. Please try again.');
     }
   };
 
@@ -666,6 +669,9 @@ export default function CheckoutPage() {
                 >
                   Simulate Successful Payment
                 </button>
+                {mockError && (
+                  <p className="text-red-400 text-sm text-center">{mockError}</p>
+                )}
                 <p className="text-[10px] text-center text-slate-500">
                   No money is charged. For demo/dev use only.
                 </p>

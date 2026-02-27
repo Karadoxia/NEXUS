@@ -8,9 +8,9 @@ export async function GET() {
   if (error) return error;
 
   const jobs = await prisma.agentJob.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy: { triggeredAt: 'desc' },
     take: 50,
-    include: { result: true },
+    include: { results: true },
   });
   return NextResponse.json(jobs);
 }

@@ -9,8 +9,7 @@ type Job = {
   id: string;
   agentName: string;
   status: string;
-  createdAt: string;
-  updatedAt: string;
+  triggeredAt: string;
   results?: { output: any; error?: string };
 };
 
@@ -34,7 +33,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
       take: 10,
       include: { results: true },
     }),
-  ])) as [any, number, Job[]];
+  ])) as unknown as [any, number, Job[]];
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -85,9 +84,9 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                   {jobs.map((j) => (
                     <tr key={j.id} className="hover:bg-slate-800/20 transition-colors">
                       <td className="px-5 py-3 font-mono text-xs text-slate-400 whitespace-nowrap">
-                        {new Date(j.createdAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                        {new Date(j.triggeredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
                       </td>
-                      <td className="px-5 py-3 text-slate-300 text-xs capitalize">{j.agentName || j.agent}</td>
+                      <td className="px-5 py-3 text-slate-300 text-xs capitalize">{j.agentName}</td>
                       <td className="px-5 py-3">
                         <span
                           className={`px-2 py-0.5 text-[11px] font-bold rounded border uppercase ${
@@ -163,7 +162,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                   </td>
                 </tr>
               ) : (
-                entries.map((e) => {
+                entries.map((e: { id: string; timestamp: Date; orders: number; returns: number; downtime: boolean; notes: string | null }) => {
                   const rate = e.orders > 0 ? ((e.returns / e.orders) * 100).toFixed(1) : '—';
                   return (
                     <tr key={e.id} className="hover:bg-slate-800/20 transition-colors">

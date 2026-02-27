@@ -48,7 +48,7 @@ export default function AdminRevenueChart({ data }: Props) {
           }}
           labelStyle={{ color: '#94a3b8', fontSize: 11 }}
           itemStyle={{ color: '#22d3ee', fontSize: 12 }}
-          formatter={(v: number) => [`€${v.toFixed(2)}`, 'Revenue']}
+          formatter={((v: number) => [`€${v.toFixed(2)}`, 'Revenue']) as any}
           cursor={{ stroke: '#22d3ee', strokeWidth: 1, strokeDasharray: '4 2' }}
         />
         <Area

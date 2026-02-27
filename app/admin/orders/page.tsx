@@ -1,4 +1,5 @@
 import { prisma } from '@/src/lib/prisma';
+import type { Prisma } from '@/src/generated/prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
@@ -21,7 +22,7 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
   const { status, q, page: pageStr } = await searchParams;
   const page = Math.max(1, parseInt(pageStr ?? '1', 10));
 
-  const where: Parameters<typeof prisma.order.findMany>[0]['where'] = {};
+  const where: Prisma.OrderWhereInput = {};
   if (status) where.status = status;
   if (q) {
     where.OR = [
