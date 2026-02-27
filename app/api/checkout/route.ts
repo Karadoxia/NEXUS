@@ -4,37 +4,66 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
 import { prisma } from '@/src/lib/prisma';
 
+// Instantiate Stripe once at module level — avoid reconstructing on every request
+const stripe = process.env.STRIPE_SECRET_KEY
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-01-27.acacia' as any })
+  : null;
+
 export async function POST(request: Request) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  if (!stripe) {
     return NextResponse.json({ error: 'Payment not configured' }, { status: 503 });
   }
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: '2026-01-28.clover' as any,
-  });
 
   const session = await getServerSession(authOptions);
-  const { amount, items, customer, address, paymentMethodId } = await request.json();
-  if (!amount) {
-    return NextResponse.json({ error: 'Amount required' }, { status: 400 });
+  const { items, customer, address, paymentMethodId } = await request.json();
+
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: 'items must be a non-empty array' }, { status: 400 });
   }
 
   const email = session?.user?.email || customer?.email || '';
 
-  // Pre-validate product IDs to avoid P2025 (stale cart items after DB migrations)
-  const itemIds: string[] = (items ?? []).map((i: any) => i.id);
-  const foundProducts = itemIds.length
-    ? await prisma.product.findMany({ where: { id: { in: itemIds } }, select: { id: true } })
-    : [];
-  const validProductIds = new Set(foundProducts.map((p) => p.id));
-  const validItems = (items ?? []).filter((i: any) => validProductIds.has(i.id));
+  // Fetch product prices from DB — never trust client-supplied price/amount.
+  // Without this check a client can send amount:0.01 and pay almost nothing.
+  const itemIds: string[] = items.map((i: { id: string }) => i.id);
+  const dbProducts = await prisma.product.findMany({
+    where: { id: { in: itemIds } },
+    select: { id: true, price: true },
+  });
+
+  if (dbProducts.length === 0) {
+    return NextResponse.json({ error: 'No valid products found in cart' }, { status: 400 });
+  }
+
+  const priceMap = new Map(dbProducts.map((p) => [p.id, p.price]));
+  const validItems = items
+    .filter((i: { id: string }) => priceMap.has(i.id))
+    .map((i: { id: string; quantity: number }) => ({
+      id: i.id,
+      quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)),
+      price: priceMap.get(i.id)!,
+    }));
+
+  if (validItems.length === 0) {
+    return NextResponse.json({ error: 'No valid products in cart' }, { status: 400 });
+  }
+
+  // Server-computed total — client-supplied amount is ignored entirely
+  const amount = validItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+
+  // Associate order with the authenticated user
+  let userConnect: { connect: { id: string } } | undefined;
+  if (session?.user?.email) {
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } });
+    if (user) userConnect = { connect: { id: user.id } };
+  }
 
   try {
     const piParams: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100),
       currency: 'eur',
       metadata: { email },
-      // automatic_payment_methods shows every method enabled in your Stripe dashboard
-      // (cards, PayPal, Apple Pay, Google Pay, Link, Klarna, etc.)
+      // automatic_payment_methods surfaces every method enabled in the Stripe dashboard
       automatic_payment_methods: { enabled: true },
     };
 
@@ -47,49 +76,45 @@ export async function POST(request: Request) {
       });
       if (stored?.stripeId) {
         // Off-session charge — must use explicit payment_method_types, not automatic
-        delete (piParams as any).automatic_payment_methods;
+        delete (piParams as Partial<Stripe.PaymentIntentCreateParams>).automatic_payment_methods;
         piParams.payment_method_types = ['card'];
         piParams.payment_method = stored.stripeId;
         piParams.confirm = true;
         piParams.off_session = true;
         isPreConfirmed = true;
       } else {
-        // Mock/demo saved method — fall back to normal unconfirmed intent
         console.warn('[checkout] selected payment method has no stripeId, falling back to element');
       }
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(piParams);
-
-    // Associate order with the authenticated user (GDPR — guest checkouts are not silently persisted)
-    let userConnect: any;
-    if (session?.user?.email) {
-      const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-      if (user) userConnect = { connect: { id: user.id } };
-    }
-
+    // Create the order first so we can stamp its ID into the PaymentIntent metadata.
+    // The Stripe webhook (app/api/webhooks/stripe/route.ts) uses metadata.orderId
+    // to confirm the order on payment_intent.succeeded — no schema change needed.
     const order = await prisma.order.create({
       data: {
         total: amount,
-        status: isPreConfirmed && paymentIntent.status === 'succeeded' ? 'processing' : 'pending',
+        status: 'pending',
         shippingAddress: address ?? undefined,
         paymentMethodId: paymentMethodId ?? undefined,
         user: userConnect,
-        ...(validItems.length > 0 && {
-          items: {
-            create: validItems.map((i: any) => ({
-              product: { connect: { id: i.id } },
-              quantity: i.quantity,
-              price: i.price,
-            })),
-          },
-        }),
+        items: {
+          create: validItems.map((i) => ({
+            product: { connect: { id: i.id } },
+            quantity: i.quantity,
+            price: i.price,
+          })),
+        },
       },
     });
 
-    // For pre-confirmed succeeded intents we don't need to return a clientSecret —
-    // the frontend redirects to success directly when it gets back orderId.
+    piParams.metadata = { ...piParams.metadata, orderId: order.id };
+
+    const paymentIntent = await stripe.paymentIntents.create(piParams);
+
+    // For pre-confirmed (off-session) intents that already succeeded, transition
+    // the order immediately — no webhook round-trip needed.
     if (isPreConfirmed && paymentIntent.status === 'succeeded') {
+      await prisma.order.update({ where: { id: order.id }, data: { status: 'processing' } });
       return NextResponse.json({ orderId: order.id, status: 'succeeded' });
     }
 
@@ -97,11 +122,9 @@ export async function POST(request: Request) {
       clientSecret: paymentIntent.client_secret,
       orderId: order.id,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Payment intent failed';
     console.error('[checkout] stripe error', err);
-    return NextResponse.json(
-      { error: err.message || 'Payment intent failed' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

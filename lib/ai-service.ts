@@ -3,7 +3,7 @@ export type AiIntent = 'NAVIGATE' | 'SEARCH' | 'SUPPORT' | 'CHAT' | 'CHECK_ORDER
 export interface AiResponse {
     text: string;
     intent: AiIntent;
-    data?: any; // e.g., URL to navigate to, or search query
+    data?: string; // URL to navigate to, or search query
 }
 
 const KNOWLEDGE_BASE = {
@@ -27,13 +27,19 @@ export async function processAiMessage(input: string): Promise<AiResponse> {
     if (lower.includes('account') || lower.includes('profile')) return { text: "Opening your account dashboard.", intent: 'NAVIGATE', data: '/account' };
     if (lower.includes('track') || lower.includes('order')) return { text: "Let's check your orders.", intent: 'NAVIGATE', data: '/account' };
 
-    // 2. Search Intents ("show me laptops", "find neural link")
-    if (lower.startsWith('show') || lower.startsWith('find') || lower.startsWith('search') || lower.includes('looking for')) {
-        const query = lower.replace(/show|find|search|me|looking|for/g, '').trim();
+    // 2. Search Intents ("show me laptops", "find neural link", "looking for monitors")
+    // Match the trigger phrase and capture everything that follows it as the query.
+    // The old approach (replace individual words) corrupted words that contained
+    // trigger substrings, e.g. "show me gaming monitors" → "  gaming nitors".
+    const searchMatch = input.match(
+      /(?:show\s+me|find|search\s+(?:for)?|looking\s+for)\s+(.+)/i
+    );
+    if (searchMatch) {
+        const query = searchMatch[1].trim();
         return {
             text: `Searching for "${query}"...`,
             intent: 'SEARCH',
-            data: query
+            data: query,
         };
     }
 

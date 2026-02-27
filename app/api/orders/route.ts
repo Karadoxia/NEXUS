@@ -2,12 +2,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/route';
-import { requireAdmin } from '@/lib/server-auth';
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
-    return NextResponse.json([], { status: 401 });
+    return NextResponse.json({ orders: [], total: 0 }, { status: 401 });
   }
 
   // Always scope to the authenticated user — never trust a client-supplied email param
@@ -15,14 +14,19 @@ export async function GET(request: Request) {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const limit = Math.min(100, parseInt(searchParams.get('limit') ?? '50', 10));
 
-  const orders = await prisma.order.findMany({
-    where: { user: { email: session.user.email } },
-    include: { items: true },
-    orderBy: { date: 'desc' },
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-  return NextResponse.json(orders);
+  const where = { user: { email: session.user.email } };
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      where,
+      include: { items: true },
+      orderBy: { date: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.order.count({ where }),
+  ]);
+
+  return NextResponse.json({ orders, total, page, limit });
 }
 
 export async function POST(request: Request) {
@@ -32,41 +36,52 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { items, total, shippingAddress, paymentMethodId } = body;
+  const { items, shippingAddress, paymentMethodId } = body;
 
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ success: false, message: 'items must be a non-empty array' }, { status: 400 });
   }
-  if (typeof total !== 'number' || total < 0) {
-    return NextResponse.json({ success: false, message: 'total must be a non-negative number' }, { status: 400 });
-  }
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
 
-  // Pre-validate product IDs to avoid P2025 (stale cart items after DB migrations).
-  // Items with unknown IDs are silently dropped so mock/demo checkout always succeeds.
-  const itemIds: string[] = items.map((i: any) => i.id);
-  const foundProducts = await prisma.product.findMany({ where: { id: { in: itemIds } }, select: { id: true } });
-  const validIds = new Set(foundProducts.map((p) => p.id));
-  const validItems = items.filter((i: any) => validIds.has(i.id));
+  // Fetch prices from DB — never trust client-supplied price/total
+  const itemIds: string[] = items.map((i: { id: string }) => i.id);
+  const dbProducts = await prisma.product.findMany({
+    where: { id: { in: itemIds } },
+    select: { id: true, price: true },
+  });
+
+  const priceMap = new Map(dbProducts.map((p) => [p.id, p.price]));
+  const validItems = items
+    .filter((i: { id: string }) => priceMap.has(i.id))
+    .map((i: { id: string; quantity: number }) => ({
+      id: i.id,
+      quantity: Math.max(1, Math.floor(Number(i.quantity) || 1)),
+      price: priceMap.get(i.id)!,
+    }));
+
+  if (validItems.length === 0) {
+    return NextResponse.json({ success: false, message: 'No valid products in cart' }, { status: 400 });
+  }
+
+  // Server-computed total — client-supplied total is ignored
+  const serverTotal = validItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
 
   try {
     const order = await prisma.order.create({
       data: {
-        total,
+        total: serverTotal,
         status: 'pending',
         shippingAddress: shippingAddress || undefined,
         paymentMethodId: paymentMethodId || undefined,
         user: user ? { connect: { id: user.id } } : undefined,
-        ...(validItems.length > 0 && {
-          items: {
-            create: validItems.map((i: any) => ({
-              product: { connect: { id: i.id } },
-              quantity: i.quantity,
-              price: i.price,
-            })),
-          },
-        }),
+        items: {
+          create: validItems.map((i) => ({
+            product: { connect: { id: i.id } },
+            quantity: i.quantity,
+            price: i.price,
+          })),
+        },
       },
       include: { items: true },
     });
@@ -87,7 +102,7 @@ export async function PUT(request: Request) {
   const { id, status, trackingNumber, carrier, cancelled } = body;
   if (!id) return NextResponse.json({ success: false, message: 'id required' }, { status: 400 });
 
-  const isAdmin = (session.user as any).isAdmin === true;
+  const isAdmin = session.user.isAdmin === true;
 
   // Non-admin users may only cancel their own pending orders
   if (!isAdmin) {

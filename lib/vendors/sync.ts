@@ -23,10 +23,25 @@ function toSlug(vp: VendorProduct): string {
   return `${vp.source}-${base}-${vp.externalId}`.slice(0, 100);
 }
 
-async function upsertProduct(vp: VendorProduct): Promise<'created' | 'updated' | 'skipped'> {
+// Pre-fetch existing slugs in bulk so upsertProduct can correctly return
+// 'created' vs 'updated' without an extra per-row query.
+async function buildExistingSlugSet(slugs: string[]): Promise<Set<string>> {
+  if (slugs.length === 0) return new Set();
+  const rows = await prisma.product.findMany({
+    where: { slug: { in: slugs } },
+    select: { slug: true },
+  });
+  return new Set(rows.map((r) => r.slug));
+}
+
+async function upsertProduct(
+  vp: VendorProduct,
+  existingSlugs: Set<string>,
+): Promise<'created' | 'updated' | 'skipped'> {
   if (!vp.name?.trim() || vp.price <= 0) return 'skipped';
 
   const slug = toSlug(vp);
+  const isNew = !existingSlugs.has(slug);
 
   await prisma.product.upsert({
     where:  { slug },
@@ -59,48 +74,61 @@ async function upsertProduct(vp: VendorProduct): Promise<'created' | 'updated' |
     },
   });
 
-  return 'updated';
+  return isNew ? 'created' : 'updated';
+}
+
+async function syncSingleVendor(
+  v: 'fakestore' | 'ebay' | 'serpapi',
+  query?: string,
+): Promise<SyncResult> {
+  const result: SyncResult = { vendor: v, synced: 0, skipped: 0, errors: 0 };
+  let products: VendorProduct[] = [];
+
+  try {
+    if (v === 'fakestore') products = await fetchFakeStoreProducts();
+    if (v === 'ebay')      products = await fetchEbayProducts(query ?? 'laptop electronics tech');
+    if (v === 'serpapi')   products = await fetchSerpApiProducts(query ?? 'electronics tech informatique');
+  } catch (err) {
+    console.error(`[sync] ${v} fetch error:`, err);
+    result.errors++;
+    return result;
+  }
+
+  // Bulk-check which slugs already exist so we can report created vs updated
+  const slugs = products.map(toSlug);
+  const existingSlugs = await buildExistingSlugSet(slugs);
+
+  for (const p of products) {
+    try {
+      const outcome = await upsertProduct(p, existingSlugs);
+      if (outcome === 'skipped') result.skipped++;
+      else result.synced++;
+    } catch (err) {
+      console.error(`[sync] ${v} upsert error for "${p.name}":`, err);
+      result.errors++;
+    }
+  }
+
+  return result;
 }
 
 export async function syncVendor(
   vendor: SyncVendor,
   query?: string,
 ): Promise<SyncResult[]> {
-  const targets = vendor === 'all'
-    ? (['fakestore', 'ebay', 'serpapi'] as const)
-    : [vendor];
-
-  const results: SyncResult[] = [];
-
-  for (const v of targets) {
-    const result: SyncResult = { vendor: v, synced: 0, skipped: 0, errors: 0 };
-
-    let products: VendorProduct[] = [];
-
-    try {
-      if (v === 'fakestore') products = await fetchFakeStoreProducts();
-      if (v === 'ebay')      products = await fetchEbayProducts(query ?? 'laptop electronics tech');
-      if (v === 'serpapi')   products = await fetchSerpApiProducts(query ?? 'electronics tech informatique');
-    } catch (err) {
-      console.error(`[sync] ${v} fetch error:`, err);
-      result.errors++;
-      results.push(result);
-      continue;
-    }
-
-    for (const p of products) {
-      try {
-        const outcome = await upsertProduct(p);
-        if (outcome === 'skipped') result.skipped++;
-        else result.synced++;
-      } catch (err) {
-        console.error(`[sync] ${v} upsert error for "${p.name}":`, err);
-        result.errors++;
-      }
-    }
-
-    results.push(result);
+  if (vendor === 'all') {
+    // Run all three vendors in parallel to halve wall-clock time
+    const [fs, eb, sp] = await Promise.allSettled([
+      syncSingleVendor('fakestore', query),
+      syncSingleVendor('ebay',      query),
+      syncSingleVendor('serpapi',   query),
+    ]);
+    return [
+      fs.status === 'fulfilled' ? fs.value : { vendor: 'fakestore', synced: 0, skipped: 0, errors: 1 },
+      eb.status === 'fulfilled' ? eb.value : { vendor: 'ebay',      synced: 0, skipped: 0, errors: 1 },
+      sp.status === 'fulfilled' ? sp.value : { vendor: 'serpapi',   synced: 0, skipped: 0, errors: 1 },
+    ];
   }
 
-  return results;
+  return [await syncSingleVendor(vendor, query)];
 }

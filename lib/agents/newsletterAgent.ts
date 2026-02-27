@@ -13,8 +13,27 @@
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 import { prisma } from "@/src/lib/prisma";
-import { sendNewsletterEmail } from "@/lib/email";
+import { sendNewsletterEmail, verifyUnsubToken } from "@/lib/email";
 import { buildGraph } from "./base";
+
+// Re-export so the /unsubscribe route can verify tokens without importing email directly
+export { verifyUnsubToken };
+
+/** Minimal HTML entity escaper for external-sourced strings in email templates */
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]!));
+}
+
+/** Signed unsubscribe URL — mirrors the helper in lib/email.ts */
+function unsubUrl(appUrl: string, email: string): string {
+  // Import inline to avoid circular dependency
+  const { createHmac } = require('crypto') as typeof import('crypto');
+  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-secret';
+  const token = createHmac('sha256', secret).update(email).digest('hex');
+  return `${appUrl}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
+}
 
 // ── Tools ─────────────────────────────────────────────────────
 
@@ -123,8 +142,8 @@ function buildNewsletterHtml({
     <tr>
       <td style="padding:12px 0;border-bottom:1px solid #111;">
         <span style="color:#06b6d4;font-size:11px;font-weight:700;">#${i + 1}</span>
-        <a href="${n.url}" style="color:#e5e7eb;font-size:13px;font-weight:600;text-decoration:none;display:block;margin:4px 0;">
-          ${n.title}
+        <a href="${encodeURI(n.url)}" style="color:#e5e7eb;font-size:13px;font-weight:600;text-decoration:none;display:block;margin:4px 0;">
+          ${esc(n.title)}
         </a>
         <span style="color:#6b7280;font-size:11px;">⬆ ${n.points} · 💬 ${n.comments}</span>
       </td>
@@ -245,7 +264,25 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
         }),
       ]),
 
-      prisma.subscriber.findMany({ select: { email: true } }).then((s) => s.map((x) => x.email)),
+      // Cursor-based pagination: load subscribers in pages of 500 to avoid
+      // holding the entire subscriber list in memory at once.
+      (async () => {
+        const emails: string[] = [];
+        let cursor: string | undefined;
+        const PAGE = 500;
+        while (true) {
+          const page = await prisma.subscriber.findMany({
+            select: { email: true },
+            orderBy: { email: 'asc' },
+            take: PAGE,
+            ...(cursor ? { skip: 1, cursor: { email: cursor } } : {}),
+          });
+          for (const s of page) emails.push(s.email);
+          if (page.length < PAGE) break;
+          cursor = page[page.length - 1].email;
+        }
+        return emails;
+      })(),
     ]);
 
     const [totalProducts, subscriberCount, weeklyOrders] = statsRaw;

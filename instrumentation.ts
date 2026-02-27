@@ -22,8 +22,13 @@ export async function register() {
     if (process.env.RUN_MIGRATIONS === 'true') {
       try {
         console.log('[startup] running prisma migrations');
-        const { execSync } = require('child_process');
-        execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: process.cwd() });
+        // Use the async execFile (not the blocking execSync) to avoid stalling
+        // the Node.js event loop for the full duration of the migration run.
+        const { execFile } = require('child_process') as typeof import('child_process');
+        const { promisify } = require('util') as typeof import('util');
+        const execFileAsync = promisify(execFile);
+        await execFileAsync('npx', ['prisma', 'migrate', 'deploy'], { cwd: process.cwd() });
+        console.log('[startup] migrations applied successfully');
       } catch (merr) {
         console.warn('[startup] prisma migrate deploy encountered error', merr);
       }

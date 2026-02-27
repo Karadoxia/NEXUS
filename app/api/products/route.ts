@@ -21,13 +21,12 @@ export async function GET(request: Request) {
   }
   if (stock === 'low') where.stock = { lt: 10 };
 
-  const products = await prisma.product.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-    orderBy: stock === 'low' ? { stock: 'asc' } : { createdAt: 'desc' },
-  });
-  return NextResponse.json(products);
+  const orderBy = stock === 'low' ? { stock: 'asc' as const } : { createdAt: 'desc' as const };
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy }),
+    prisma.product.count({ where }),
+  ]);
+  return NextResponse.json({ products, total, page, limit });
 }
 
 export async function POST(request: Request) {

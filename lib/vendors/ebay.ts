@@ -12,8 +12,9 @@ let cachedToken: { value: string; expiresAt: number } | null = null;
 async function getAccessToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedToken.expiresAt) return cachedToken.value;
 
-  const clientId     = process.env.EBAY_CLIENT_ID!;
-  const clientSecret = process.env.EBAY_CLIENT_SECRET!;
+  const clientId     = process.env.EBAY_CLIENT_ID;
+  const clientSecret = process.env.EBAY_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error('eBay credentials not configured');
   const credentials  = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   const res = await fetch(EBAY_TOKEN_URL, {
@@ -104,8 +105,10 @@ export async function fetchEbayProducts(query = 'tech electronics'): Promise<Ven
         category:  categoryName,
       },
       stock:       item.estimatedAvailabilities?.[0]?.estimatedAvailableQuantity ?? 10,
-      rating:      parseFloat(item.sellerFeedbackScore ?? '0'),
-      reviewCount: parseInt(item.feedbackPercentage ?? '0', 10),
+      // feedbackPercentage is 0–100 (e.g. 99.2 %) — map to a 0–5 star rating.
+      // sellerFeedbackScore is a raw count of reviews (e.g. 87 432) — use as reviewCount.
+      rating:      Math.min(5, (parseFloat(item.feedbackPercentage ?? '100') / 100) * 5),
+      reviewCount: parseInt(String(item.sellerFeedbackScore ?? '0'), 10),
       tags:        ['ebay', categoryName].filter(Boolean),
     };
   });

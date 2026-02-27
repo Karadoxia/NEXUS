@@ -8,10 +8,43 @@
 // ============================================================
 
 import { Resend } from 'resend'
+import { createHmac } from 'crypto'
 import { CartItem, Address } from '@/types'
+
+if (!process.env.RESEND_API_KEY) {
+  console.warn('[email] RESEND_API_KEY is not set — email sends will fail');
+}
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM = process.env.EMAIL_FROM ?? 'NEXUS Store <orders@nexus-store.io>'
+
+/**
+ * Minimal HTML entity escaper — prevents user-controlled strings from being
+ * rendered as markup inside email templates.
+ */
+function esc(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[c]!))
+}
+
+/**
+ * Generate a signed unsubscribe token for an email address.
+ * The token is an HMAC-SHA256 digest of the email, signed with NEXTAUTH_SECRET.
+ * This prevents anyone from unsubscribing arbitrary addresses by guessing URLs.
+ */
+function unsubToken(email: string): string {
+  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-secret'
+  return createHmac('sha256', secret).update(email).digest('hex')
+}
+
+function unsubUrl(appUrl: string, email: string): string {
+  return `${appUrl}/unsubscribe?email=${encodeURIComponent(email)}&token=${unsubToken(email)}`
+}
 
 // ─── ORDER CONFIRMATION ────────────────────────────────────
 export async function sendOrderConfirmationEmail({
@@ -34,8 +67,8 @@ export async function sendOrderConfirmationEmail({
       (item) => `
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid #1a1a1a;">
-          <strong style="color:#ffffff;font-size:14px;">${item.name}</strong>
-          <br/><span style="color:#6b7280;font-size:12px;">${item.brand} • Qty: ${item.quantity}</span>
+          <strong style="color:#ffffff;font-size:14px;">${esc(item.name)}</strong>
+          <br/><span style="color:#6b7280;font-size:12px;">${esc(item.brand ?? '')} • Qty: ${item.quantity}</span>
         </td>
         <td style="padding:12px 0;border-bottom:1px solid #1a1a1a;text-align:right;">
           <strong style="color:#06b6d4;">€${(item.price * item.quantity).toFixed(2)}</strong>
@@ -82,7 +115,7 @@ export async function sendOrderConfirmationEmail({
             <td style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:16px;padding:40px;text-align:center;margin-bottom:24px;">
               <div style="font-size:48px;margin-bottom:16px;">✅</div>
               <h1 style="color:#ffffff;font-size:24px;font-weight:800;margin:0 0 8px;letter-spacing:-0.5px;">Order Confirmed!</h1>
-              <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">Hey ${name}, your order is being processed.</p>
+              <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">Hey ${esc(name)}, your order is being processed.</p>
               <div style="background:#111111;border:1px solid #1f2937;border-radius:10px;padding:16px;display:inline-block;">
                 <span style="color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:1px;">Order ID</span>
                 <br/>
@@ -118,10 +151,10 @@ export async function sendOrderConfirmationEmail({
             <td style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:16px;padding:32px;">
               <h2 style="color:#ffffff;font-size:16px;font-weight:700;margin:0 0 16px;">📦 Shipping To</h2>
               <p style="color:#9ca3af;font-size:14px;margin:0;line-height:1.8;">
-                ${address.fullName}<br/>
-                ${address.line1}${address.line2 ? '<br/>' + address.line2 : ''}<br/>
-                ${address.postalCode} ${address.city}<br/>
-                ${address.country}
+                ${esc(address.fullName)}<br/>
+                ${esc(address.line1)}${address.line2 ? '<br/>' + esc(address.line2) : ''}<br/>
+                ${esc(address.postalCode)} ${esc(address.city)}<br/>
+                ${esc(address.country)}
               </p>
             </td>
           </tr>
@@ -173,7 +206,7 @@ export async function sendOrderConfirmationEmail({
               <p style="margin:12px 0 0;">
                 <a href="${process.env.NEXT_PUBLIC_APP_URL}/account" style="color:#374151;font-size:11px;text-decoration:underline;">View in browser</a>
                 &nbsp;·&nbsp;
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe" style="color:#374151;font-size:11px;text-decoration:underline;">Unsubscribe</a>
+                <a href="${unsubUrl(process.env.NEXT_PUBLIC_APP_URL ?? '', email)}" style="color:#374151;font-size:11px;text-decoration:underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>
@@ -232,7 +265,7 @@ export async function sendShippingEmail({
       <td style="text-align:center;padding-bottom:32px;">
         <span style="font-size:48px;">🚀</span>
         <h1 style="color:#fff;font-size:24px;margin:16px 0 8px;">Your Order Is On Its Way!</h1>
-        <p style="color:#6b7280;margin:0;">Hey ${name}, your NEXUS order has shipped.</p>
+        <p style="color:#6b7280;margin:0;">Hey ${esc(name)}, your NEXUS order has shipped.</p>
       </td>
     </tr>
     <tr>
@@ -321,7 +354,7 @@ export async function sendWelcomeEmail({ email }: { email: string }) {
       <td style="text-align:center;padding-top:24px;">
         <p style="color:#374151;font-size:12px;margin:0;">
           © 2026 NEXUS Technologies &nbsp;·&nbsp;
-          <a href="${appUrl}/unsubscribe?email=${encodeURIComponent(email)}" style="color:#374151;">Unsubscribe</a>
+          <a href="${unsubUrl(appUrl, email)}" style="color:#374151;">Unsubscribe</a>
         </p>
       </td>
     </tr>
@@ -345,6 +378,11 @@ export async function sendWelcomeEmail({ email }: { email: string }) {
 }
 
 // ─── NEWSLETTER BULK SEND ───────────────────────────────────
+// Uses Resend's batch endpoint (up to 100 emails per call) to avoid making
+// one HTTP round-trip per subscriber.  1 000 subscribers = 10 requests,
+// not 1 000.
+const BATCH_SIZE = 100;
+
 export async function sendNewsletterEmail({
   subscribers,
   subject,
@@ -355,15 +393,36 @@ export async function sendNewsletterEmail({
   html: string;
 }) {
   const results = { sent: 0, failed: 0, errors: [] as string[] };
-  for (const email of subscribers) {
+
+  for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
+    const batch = subscribers.slice(i, i + BATCH_SIZE);
     try {
-      const { error } = await resend.emails.send({ from: FROM, to: email, subject, html });
-      if (error) { results.failed++; results.errors.push(`${email}: ${JSON.stringify(error)}`); }
-      else results.sent++;
-    } catch (e: any) {
-      results.failed++;
-      results.errors.push(`${email}: ${e.message}`);
+      const { data, error } = await (resend.batch as {
+        send: (emails: { from: string; to: string; subject: string; html: string }[]) => Promise<{ data: null | { id: string }[]; error: unknown }>
+      }).send(
+        batch.map((email) => ({ from: FROM, to: email, subject, html })),
+      );
+      if (error || !data) {
+        results.failed += batch.length;
+        results.errors.push(`batch[${i}–${i + batch.length - 1}]: ${JSON.stringify(error)}`);
+      } else {
+        results.sent += data.length;
+        results.failed += batch.length - data.length;
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.failed += batch.length;
+      results.errors.push(`batch[${i}–${i + batch.length - 1}]: ${msg}`);
     }
   }
+
   return results;
+}
+
+/**
+ * Verify an unsubscribe token for the given email.
+ * Used by the /unsubscribe route to authenticate the request.
+ */
+export function verifyUnsubToken(email: string, token: string): boolean {
+  return token === unsubToken(email)
 }

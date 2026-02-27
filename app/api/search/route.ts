@@ -1,6 +1,7 @@
 // GET /api/search?q=laptops
 // Fans out to all enabled vendor APIs simultaneously + local DB.
-// Upserts new vendor products to DB in the background.
+// Upserts new vendor products to DB in the background (throttled to once per
+// unique query per 5 minutes to avoid draining eBay/SerpAPI quota).
 // Returns results grouped by source for catalogue display.
 
 import { NextResponse }        from 'next/server';
@@ -14,6 +15,12 @@ const VENDOR_LABELS: Record<string, string> = {
   ebay:            'eBay',
   'google-shopping': 'Google Shopping',
 };
+
+// Per-query sync throttle: do not re-sync the same search term within 5 minutes.
+// Without this, every concurrent search for "laptop" would fan out to eBay and
+// SerpAPI simultaneously, rapidly exhausting their free-tier quotas.
+const syncThrottle = new Map<string, number>();
+const SYNC_COOLDOWN_MS = 5 * 60 * 1000;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -46,9 +53,13 @@ export async function GET(request: Request) {
   const ebayProducts  = ebayResult.status  === 'fulfilled' ? ebayResult.value  : [];
   const serpapiItems  = serpapiResult.status === 'fulfilled' ? serpapiResult.value : [];
 
-  // 2. Upsert vendor results to DB in the background (non-blocking)
+  // 2. Upsert vendor results to DB in the background (non-blocking, throttled)
   if (ebayProducts.length || serpapiItems.length) {
-    syncVendor('all', q).catch((err) => console.error('[search] bg sync error:', err));
+    const lastSync = syncThrottle.get(q);
+    if (!lastSync || Date.now() - lastSync > SYNC_COOLDOWN_MS) {
+      syncThrottle.set(q, Date.now());
+      syncVendor('all', q).catch((err) => console.error('[search] bg sync error:', err));
+    }
   }
 
   // 3. Normalize vendor products to a display shape
