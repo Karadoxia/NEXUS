@@ -9,11 +9,11 @@ if (process.argv.length < 4) {
   process.exit(1);
 }
 
-const name = process.argv[2];
-const prompt = process.argv[3];
-const desc = process.argv[4] || name;
+const agentName = process.argv[2];
+const agentPrompt = process.argv[3];
+const desc = process.argv[4] || agentName;
 
-const fileName = paramCase(name);
+const fileName = paramCase(agentName);
 const agentsDir = path.resolve(process.cwd(), 'lib/agents');
 const targetFile = path.join(agentsDir, `${fileName}.ts`);
 const indexFile = path.join(agentsDir, 'index.ts');
@@ -28,12 +28,13 @@ if (fs.existsSync(targetFile)) {
   process.exit(1);
 }
 
+const varName = agentName.replace(/\W/g, '_').toUpperCase();
 const content = `import { createAgent } from "./base";
 
-const PROMPT = \\`${prompt}\\`;
+const PROMPT = `${agentPrompt}`;
 
-export const ${name.replace(/\W/g, '_').toUpperCase()} = createAgent({
-  name: "${name}",
+export const ${varName} = createAgent({
+  name: "${agentName}",
   description: "${desc}",
   systemPrompt: PROMPT,
   tools: [],
@@ -50,7 +51,7 @@ let indexContent = '';
 if (fs.existsSync(indexFile)) {
   indexContent = fs.readFileSync(indexFile, 'utf-8');
 }
-const exportLine = `export { ${name.replace(/\W/g, '_').toUpperCase()} } from './${fileName}';`;
+const exportLine = `export { ${agentName.replace(/\W/g, '_').toUpperCase()} } from './${fileName}';`;
 if (!indexContent.includes(exportLine)) {
   indexContent += `\n${exportLine}\n`;
   fs.writeFileSync(indexFile, indexContent);
@@ -65,7 +66,7 @@ if (fs.existsSync(configPath)) {
   cfg.agentPrompts = cfg.agentPrompts || {};
   if (!cfg.agentList.find((a: any) => a.name === fileName)) {
     cfg.agentList.push({ name: fileName, description: desc, enabled: true });
-    cfg.agentPrompts[fileName] = prompt;
+    cfg.agentPrompts[fileName] = agentPrompt;
     fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2));
     console.log(`added entry to agents/config.json`);
   }
