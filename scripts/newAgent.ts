@@ -30,6 +30,7 @@ if (fs.existsSync(targetFile)) {
 
 const varName = agentName.replace(/\W/g, '_').toUpperCase();
 const content = `import { createAgent } from "./base";
+import { rustTool } from "../lib/agents/tools";
 
 const PROMPT = \`${agentPrompt}\`;
 
@@ -37,7 +38,7 @@ export const ${varName} = createAgent({
   name: "${agentName}",
   description: "${desc}",
   systemPrompt: PROMPT,
-  tools: [],
+  tools: [rustTool()],
   temperature: 0.3,
   maxSteps: 10,
 });
