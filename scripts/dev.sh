@@ -5,13 +5,22 @@ set -e
 : "${POSTGRES_PASSWORD:=password}"
 : "${REDIS_PASSWORD:=password}"
 
-# warn if running as root (sudo strips environment variables)
+# abort if running as root (sudo strips environment variables)
 if [ "$(id -u)" = "0" ]; then
-  echo "[warn] running as root; environment variables may not be preserved."
-  echo "        avoid using sudo or export POSTGRES_PASSWORD & REDIS_PASSWORD before sudo."
+  echo "[error] running as root; environment variables such as POSTGRES_PASSWORD will be lost."
+  echo "        this causes authentication failures (store/admin pages will 500)."
+  echo "        either add your user to the docker group or invoke the script as a regular user."
+  echo "        example: sudo usermod -aG docker $USER && newgrp docker"
+  exit 1
 fi
 
 printf "Starting postgres and redis containers...\n"
+# ensure database password is not empty
+if [ -z "$POSTGRES_PASSWORD" ]; then
+  echo "[error] POSTGRES_PASSWORD is not set; set it before running dev script."
+  exit 1
+fi
+
 # bring up essential services; make sure password env vars are exported
 # docker compose will substitute ${POSTGRES_PASSWORD} etc.
 docker compose up -d postgres redis
