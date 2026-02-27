@@ -67,6 +67,7 @@ Agent modules live under `lib/agents` and are driven by `agents/config.json`.  Y
 npm run agent:new -- "Name" "System prompt" "Optional description"
 
 # create any missing files/exports for agents defined in config
+# existing implementations (camelCase) are detected and not duplicated
 npm run agent:sync
 ```
 
