@@ -1,0 +1,1 @@
+/home/redbend/Desktop/Local-Projects/NEXUS-V2/rust-agents/target/debug/nexus-service: /home/redbend/Desktop/Local-Projects/NEXUS-V2/rust-agents/crates/compute/src/lib.rs /home/redbend/Desktop/Local-Projects/NEXUS-V2/rust-agents/crates/service/src/main.rs
