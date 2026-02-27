@@ -33,7 +33,7 @@ async function main() {
       const varName = name.replace(/\W/g, '_').toUpperCase();
       const content = `import { createAgent } from "./base";
 
-const PROMPT = \\`${prompt}\\`;
+const PROMPT = \`${prompt}\`;
 
 export const ${varName} = createAgent({
   name: "${name}",

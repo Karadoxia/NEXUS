@@ -31,7 +31,7 @@ if (fs.existsSync(targetFile)) {
 const varName = agentName.replace(/\W/g, '_').toUpperCase();
 const content = `import { createAgent } from "./base";
 
-const PROMPT = `${agentPrompt}`;
+const PROMPT = \`${agentPrompt}\`;
 
 export const ${varName} = createAgent({
   name: "${agentName}",
