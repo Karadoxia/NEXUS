@@ -1,5 +1,7 @@
 # NEXUS | 2027-online-shop
 
+[![CI](https://github.com/your-username/2027-online-shop/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/2027-online-shop/actions/workflows/ci.yml)
+
 **NEXUS** is a futuristic e-commerce platform built with Next.js 14, Tailwind CSS, and Zustand. It features a high-performance, mock-backend architecture designed to simulate a premium shopping experience for next-generation technology.
 
 ## 🚀 Features
@@ -55,6 +57,27 @@
    ```
 
    or set `PORT` in `.env.local` and then just run `npm run dev`.
+
+## Managing agents
+
+Agent modules live under `lib/agents` and are driven by `agents/config.json`.  You can keep code and configuration in sync using the helper scripts shipped with the project:
+
+```bash
+# scaffold a single agent interactively
+npm run agent:new -- "Name" "System prompt" "Optional description"
+
+# create any missing files/exports for agents defined in config
+npm run agent:sync
+```
+
+After updating `agents/config.json` run the seeder to persist entries in the database:
+
+```bash
+node scripts/seedAgents.ts
+```
+
+These tools are idempotent and will never overwrite existing files, so feel free to run them repeatedly while developing.
+
 
 4. Open [http://localhost:3030](http://localhost:3030) (or your chosen port) in your browser.
 

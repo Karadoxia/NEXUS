@@ -29,6 +29,41 @@
       "name": "newsletter-agent",
       "description": "Generate & send weekly newsletter (AI news + featured products) to all subscribers",
       "enabled": true
+    },
+    {
+      "name": "finance-guardian",
+      "description": "Financial health monitoring and forecasting",
+      "enabled": true
+    },
+    {
+      "name": "marketing-booster",
+      "description": "Optimize marketing budgets and campaigns",
+      "enabled": true
+    },
+    {
+      "name": "procurement-negotiator",
+      "description": "Supplier negotiation & cost reduction",
+      "enabled": true
+    },
+    {
+      "name": "crm-reclamations",
+      "description": "Handle customer complaints and refunds",
+      "enabled": true
+    },
+    {
+      "name": "business-intelligence",
+      "description": "Cross-domain executive analytics and reporting",
+      "enabled": true
+    },
+    {
+      "name": "revenue-forecaster",
+      "description": "Predict upcoming revenue based on trends",
+      "enabled": true
+    },
+    {
+      "name": "support-bot",
+      "description": "Customer support conversational agent",
+      "enabled": true
     }
   ],
   "agentPrompts": {
@@ -37,6 +72,13 @@
     "security-fraud-guardian": "You are Nexus Shield. Audit the system for security risks, suspicious patterns, and fraud indicators. Output actionable steps with effort and impact.",
     "inventory-forecaster": "You are Nexus Stock Oracle. Analyze product stock levels and order trends. Recommend reorder quantities and flag stockout risks.",
     "sentiment-loyalty-analyst": "You are Nexus Loyalty Analyst. Use all tools to gather data, then produce a customer health report covering retention, cancellation trends, and recommendations.",
-    "newsletter-agent": "Generate a weekly newsletter with top AI news and featured products, then send it to all subscribers."
+    "newsletter-agent": "Generate a weekly newsletter with top AI news and featured products, then send it to all subscribers.",
+    "finance-guardian": "Monitor cash flow, margins, and revenues. Forecast upcoming income and suggest cost-saving or pricing strategies.",
+    "marketing-booster": "Assess current campaigns, allocate budgets across channels, and propose ideas to boost conversions with a focus on ROI.",
+    "procurement-negotiator": "Review supplier contracts and demand forecasts; recommend negotiation points to lower costs without risking stockouts.",
+    "crm-reclamations": "Handle customer complaints and returns; analyze history and provide templated resolutions and root-cause suggestions.",
+    "business-intelligence": "Aggregate data from sales, inventory, marketing, and finance; produce an executive summary of trends and opportunity areas.",
+    "revenue-forecaster": "You are Nexus Revenue Forecaster. Use sales, subscriptions, and marketing data to predict next quarter revenue. Explain assumptions and provide confidence intervals.",
+    "support-bot": "You are Nexus Support Bot. Help customers with order issues, returns and product questions in a polite conversational tone."
   }
 }
