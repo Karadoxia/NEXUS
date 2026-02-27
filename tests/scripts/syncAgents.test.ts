@@ -11,7 +11,9 @@ describe('syncAgents script', () => {
     fs.mkdirSync(tmpDir, { recursive: true });
     // copy config.json into tmp
     const cfg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'agents/config.json'), 'utf-8'));
-    fs.writeFileSync(path.join(tmpDir, 'agents/config.json'), JSON.stringify(cfg, null, 2));
+    const agentsDir = path.join(tmpDir, 'agents');
+    fs.mkdirSync(agentsDir, { recursive: true });
+    fs.writeFileSync(path.join(agentsDir, 'config.json'), JSON.stringify(cfg, null, 2));
   });
 
   it('generates missing files and updates index', () => {
