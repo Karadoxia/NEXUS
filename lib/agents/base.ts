@@ -35,7 +35,7 @@ export async function buildGraph(config: AgentConfig) {
     channels: {
       messages: { reducer: (x: any[], y: any[]) => x.concat(y) },
     },
-  })
+  } as any)
     .addNode("agent", async (state: any) => {
       const response = await model.invoke([
         { role: "system", content: config.systemPrompt },
@@ -97,8 +97,9 @@ export async function runAgentJob(
   }
 }
 
-// createAgent — returns an object with invoke() so existing callers work unchanged.
-export async function createAgent(config: AgentConfig) {
+// createAgent — synchronous so module-level exports resolve to the object directly.
+// (async would make them Promise<{invoke}> which breaks agent.invoke() at call sites)
+export function createAgent(config: AgentConfig) {
   return {
     invoke: async (input: { messages: any[] }) => {
       const userMessage =

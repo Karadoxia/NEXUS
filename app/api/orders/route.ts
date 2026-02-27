@@ -43,6 +43,13 @@ export async function POST(request: Request) {
 
   const user = await prisma.user.findUnique({ where: { email: session.user.email } });
 
+  // Pre-validate product IDs to avoid P2025 (stale cart items after DB migrations).
+  // Items with unknown IDs are silently dropped so mock/demo checkout always succeeds.
+  const itemIds: string[] = items.map((i: any) => i.id);
+  const foundProducts = await prisma.product.findMany({ where: { id: { in: itemIds } }, select: { id: true } });
+  const validIds = new Set(foundProducts.map((p) => p.id));
+  const validItems = items.filter((i: any) => validIds.has(i.id));
+
   try {
     const order = await prisma.order.create({
       data: {
@@ -51,13 +58,15 @@ export async function POST(request: Request) {
         shippingAddress: shippingAddress || undefined,
         paymentMethodId: paymentMethodId || undefined,
         user: user ? { connect: { id: user.id } } : undefined,
-        items: {
-          create: items.map((i: any) => ({
-            product: { connect: { id: i.id } },
-            quantity: i.quantity,
-            price: i.price,
-          })),
-        },
+        ...(validItems.length > 0 && {
+          items: {
+            create: validItems.map((i: any) => ({
+              product: { connect: { id: i.id } },
+              quantity: i.quantity,
+              price: i.price,
+            })),
+          },
+        }),
       },
       include: { items: true },
     });

@@ -9,7 +9,7 @@ export async function POST() {
 
   try {
     const result = await runNewsletterAgent('admin');
-    return NextResponse.json({ jobId: result.jobId, sent: result.sent, failed: result.failed });
+    return NextResponse.json({ jobId: result.jobId, sent: result.sent, failed: (result as any).failed ?? 0 });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

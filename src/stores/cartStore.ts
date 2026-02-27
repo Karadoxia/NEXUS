@@ -11,7 +11,7 @@ interface CartState {
     clearCart: () => void;
     openCart: () => void;
     closeCart: () => void;
-    checkout: (customer: { name: string; email: string }, shippingAddress?: any) => Promise<any>;
+    checkout: (customer: { name: string; email: string }, shippingAddress?: any, paymentMethodId?: string) => Promise<any>;
     total: () => number;
     count: () => number;
 }
@@ -60,7 +60,7 @@ export const useCartStore = create<CartState>()(
             closeCart: () => set({ isOpen: false }),
 
             // send order to backend and clear
-            checkout: async (customer, shippingAddress, paymentMethodId) => {
+            checkout: async (customer: { name: string; email: string }, shippingAddress?: any, paymentMethodId?: string) => {
                 const order: any = {
                     id: crypto.randomUUID(),
                     items: get().items,

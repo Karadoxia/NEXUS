@@ -78,7 +78,7 @@ export default function AdminProductsPage() {
       price:        p.price ?? 0,
       comparePrice: (p as unknown as { comparePrice?: number }).comparePrice ?? 0,
       category:     p.category ?? '',
-      image:        p.image ?? '',
+      image:        (p as unknown as { image?: string }).image ?? '',
       stock:        p.stock ?? 0,
       featured:     p.featured ?? false,
     });

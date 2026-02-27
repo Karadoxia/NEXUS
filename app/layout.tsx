@@ -52,6 +52,8 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
+    // Side-effect only — must NOT be placed inside JSX (returns void)
+    initAgents();
     return (
         <html lang="en" className="dark" suppressHydrationWarning>
             <body suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
@@ -65,8 +67,6 @@ export default function RootLayout({
                     <AiAssistant />
                     <ChatWrapper />
                     <SocialProof />
-                    {/* initialize background agents once server renders layout */}
-                    {initAgents()}
                     <Toaster />
                     <MobileNav />
                 </AuthProvider>
