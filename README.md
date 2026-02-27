@@ -79,6 +79,19 @@ node scripts/seedAgents.ts
 
 These tools are idempotent and will never overwrite existing files, so feel free to run them repeatedly while developing.
 
+### Rust service and tools
+
+A companion Rust microservice lives in `rust-agents/crates/service` and exposes a simple HTTP API (currently `POST /tool`) that your agents can call. The default `rustTool()` helper is added to new agents and can be used from any agent configuration; it performs a `sum` operation by default.
+
+- Start the service with `npm run rust:run:service` or via Docker (`docker compose up nexus-rust-service`).
+- Configure the endpoint using the `RUST_SERVICE_URL` or `NEXT_PUBLIC_RUST_SERVICE_URL` environment variable (fallback: `http://localhost:8081/tool`).
+
+### LangSmith tracing
+
+Set `LANGSMITH_API_KEY` in your environment to enable automatic tracing of LLM calls and tool usage. When provided, the `ChatGroq` model instance will be configured with a `LangSmithTracer` and all agent executions will be recorded in LangSmith for debugging and auditing.
+
+Add tracing keys to your deployment configuration as needed.
+
 
 4. Open [http://localhost:3030](http://localhost:3030) (or your chosen port) in your browser.
 

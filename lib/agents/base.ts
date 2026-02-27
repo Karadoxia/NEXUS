@@ -1,6 +1,8 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
 import { ChatGroq } from "@langchain/groq";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
+// LangSmithTracer may not be available in all langchain versions; we'll
+// dynamically import when needed rather than relying on a static import.
 import { prisma } from "@/src/lib/prisma";
 
 export interface AgentConfig {
@@ -29,7 +31,26 @@ export async function buildGraph(config: AgentConfig) {
     apiKey: getGroqKey(),
   });
 
-  const toolNode = new ToolNode(config.tools);
+  // attach LangSmith tracer if key provided and module is available
+  if (process.env.LANGSMITH_API_KEY) {
+    try {
+      const mod = await import("@langchain/tracing");
+      const LangSmithTracer = mod?.LangSmithTracer;
+      if (LangSmithTracer) {
+        const tracer = new LangSmithTracer({ apiKey: process.env.LANGSMITH_API_KEY });
+        if (typeof (model as any).addTracer === "function") {
+          (model as any).addTracer(tracer);
+        } else if (typeof (model as any).configure === "function") {
+          (model as any).configure({ tracer });
+        }
+      }
+    } catch (e) {
+      // tracer module not available; ignore
+      console.warn("LangSmith tracer not available", e);
+    }
+  }
+
+  const toolNode = new ToolNode(config.tools || []);
 
   const graph = new StateGraph({
     channels: {

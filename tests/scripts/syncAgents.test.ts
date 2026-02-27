@@ -27,5 +27,7 @@ describe('syncAgents script', () => {
     expect(fs.existsSync(path.join(agentsDir, `${fileName}.ts`))).toBe(true);
     const idx = fs.readFileSync(path.join(agentsDir, 'index.ts'), 'utf-8');
     expect(idx).toContain(fileName);
+    const generated = fs.readFileSync(path.join(agentsDir, `${fileName}.ts`), 'utf-8');
+    expect(generated).toContain('rustTool()');
   });
 });

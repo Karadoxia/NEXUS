@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
-import { paramCase } from 'change-case';
+import { paramCase, camelCase } from 'change-case';
+
+// utility template generation now includes rustTool by default
 
 // read the configuration and generate any missing agent files
 async function main() {
@@ -22,16 +24,21 @@ async function main() {
 
   for (const a of cfg.agentList || []) {
     const name = a.name;
-    const fileName = paramCase(name);
-    const target = path.join(agentsDir, `${fileName}.ts`);
+    const kebab = paramCase(name);
+    const camel = camelCase(name);
+    const target = path.join(agentsDir, `${kebab}.ts`);
+    const alt = path.join(agentsDir, `${camel}.ts`);
     const prompt = cfg.agentPrompts?.[name] || a.prompt || '';
     const description = a.description || name;
 
-    if (fs.existsSync(target)) {
-      console.log(`skipping existing ${fileName}`);
+    if (fs.existsSync(alt)) {
+      console.log(`found existing camel-case file ${camel}, skipping generation`);
+    } else if (fs.existsSync(target)) {
+      console.log(`skipping existing ${kebab}`);
     } else {
       const varName = name.replace(/\W/g, '_').toUpperCase();
       const content = `import { createAgent } from "./base";
+import { rustTool } from "../lib/agents/tools";
 
 const PROMPT = \`${prompt}\`;
 
@@ -39,19 +46,21 @@ export const ${varName} = createAgent({
   name: "${name}",
   description: "${description}",
   systemPrompt: PROMPT,
-  tools: [],
+  tools: [rustTool()],
   temperature: 0.3,
   maxSteps: 10,
 });
 `;
       fs.writeFileSync(target, content);
-      console.log(`generated ${fileName}.ts`);
+      console.log(`generated ${kebab}.ts`);
     }
 
-    const exportLine = `export { ${name.replace(/\W/g, '_').toUpperCase()} } from './${fileName}';`;
+    // prefer camel-case file if it exists
+    const exportPath = fs.existsSync(alt) ? camel : kebab;
+    const exportLine = `export { ${name.replace(/\W/g, '_').toUpperCase()} } from './${exportPath}';`;
     if (!indexContent.includes(exportLine)) {
       indexContent += `\n${exportLine}\n`;
-      console.log(`added export for ${fileName}`);
+      console.log(`added export for ${exportPath}`);
     }
   }
 

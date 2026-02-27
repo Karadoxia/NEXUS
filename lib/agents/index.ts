@@ -10,4 +10,5 @@ export { CRM_AGENT } from './crmReclamations';
 export { BI_AGENT } from './biAnalyst';
 export { NEWSLETTER_AGENT } from './newsletterAgent';
 export { REVENUE_FORECASTER } from './revenueForecaster';
+export { RUST_SUM } from './rust-sum';
 

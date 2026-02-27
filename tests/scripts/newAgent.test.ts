@@ -22,6 +22,8 @@ describe('newAgent script', () => {
     });
     const agentsDir = path.join(tmpDir, 'lib/agents');
     expect(fs.existsSync(path.join(agentsDir, 'foo-bot.ts'))).toBe(true);
+    const fileContent = fs.readFileSync(path.join(agentsDir, 'foo-bot.ts'), 'utf-8');
+    expect(fileContent).toContain('rustTool()');
     const idx = fs.readFileSync(path.join(agentsDir, 'index.ts'), 'utf-8');
     expect(idx).toContain('foo-bot');
     const cfg = JSON.parse(fs.readFileSync(path.join(tmpDir, 'agents/config.json'), 'utf-8'));
