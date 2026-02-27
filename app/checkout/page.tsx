@@ -6,438 +6,683 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
 import { useCartStore } from '@/src/stores/cartStore';
 import { Address } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
 
-// Replace with your actual publishable key
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_mock');
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+);
 
-function CheckoutForm({
-    total,
-    orderId,
-    selectedAddress,
-    paymentMethods,
-    selectedPm,
-    setSelectedPm,
-    isMockMode,
+// ── Brand color map (used for visual card display) ───────────────────────────
+const BRAND_COLOR: Record<string, string> = {
+  visa: '#1a1f71',
+  mastercard: '#eb001b',
+  amex: '#016fd0',
+  paypal: '#003087',
+  discover: '#e65c00',
+};
+const BRAND_ICON: Record<string, string> = {
+  visa: 'VISA',
+  mastercard: 'MC',
+  amex: 'AMEX',
+  paypal: 'PP',
+  discover: 'DISC',
+};
+
+// ── Clickable payment-method card ────────────────────────────────────────────
+function PmCard({
+  pm,
+  selected,
+  onClick,
 }: {
-    total: number;
-    orderId: string | null;
-    selectedAddress: Address | null;
-    paymentMethods: any[]; // kept loose since it's shared with page state
-    selectedPm: string | undefined;
-    setSelectedPm: React.Dispatch<React.SetStateAction<string | undefined>>;
-    isMockMode: boolean;
+  pm: any;
+  selected: boolean;
+  onClick: () => void;
 }) {
-    const stripe = useStripe();
-    const elements = useElements();
-    const [message, setMessage] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const { checkout } = useCartStore();
-    const router = useRouter();
-    const { data: session } = useSession();
+  const key = pm.brand?.toLowerCase() ?? '';
+  const isCard = pm.type === 'card';
+  const icon = BRAND_ICON[key] ?? pm.brand?.slice(0, 2).toUpperCase();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // if a saved method is selected attempt the off‑session charge only if
-        // the record actually has a Stripe token associated with it.  Otherwise
-        // fall through and let the standard element flow run.
-        if (selectedPm) {
-            const pmRec = paymentMethods.find(pm => pm.id === selectedPm);
-            if (pmRec?.stripeId) {
-                setIsLoading(true);
-                try {
-                    const user = session?.user
-                        ? { name: session.user.name || 'Customer', email: session.user.email || '' }
-                        : { name: 'Guest User', email: 'guest@example.com' };
-                    const resp = await fetch('/api/checkout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            amount: total,
-                            items,
-                            paymentMethodId: selectedPm,
-                            customer: user,
-                            address: selectedAddress,
-                        }),
-                    });
-                    const data = await resp.json();
-                    if (resp.ok && data.orderId) {
-                        router.push(`/checkout/success?orderId=${data.orderId}`);
-                        return;
-                    }
-                    throw new Error(data.error || 'unknown');
-                } catch (err) {
-                    console.error('checkout failed', err);
-                    setMessage('Failed to process saved payment method.');
-                } finally {
-                    setIsLoading(false);
-                }
-            }
-            // if there's no stripeId, don't intercept – the UI will still allow the
-            // user to type new card info and confirm below.
-        }
-
-        if (!stripe || !elements) return;
-
-        setIsLoading(true);
-
-        const returnUrl = orderId
-            ? `${window.location.origin}/checkout/success?orderId=${orderId}`
-            : `${window.location.origin}/checkout/success`;
-
-        const { error } = await stripe.confirmPayment({
-            elements,
-            confirmParams: {
-                return_url: returnUrl,
-            },
-        });
-
-        if (error.type === 'card_error' || error.type === 'validation_error') {
-            setMessage(error.message ?? 'An unexpected error occurred.');
-        } else {
-            setMessage('An unexpected error occurred.');
-        }
-
-        setIsLoading(false);
-    };
-
-    return (
-        <form id="payment-form" onSubmit={handleSubmit} className="space-y-6">
-            {paymentMethods.length > 0 && (
-              <div className="mb-4">
-                <label className="block text-sm text-slate-400 mb-1">
-                  Select a saved payment method (for offline/demo use only)
-                </label>
-                <select
-                  className="w-full bg-black border border-slate-700 rounded px-3 py-2 text-white"
-                  value={selectedPm || ''}
-                  onChange={e => setSelectedPm(e.target.value || undefined)}
-                >
-                  <option value="">-- none --</option>
-                  {paymentMethods.map(pm => (
-                      <option key={pm.id} value={pm.id}>
-                        {pm.type === 'card'
-                          ? `${pm.brand} •••• ${pm.last4}`
-                          : `${pm.brand}${pm.accountEmail ? ' ('+pm.accountEmail+')' : ''}`}
-                        {pm.stripeId ? '' : ' (mock-only)'}
-                      </option>
-                  ))}
-                </select>
-                <p className="text-xs text-slate-500 mt-1">
-                  When a saved Stripe‑backed method is selected the card element is
-                  hidden and a summary of the masked details is shown below; this
-                  works for wallet methods such as PayPal as well. No sensitive
-                  information is ever stored.
-                </p>
-              </div>
-            )}
-
-            {/* either show the element or a summary, never both */}
-            {!(selectedPm && paymentMethods.find(pm => pm.id === selectedPm)?.stripeId) ? (
-              <PaymentElement
-                id="payment-element"
-                options={{
-                  layout: 'tabs',
-                  defaultValues: {
-                    billingDetails: {
-                      name: session?.user?.name,
-                      email: session?.user?.email,
-                    },
-                  },
-                }}
-              />
-            ) : (
-              <div className="p-4 bg-slate-800 rounded">
-                {(() => {
-                  const chosen = paymentMethods.find(pm => pm.id === selectedPm);
-                  if (!chosen) return null;
-                  const isCard = chosen.type === 'card';
-                  return (
-                    <>
-                      <p className="text-sm text-white">
-                        {isCard
-                          ? `${chosen.brand} •••• ${chosen.last4}`
-                          : `Using ${chosen.brand}`}
-                      </p>
-                      {isCard && (
-                        <p className="text-xs text-slate-400">
-                          exp {chosen.expMonth}/{chosen.expYear}
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        className="mt-2 text-xs underline text-cyan-400"
-                        onClick={() => setSelectedPm(undefined)}
-                      >
-                        Use different method
-                      </button>
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-            <button
-                disabled={isLoading || !stripe || !elements}
-                id="submit"
-                className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-4 rounded-lg shadow-[0_0_20px_rgba(8,145,178,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-                {isLoading ? 'PROCESSING...' : `PAY €${total.toLocaleString()}`}
-            </button>
-            {message && <div id="payment-message" className="text-red-500 text-sm text-center">{message}</div>}
-
-            {/* MOCK MODE: Simulate Payment */}
-            <div className="pt-6 border-t border-slate-800 mt-6">
-                <button
-                    type="button"
-                    onClick={async () => {
-                        try {
-                            const user = session?.user
-                                ? { name: session.user.name || 'Customer', email: session.user.email || '' }
-                                : { name: 'Guest User', email: 'guest@example.com' };
-                            const order = await checkout(user, selectedAddress || undefined, selectedPm);
-                            router.push(`/checkout/success?orderId=${order.id}`);
-                        } catch (e) {
-                            console.error('checkout failed', e);
-                        }
-                    }}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-cyan-400 font-bold py-3 rounded-lg border border-slate-700 transition-all text-xs tracking-widest uppercase"
-                >
-                    [MOCK MODE] Simulate Successful Payment{selectedPm ? ' (using saved method)' : ''}
-                </button>
-                <p className="text-[10px] text-center text-slate-500 mt-2">Use this if you don&apos;t have a valid Stripe key or backend running.</p>
-            </div>
-        </form>
-    );
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+        selected
+          ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_12px_rgba(8,145,178,0.3)]'
+          : 'border-slate-700 bg-slate-800/60 hover:border-slate-500'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className="w-12 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold shrink-0"
+          style={{ background: BRAND_COLOR[key] ?? '#1e293b' }}
+        >
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          {isCard ? (
+            <>
+              <p className="text-white text-sm font-semibold">
+                {pm.brand} •••• {pm.last4}
+              </p>
+              <p className="text-slate-400 text-xs">
+                Expires {String(pm.expMonth).padStart(2, '0')}/{pm.expYear}
+                {pm.cardholderName ? ` · ${pm.cardholderName}` : ''}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-white text-sm font-semibold">{pm.brand}</p>
+              {pm.accountEmail && (
+                <p className="text-slate-400 text-xs">{pm.accountEmail}</p>
+              )}
+            </>
+          )}
+        </div>
+        {!pm.stripeId && (
+          <span className="text-slate-500 text-xs italic shrink-0">demo</span>
+        )}
+        {selected && (
+          <svg
+            className="w-5 h-5 text-cyan-400 shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+              clipRule="evenodd"
+            />
+          </svg>
+        )}
+      </div>
+    </button>
+  );
 }
 
-export default function CheckoutPage() {
-    const { total, items, checkout } = useCartStore();
-    const router = useRouter();
-    const [clientSecret, setClientSecret] = useState('');
-    const [orderId, setOrderId] = useState<string | null>(null);
-    const [isMockMode, setIsMockMode] = useState(false);
-    const [addresses, setAddresses] = useState<Address[]>([]);
-    const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-    const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
-    const [selectedPm, setSelectedPm] = useState<string | undefined>(undefined); // start with no selection
+// ── New-card form (must live inside <Elements>) ───────────────────────────────
+function NewCardForm({
+  total,
+  orderId,
+  session,
+}: {
+  total: number;
+  orderId: string | null;
+  session: any;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        // fetch saved addresses for user
-        if (session?.user?.email) {
-            fetch('/api/user/addresses')
-                .then(r => r.json())
-                .then((list) => {
-                    setAddresses(list);
-                    if (list.length > 0) setSelectedAddress(list[0]);
-                });
-            fetch('/api/user/payment-methods')
-                .then(r => r.json())
-                .then((pms) => {
-                    if (Array.isArray(pms)) {
-                        setPaymentMethods(pms);
-                        // do not auto-select a saved method; let user choose so they
-                        // can easily switch to entering new card data.
-                        // if you want to preselect, uncomment next line:
-                        // if (pms.length > 0) setSelectedPm(pms[0].id);
-                    }
-                });
-        }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+    setIsLoading(true);
+    setMessage(null);
 
-        // reset mock indicator any time inputs change
-        setIsMockMode(false);
-        // Create PaymentIntent as soon as the page loads or when critical inputs
-        // change – but only when no saved method is selected.  A saved method with
-        // a Stripe token bypasses the element altogether.
-        if (total() > 0 && !selectedPm) {
-            // Set a timeout to fallback to mock mode if backend is slow/down
-            const timeout = setTimeout(() => setIsMockMode(true), 2000);
+    const returnUrl = orderId
+      ? `${window.location.origin}/checkout/success?orderId=${orderId}`
+      : `${window.location.origin}/checkout/success`;
 
-            fetch('/api/checkout', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    amount: total(),
-                    items,
-                    // do not send paymentMethodId so Stripe intent is standard
-                    customer: session?.user ? { name: session.user.name, email: session.user.email } : undefined,
-                    address: selectedAddress,
-                }),
-            })
-                .then((res) => {
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    return res.json();
-                })
-                .then((data) => {
-                    clearTimeout(timeout);
-                    if (data.clientSecret) {
-                        setClientSecret(data.clientSecret);
-                        setOrderId(data.orderId || null);
-                    } else {
-                        setIsMockMode(true);
-                    }
-                })
-                .catch(() => {
-                    clearTimeout(timeout);
-                    setIsMockMode(true);
-                });
+    const { error } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: returnUrl },
+    });
 
-            return () => clearTimeout(timeout);
-        }
-    }, [total, selectedAddress, selectedPm]);
-
-    const appearance = {
-        theme: 'night' as const,
-        variables: {
-            colorPrimary: '#0891b2',
-            colorBackground: '#0f172a',
-            colorText: '#ffffff',
-        },
-    };
-    const options = {
-        clientSecret,
-        appearance,
-    };
-
-    const { data: session, status } = useSession();
-
-    useEffect(() => {
-        if (status === 'loading') return;
-        if (!session?.user) {
-            router.push('/signin');
-        }
-    }, [session, status, router]);
-
-    if (items.length === 0) {
-        return (
-            <main className="min-h-screen bg-black text-white">
-                <Navbar />
-                <div className="container mx-auto px-4 py-24 text-center">
-                    <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
-                    <p className="text-slate-400 mb-8">Add some gear before checking out.</p>
-                    <Link href="/products" className="text-cyan-400 hover:text-white font-bold">BROWSE STORE</Link>
-                </div>
-            </main>
-        );
+    if (error) {
+      setMessage(
+        error.type === 'card_error' || error.type === 'validation_error'
+          ? (error.message ?? 'An unexpected error occurred.')
+          : 'An unexpected error occurred.',
+      );
     }
+    setIsLoading(false);
+  };
 
-    return (
-        <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
-            <Navbar />
-            <div className="container mx-auto px-4 py-24">
-                <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <PaymentElement
+        options={{
+          layout: 'tabs',
+          defaultValues: {
+            billingDetails: {
+              name: session?.user?.name ?? undefined,
+              email: session?.user?.email ?? undefined,
+            },
+          },
+        }}
+      />
+      <button
+        disabled={isLoading || !stripe || !elements}
+        className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(8,145,178,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading ? 'PROCESSING…' : `PAY €${total.toLocaleString()}`}
+      </button>
+      {message && (
+        <p className="text-red-400 text-sm text-center">{message}</p>
+      )}
+    </form>
+  );
+}
 
-                    {/* Order Summary */}
-                    <div className="bg-slate-900/50 p-8 rounded-2xl border border-cyan-900/30 h-fit">
-                        <h2 className="text-2xl font-bold text-white mb-6">ORDER SUMMARY</h2>
-                        <div className="space-y-4 max-h-[400px] overflow-y-auto mb-6 pr-2">
-                            {items.map(item => (
-                                <div key={item.id} className="flex justify-between items-center bg-slate-900 p-4 rounded-lg">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-black rounded border border-slate-800 flex items-center justify-center overflow-hidden relative">
-                                            <Image src={item.images?.[0] || ''} alt={item.name} fill className="object-cover" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-bold text-sm text-white line-clamp-1">{item.name}</h4>
-                                            <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
-                                        </div>
-                                    </div>
-                                    <span className="font-mono text-cyan-400">€{(item.price * item.quantity).toLocaleString()}</span>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="border-t border-cyan-900/30 pt-4 space-y-2">
-                            <div className="flex justify-between text-slate-400">
-                                <span>Subtotal</span>
-                                <span>€{total().toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-slate-400">
-                                <span>Shipping</span>
-                                <span className="text-green-400">FREE</span>
-                            </div>
-                            <div className="flex justify-between text-xl font-bold text-white pt-2">
-                                <span>TOTAL</span>
-                                <span>€{total().toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
+// ── Saved-method form: shows visual card + direct off-session charge ──────────
+function SavedMethodForm({
+  pm,
+  total,
+  items,
+  selectedAddress,
+  session,
+  onClear,
+}: {
+  pm: any;
+  total: number;
+  items: any[];
+  selectedAddress: Address | null;
+  session: any;
+  onClear: () => void;
+}) {
+  const router = useRouter();
+  const [message, setMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const isCard = pm.type === 'card';
+  const key = pm.brand?.toLowerCase() ?? '';
+  const icon = BRAND_ICON[key] ?? pm.brand?.slice(0, 2).toUpperCase();
 
-                    {/* Payment Form */}
-                    <div className="bg-slate-900 p-8 rounded-2xl border border-cyan-900/30 shadow-2xl">
-                        <h2 className="text-2xl font-bold text-white mb-6">SECURE PAYMENT</h2>
-                        {/* Address selection (if available) */}
-                        {addresses.length > 0 && (
-                            <div className="mb-6">
-                                <label className="block text-sm text-slate-400 mb-1">Shipping address</label>
-                                <select
-                                    value={selectedAddress?.id || ''}
-                                    onChange={(e) => {
-                                        const a = addresses.find(a => a.id === e.target.value);
-                                        setSelectedAddress(a || null);
-                                    }}
-                                    className="w-full bg-slate-800 p-2 rounded"
-                                >
-                                    {addresses.map(a => (
-                                        <option key={a.id} value={a.id}>{a.label} - {a.line1}, {a.city}</option>
-                                    ))}
-                                </select>
-                                <Link href="/account" className="text-xs text-cyan-400 underline">
-                                    Manage addresses
-                                </Link>
-                            </div>
-                        )}
-                        {clientSecret ? (
-                            <Elements options={options} stripe={stripePromise}>
-                                <CheckoutForm
-                                    total={total()}
-                                    orderId={orderId}
-                                    selectedAddress={selectedAddress}
-                                    paymentMethods={paymentMethods}
-                                    selectedPm={selectedPm}
-                                    setSelectedPm={setSelectedPm}
-                                    isMockMode={isMockMode}
-                                />
-                            </Elements>
-                        ) : isMockMode ? (
-                            <div className="text-center space-y-6">
-                                <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-lg">
-                                    <h3 className="text-yellow-400 font-bold mb-2">Backend Unavailable</h3>
-                                    <p className="text-sm text-yellow-200/60">
-                                        The payment server is ensuring secure connections. Switching to offline simulation mode using standard test credentials.
-                                    </p>
-                                </div>
+  const handlePay = async () => {
+    setIsLoading(true);
+    setMessage(null);
+    try {
+      const user = session?.user
+        ? { name: session.user.name || 'Customer', email: session.user.email || '' }
+        : { name: 'Guest', email: '' };
 
-                                <div className="space-y-4">
-                                    <div className="bg-slate-800 p-4 rounded-lg flex items-center gap-4 opacity-50 cursor-not-allowed">
-                                        <div className="w-12 h-8 bg-slate-700 rounded"></div>
-                                        <div className="flex-1 h-4 bg-slate-700 rounded w-full"></div>
-                                    </div>
-                                    <button
-                                        onClick={() => window.location.href = '/checkout/success'}
-                                        className="w-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold py-4 rounded-lg shadow-lg shadow-cyan-500/20 transition-all hover:scale-[1.02]"
-                                    >
-                                        SIMULATE SUCCESSFUL PAYMENT
-                                    </button>
-                                    <p className="text-xs text-slate-500">
-                                        * No actual money will be charged. This is a demonstration.
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-64 text-cyan-400 gap-4">
-                                <div className="h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                                <span className="animate-pulse">Connecting to Secure Gateway...</span>
-                            </div>
-                        )}
-                    </div>
+      const resp = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: total,
+          items,
+          paymentMethodId: pm.id,
+          customer: user,
+          address: selectedAddress,
+        }),
+      });
+      const data = await resp.json();
+      if (resp.ok && data.orderId) {
+        router.push(`/checkout/success?orderId=${data.orderId}`);
+        return;
+      }
+      throw new Error(data.error || 'Payment failed. Please try again.');
+    } catch (err: any) {
+      setMessage(err.message ?? 'Payment failed.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  return (
+    <div className="space-y-4">
+      {/* Visual card — the "auto-filled" display */}
+      <div
+        className="relative h-44 rounded-2xl p-5 overflow-hidden select-none"
+        style={{
+          background: `linear-gradient(135deg, ${
+            BRAND_COLOR[key] ?? '#1e293b'
+          } 0%, #0f172a 100%)`,
+        }}
+      >
+        {/* subtle grid texture */}
+        <div
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(255,255,255,.15) 10px,rgba(255,255,255,.15) 11px)',
+          }}
+        />
+        <div className="relative z-10 flex flex-col h-full justify-between">
+          <div className="flex justify-between items-start">
+            <span className="text-white/50 text-[10px] uppercase tracking-widest">
+              {isCard ? 'Payment Card' : 'Digital Wallet'}
+            </span>
+            <span className="text-white font-black text-lg tracking-wider">
+              {icon}
+            </span>
+          </div>
+
+          {isCard ? (
+            <>
+              <div>
+                <p className="text-white/40 text-[10px] mb-1 tracking-widest">
+                  CARD NUMBER
+                </p>
+                <p className="text-white font-mono text-xl tracking-[0.35em]">
+                  •••• •••• •••• {pm.last4}
+                </p>
+              </div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <p className="text-white/40 text-[10px] mb-1 tracking-widest">
+                    EXPIRES
+                  </p>
+                  <p className="text-white font-mono text-sm">
+                    {String(pm.expMonth).padStart(2, '0')}/{pm.expYear}
+                  </p>
                 </div>
+                {pm.cardholderName && (
+                  <div className="text-right">
+                    <p className="text-white/40 text-[10px] mb-1 tracking-widest">
+                      CARDHOLDER
+                    </p>
+                    <p className="text-white text-sm font-semibold uppercase tracking-wider">
+                      {pm.cardholderName}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div>
+              <p className="text-white font-bold text-2xl">{pm.brand}</p>
+              {pm.accountEmail && (
+                <p className="text-white/60 text-sm mt-1">{pm.accountEmail}</p>
+              )}
             </div>
-        </main>
+          )}
+        </div>
+      </div>
+
+      <button
+        onClick={handlePay}
+        disabled={isLoading}
+        className="w-full bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_rgba(8,145,178,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isLoading ? 'PROCESSING…' : `PAY €${total.toLocaleString()}`}
+      </button>
+      <button
+        type="button"
+        onClick={onClear}
+        className="w-full text-xs text-slate-400 hover:text-white underline transition-colors"
+      >
+        Use a different payment method
+      </button>
+      {message && (
+        <p className="text-red-400 text-sm text-center">{message}</p>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
+export default function CheckoutPage() {
+  // ← session MUST be declared before the effects that reference it
+  const { data: session, status } = useSession();
+  const { total, items, checkout } = useCartStore();
+  const router = useRouter();
+
+  const [clientSecret, setClientSecret] = useState('');
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [isMockMode, setIsMockMode] = useState(false);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  // undefined = "new card" (default)
+  const [selectedPm, setSelectedPm] = useState<string | undefined>(undefined);
+
+  // Redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (!session?.user) router.push('/signin');
+  }, [session, status, router]);
+
+  // Fetch saved addresses and payment methods for authenticated users
+  useEffect(() => {
+    if (!session?.user?.email) return;
+
+    fetch('/api/user/addresses')
+      .then((r) => r.json())
+      .then((list) => {
+        if (Array.isArray(list)) {
+          setAddresses(list);
+          if (list.length > 0) setSelectedAddress(list[0]);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/user/payment-methods')
+      .then((r) => r.json())
+      .then((pms) => {
+        if (Array.isArray(pms)) setPaymentMethods(pms);
+      })
+      .catch(() => {});
+  }, [session?.user?.email]);
+
+  // Create a PaymentIntent for the new-card / PayPal flow.
+  // Skip when a real Stripe-backed saved method is selected (charged server-side).
+  useEffect(() => {
+    const pm = paymentMethods.find((p) => p.id === selectedPm);
+    if (pm?.stripeId) return; // direct charge — no clientSecret needed
+
+    if (total() <= 0) return;
+
+    setIsMockMode(false);
+    setClientSecret('');
+
+    const timeout = setTimeout(() => setIsMockMode(true), 5000);
+
+    fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: total(),
+        items,
+        customer: session?.user
+          ? { name: session.user.name, email: session.user.email }
+          : undefined,
+        address: selectedAddress,
+      }),
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('checkout init failed');
+        return r.json();
+      })
+      .then((data) => {
+        clearTimeout(timeout);
+        if (data.clientSecret) {
+          setClientSecret(data.clientSecret);
+          setOrderId(data.orderId ?? null);
+        } else {
+          setIsMockMode(true);
+        }
+      })
+      .catch(() => {
+        clearTimeout(timeout);
+        setIsMockMode(true);
+      });
+
+    return () => clearTimeout(timeout);
+  }, [total, selectedAddress, selectedPm, paymentMethods]);
+
+  const handleMock = async () => {
+    try {
+      const user = session?.user
+        ? { name: session.user.name || 'Customer', email: session.user.email || '' }
+        : { name: 'Guest', email: '' };
+      const order = await checkout(user, selectedAddress || undefined, selectedPm);
+      router.push(`/checkout/success?orderId=${order.id}`);
+    } catch (e) {
+      console.error('mock checkout failed', e);
+    }
+  };
+
+  const selectedPmRecord = paymentMethods.find((p) => p.id === selectedPm);
+  const useDirectCharge = !!selectedPmRecord?.stripeId;
+
+  const appearance = {
+    theme: 'night' as const,
+    variables: {
+      colorPrimary: '#0891b2',
+      colorBackground: '#0f172a',
+      colorText: '#ffffff',
+    },
+  };
+
+  if (items.length === 0) {
+    return (
+      <main className="min-h-screen bg-black text-white">
+        <Navbar />
+        <div className="container mx-auto px-4 py-24 text-center">
+          <h1 className="text-3xl font-bold mb-4">Your cart is empty</h1>
+          <p className="text-slate-400 mb-8">Add some gear before checking out.</p>
+          <Link href="/store" className="text-cyan-400 hover:text-white font-bold">
+            BROWSE STORE
+          </Link>
+        </div>
+      </main>
     );
+  }
+
+  return (
+    <main className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
+      <Navbar />
+      <div className="container mx-auto px-4 py-24">
+        <div className="grid lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+
+          {/* ── Order Summary ── */}
+          <div className="bg-slate-900/50 p-8 rounded-2xl border border-cyan-900/30 h-fit">
+            <h2 className="text-2xl font-bold text-white mb-6">ORDER SUMMARY</h2>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto mb-6 pr-2">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex justify-between items-center bg-slate-900 p-4 rounded-lg"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-black rounded border border-slate-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                      <Image
+                        src={(item as any).images?.[0] || ''}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-white line-clamp-1">
+                        {item.name}
+                      </h4>
+                      <p className="text-xs text-slate-400">Qty: {item.quantity}</p>
+                    </div>
+                  </div>
+                  <span className="font-mono text-cyan-400">
+                    €{(item.price * item.quantity).toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-cyan-900/30 pt-4 space-y-2">
+              <div className="flex justify-between text-slate-400">
+                <span>Subtotal</span>
+                <span>€{total().toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-slate-400">
+                <span>Shipping</span>
+                <span className="text-green-400">FREE</span>
+              </div>
+              <div className="flex justify-between text-xl font-bold text-white pt-2">
+                <span>TOTAL</span>
+                <span>€{total().toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Payment Panel ── */}
+          <div className="bg-slate-900 p-8 rounded-2xl border border-cyan-900/30 shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6">SECURE PAYMENT</h2>
+
+            {/* Shipping address */}
+            {addresses.length > 0 && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-400 mb-2">
+                  Shipping Address
+                </label>
+                <select
+                  value={selectedAddress?.id || ''}
+                  onChange={(e) =>
+                    setSelectedAddress(
+                      addresses.find((a) => a.id === e.target.value) || null,
+                    )
+                  }
+                  className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white text-sm"
+                >
+                  {addresses.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label} — {a.line1}, {a.city}
+                    </option>
+                  ))}
+                </select>
+                <Link
+                  href="/account"
+                  className="text-xs text-cyan-400 mt-1 inline-block hover:text-cyan-300"
+                >
+                  + Add / manage addresses
+                </Link>
+              </div>
+            )}
+
+            {/* Payment method picker */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-400 mb-3">
+                Payment Method
+              </label>
+              <div className="space-y-2">
+                {/* New card / PayPal (default) */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPm(undefined)}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${
+                    selectedPm === undefined
+                      ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_12px_rgba(8,145,178,0.3)]'
+                      : 'border-slate-700 bg-slate-800/60 hover:border-slate-500'
+                  }`}
+                >
+                  <div className="w-12 h-8 rounded-md bg-slate-700 flex items-center justify-center shrink-0">
+                    <svg
+                      className="w-5 h-5 text-slate-300"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-semibold">
+                      New Card / PayPal
+                    </p>
+                    <p className="text-slate-400 text-xs">
+                      Enter card details or pay with PayPal
+                    </p>
+                  </div>
+                  {selectedPm === undefined && (
+                    <svg
+                      className="w-5 h-5 text-cyan-400 shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </button>
+
+                {/* Saved methods */}
+                {paymentMethods.map((pm) => (
+                  <PmCard
+                    key={pm.id}
+                    pm={pm}
+                    selected={selectedPm === pm.id}
+                    onClick={() => setSelectedPm(pm.id)}
+                  />
+                ))}
+
+                {paymentMethods.length === 0 && (
+                  <Link
+                    href="/account"
+                    className="block text-xs text-slate-500 hover:text-slate-300 mt-1"
+                  >
+                    + Save a card for faster checkout
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Payment content area */}
+            {useDirectCharge ? (
+              /* Saved Stripe-backed method: show visual card + direct charge */
+              <SavedMethodForm
+                pm={selectedPmRecord}
+                total={total()}
+                items={items}
+                selectedAddress={selectedAddress}
+                session={session}
+                onClear={() => setSelectedPm(undefined)}
+              />
+            ) : clientSecret ? (
+              /* New card / PayPal via Stripe Elements */
+              <Elements
+                options={{ clientSecret, appearance }}
+                stripe={stripePromise}
+              >
+                <NewCardForm
+                  total={total()}
+                  orderId={orderId}
+                  session={session}
+                />
+              </Elements>
+            ) : isMockMode ? (
+              /* Stripe not configured — mock fallback */
+              <div className="space-y-4">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl">
+                  <h3 className="text-yellow-400 font-bold text-sm mb-1">
+                    Stripe not configured
+                  </h3>
+                  <p className="text-yellow-200/60 text-xs">
+                    Set{' '}
+                    <code className="font-mono bg-black/30 px-1 rounded">
+                      STRIPE_SECRET_KEY
+                    </code>{' '}
+                    and{' '}
+                    <code className="font-mono bg-black/30 px-1 rounded">
+                      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+                    </code>{' '}
+                    in{' '}
+                    <code className="font-mono bg-black/30 px-1 rounded">
+                      .env.local
+                    </code>{' '}
+                    to enable real payments.
+                  </p>
+                </div>
+                <button
+                  onClick={handleMock}
+                  className="w-full bg-slate-700 hover:bg-slate-600 text-cyan-400 font-bold py-4 rounded-xl border border-slate-600 transition-all text-sm tracking-widest uppercase"
+                >
+                  Simulate Successful Payment
+                </button>
+                <p className="text-[10px] text-center text-slate-500">
+                  No money is charged. For demo/dev use only.
+                </p>
+              </div>
+            ) : (
+              /* Loading */
+              <div className="flex flex-col items-center justify-center h-48 text-cyan-400 gap-4">
+                <div className="h-8 w-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm animate-pulse">
+                  Connecting to Secure Gateway…
+                </span>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </main>
+  );
 }
