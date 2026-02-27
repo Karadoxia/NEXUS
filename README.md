@@ -170,8 +170,26 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # No further variables required unless using OAuth providers.
 
 # --- Optional 3rd-party services ------------------------------------------
-RESEND_API_KEY=re_...
+RESEND_API_KEY=re_...   # real key required for sending mail
 GEMINI_API_KEY=AIzaSyBypwgh3aX5BQQ_Xeq-Mxwtvt5o6M9F7d0
+
+## Sending email
+A lightweight `/api/mail` route is provided for dispatching HTML messages via
+Resend. You can call it directly during development:
+
+```bash
+curl -X POST http://localhost:3030/api/mail \
+  -H 'Content-Type: application/json' \
+  -d '{"to":"kalistox.ia@gmail.com","subject":"Test","html":"<p>Hello from NEXUS!</p>"}'
+```
+
+> ⚠️ **Replace** the `to` address with your own or use `kalistox.ia@gmail.com` for
+manual testing, as suggested by the project maintainer.
+
+The environment variable `RESEND_API_KEY` must be set (load from your vault)
+otherwise the route will respond with a 500 error.
+
+Back to optional variables:
 
 # --- Local operations dashboard -------------------------------------------
 The admin panel now includes an **Operations** page (`/admin/monitoring`) that
