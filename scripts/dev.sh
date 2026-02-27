@@ -1,11 +1,19 @@
 #!/bin/sh
 set -e
 
-# Ensure passwords are set or fallback to defaults (not secure for prod)
+# ensure we have sensible defaults for passwords (not for production!)
 : "${POSTGRES_PASSWORD:=password}"
 : "${REDIS_PASSWORD:=password}"
 
+# warn if running as root (sudo strips environment variables)
+if [ "$(id -u)" = "0" ]; then
+  echo "[warn] running as root; environment variables may not be preserved."
+  echo "        avoid using sudo or export POSTGRES_PASSWORD & REDIS_PASSWORD before sudo."
+fi
+
 printf "Starting postgres and redis containers...\n"
+# bring up essential services; make sure password env vars are exported
+# docker compose will substitute ${POSTGRES_PASSWORD} etc.
 docker compose up -d postgres redis
 
 # wait for postgres to become healthy

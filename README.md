@@ -33,6 +33,20 @@
 - npm or pnpm
 
 > **Note:** The development environment provided by this workspace does **not** include a running PostgreSQL server or allow starting one via Docker due to sandbox restrictions. Any attempt to migrate or connect to `localhost:5432` will fail with `P1001` errors until you point the project at a real database instance (see "Database setup" below).
+>
+> **Important:** do **not** run any of the `npm run dev` or `sh ./scripts/dev.sh` commands with `sudo`. Running as root will strip the `POSTGRES_PASSWORD` / `REDIS_PASSWORD` environment variables, causing the database container to initialise with a blank password while the application continues to use the default `password` value. This mismatch results in authentication failures (you'll see `P1000` errors and login/store pages will 500). If you have already started the containers with the wrong password, stop them and remove the `nexus_v2_postgres_data` volume before restarting with the correct password:
+>
+> ```bash
+> # stop containers and remove data volume
+> docker compose down
+> docker volume rm nexus_v2_postgres_data
+>
+> # set a password and start normally (no sudo)
+> export POSTGRES_PASSWORD="super-secure-2026-password-here-CHANGE-ME!"
+> npm run dev          # or sh ./scripts/dev.sh
+> ```
+>
+> You can add your user to the `docker` group (`sudo usermod -aG docker $USER`) to avoid needing sudo entirely.
 
 ### Installation
 
