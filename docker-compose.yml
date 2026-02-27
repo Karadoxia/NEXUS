@@ -31,6 +31,20 @@ services:
       - nexus_v2_net
     restart: unless-stopped
 
+  pgadmin:
+    image: dpage/pgadmin4:6
+    container_name: nexus_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@localhost
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "15432:80"  # web UI on host:15432
+    depends_on:
+      - postgres
+    networks:
+      - nexus_v2_net
+    restart: unless-stopped
+
   nexus-rust-service:
     build: ./rust-agents/crates/service
     container_name: nexus_rust_service

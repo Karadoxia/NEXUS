@@ -130,6 +130,18 @@ To copy existing data from the old SQLite file (`dev.db`), run the helper script
 npm run migrate:sqlite-to-postgres
 ```
 
+### PostgreSQL Dashboard
+
+For a convenient web UI we include **pgAdmin** in the compose setup. After
+starting the containers you can access it at [http://localhost:15432](http://localhost:15432)
+using the default credentials `admin@localhost` / `admin`.
+
+- Add a new server in pgAdmin with host `postgres`, port `5432`,
+  username `nexus`, password (your `POSTGRES_PASSWORD`).
+
+This lets you browse tables, run queries, and manage the `nexus_v2` database
+from the browser.
+
 After migration you may delete `dev.db` and remove any `SQLITE_URL` variable – the application no longer references SQLite.
 
 Example `.env.local`:
@@ -150,6 +162,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # your Grok API key enables the built-in agents and any GPT-style calls.
 # set this to the key you were provided before starting the dev server.
 # example (do not commit the real key):
+# GROK_API_KEY="your_actual_key_here"
 
 
 # --- Authentication -------------------------------------------------------
