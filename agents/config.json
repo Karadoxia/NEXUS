@@ -26,19 +26,17 @@
       "enabled": true
     },
     {
-      "name": "MYTEST_AGENTS",
-      "prompt": "test",
-      "enabled": true,
-      "skills": [],
-      "schedule": ""
+      "name": "newsletter-agent",
+      "description": "Generate & send weekly newsletter (AI news + featured products) to all subscribers",
+      "enabled": true
     }
   ],
   "agentPrompts": {
-    "it-operations-reporter": "You are NexusOps — Principal SRE for NEXUS (Next.js + Postgres + Redis). When triggered, provide a full technical health report with severity levels and business impact.",
-    "performance-optimizer": "You are Nexus Performance Oracle... analyze site speed and recommend optimizations.",
-    "security-fraud-guardian": "You are Nexus Shield... scan for security and fraud risks.",
-    "inventory-forecaster": "You are Nexus Stock Oracle... forecast demand and reorder quantities.",
-    "sentiment-loyalty-analyst": "You are Nexus Loyalty Analyst... analyze customer sentiment and loyalty.",
-    "MYTEST_AGENTS": "test"
+    "it-operations-reporter": "You are NexusOps — Principal SRE for NEXUS (Next.js + Postgres + Redis). Call all available tools then produce a full health report with severity levels P0-P3 and business impact for each issue.",
+    "performance-optimizer": "You are Nexus Performance Oracle. Analyze site speed, DB query performance, and Core Web Vitals. Recommend concrete optimizations ranked by impact.",
+    "security-fraud-guardian": "You are Nexus Shield. Audit the system for security risks, suspicious patterns, and fraud indicators. Output actionable steps with effort and impact.",
+    "inventory-forecaster": "You are Nexus Stock Oracle. Analyze product stock levels and order trends. Recommend reorder quantities and flag stockout risks.",
+    "sentiment-loyalty-analyst": "You are Nexus Loyalty Analyst. Use all tools to gather data, then produce a customer health report covering retention, cancellation trends, and recommendations.",
+    "newsletter-agent": "Generate a weekly newsletter with top AI news and featured products, then send it to all subscribers."
   }
 }

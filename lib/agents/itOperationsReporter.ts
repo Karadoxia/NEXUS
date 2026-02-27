@@ -1,52 +1,122 @@
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
 import { createAgent } from "./base";
 import { prisma } from "@/src/lib/prisma";
-import * as Sentry from "@sentry/nextjs";
 
-const IT_OPS_SYSTEM_PROMPT = `You are **NexusOps** — Principal SRE & DevOps Engineer for premium Next.js e-commerce platforms.
-Context: NEXUS runs on Next.js 15 + Postgres 16 + Redis + Vercel/Railway. Must maintain 99.99% uptime and <400ms checkout.
-Mission: Deliver a complete technical health report when triggered.
+const IT_OPS_SYSTEM_PROMPT = `You are **NexusOps** — Principal SRE for NEXUS (Next.js + Postgres + Redis).
+Mission: When triggered, call ALL available tools, then produce a complete health report.
 
-Tools you MUST use:
-- getDbStats()
-- getSlowQueries()
-- getRecentSentryErrors()
-- getApiLatencyStats()
-- getCoreWebVitals()
-- getResourceUsage()
+Report format (strict Markdown):
+## NEXUS Health Report
+### Database
+### Orders (last 24h)
+### Products & Inventory
+### Issues Found
+| Priority | Issue | Business Impact | Fix |
+|----------|-------|-----------------|-----|
 
-Step-by-step:
-1. Gather fresh data
-2. Classify every issue: P0 (revenue risk), P1, P2, P3
-3. For each: Description, €/conversion impact, root cause, fix, effort, one-click safe?
+End with a one-line executive summary.`;
 
-Output STRICT Markdown with emojis and tables. End with "Ready for human approval on any fix?"`;
+const getDbStats = tool(
+  async () => {
+    try {
+      const stats = await prisma.$queryRaw<any[]>`
+        SELECT datname, numbackends, xact_commit, xact_rollback, blks_read, blks_hit
+        FROM pg_stat_database
+        WHERE datname = current_database();
+      `;
+      return JSON.stringify(stats[0] ?? {});
+    } catch (e: any) {
+      return `DB stats unavailable: ${e.message}`;
+    }
+  },
+  {
+    name: "getDbStats",
+    description: "Fetch PostgreSQL database statistics (connections, commits, rollbacks, cache hits)",
+    schema: z.object({}),
+  },
+);
 
-async function getDbStats() {
-  const stats = await prisma.$queryRaw`SELECT * FROM pg_stat_database LIMIT 5;`;
-  return { connections: stats, slowQueries: "..." };
-}
+const getSlowQueries = tool(
+  async () => {
+    try {
+      // pg_stat_statements requires the extension — graceful fallback
+      const rows = await prisma.$queryRaw<any[]>`
+        SELECT query, calls, total_exec_time, mean_exec_time
+        FROM pg_stat_statements
+        ORDER BY mean_exec_time DESC
+        LIMIT 5;
+      `;
+      return JSON.stringify(rows);
+    } catch {
+      return "pg_stat_statements extension not enabled — install with: CREATE EXTENSION pg_stat_statements;";
+    }
+  },
+  {
+    name: "getSlowQueries",
+    description: "List the 5 slowest database queries using pg_stat_statements",
+    schema: z.object({}),
+  },
+);
 
-async function getSlowQueries() {
-  return await prisma.$queryRaw`SELECT * FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 10;`;
-}
+const getOrderStats = tool(
+  async () => {
+    try {
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const [total, recent, cancelled] = await Promise.all([
+        prisma.order.count(),
+        prisma.order.count({ where: { date: { gte: yesterday } } }),
+        prisma.order.count({ where: { cancelled: true, date: { gte: yesterday } } }),
+      ]);
+      const revenue = await prisma.order.aggregate({
+        where: { date: { gte: yesterday }, cancelled: false },
+        _sum: { total: true },
+      });
+      return JSON.stringify({
+        totalOrders: total,
+        last24hOrders: recent,
+        last24hCancelled: cancelled,
+        last24hRevenue: revenue._sum.total ?? 0,
+      });
+    } catch (e: any) {
+      return `Order stats unavailable: ${e.message}`;
+    }
+  },
+  {
+    name: "getOrderStats",
+    description: "Get order counts and revenue for the last 24 hours",
+    schema: z.object({}),
+  },
+);
 
-async function getRecentSentryErrors() {
-  // Sentry SDK call - replace with your project
-  return { errors: "No critical errors in last 24h" };
-}
-
-const tools = [
-  { name: "getDbStats", description: "Database stats", func: getDbStats },
-  { name: "getSlowQueries", description: "Slow queries", func: getSlowQueries },
-  { name: "getRecentSentryErrors", description: "Recent Sentry errors", func: getRecentSentryErrors },
-  // add getCoreWebVitals, getApiLatencyStats etc. the same way
-];
+const getInventoryAlerts = tool(
+  async () => {
+    try {
+      const lowStock = await prisma.product.findMany({
+        where: { stock: { lte: 5 } },
+        select: { name: true, stock: true, category: true },
+        orderBy: { stock: "asc" },
+        take: 10,
+      });
+      const outOfStock = await prisma.product.count({ where: { stock: 0 } });
+      return JSON.stringify({ outOfStock, lowStock });
+    } catch (e: any) {
+      return `Inventory data unavailable: ${e.message}`;
+    }
+  },
+  {
+    name: "getInventoryAlerts",
+    description: "Find out-of-stock and low-stock products",
+    schema: z.object({}),
+  },
+);
 
 export const ITOPS_AGENT = createAgent({
-  name: "IT-Operations-Reporter",
+  name: "it-operations-reporter",
   description: "Full technical health & operations report",
   systemPrompt: IT_OPS_SYSTEM_PROMPT,
-  tools,
+  tools: [getDbStats, getSlowQueries, getOrderStats, getInventoryAlerts],
   temperature: 0.2,
   maxSteps: 15,
 });

@@ -1,61 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
+import { requireAdmin } from '@/lib/server-auth';
 import fs from 'fs';
 import path from 'path';
-import { createAgent } from '@/lib/agents/base';
+import { buildGraph } from '@/lib/agents/base';
 
-// load config file (agents/config.json)
 function loadConfig() {
   const cfgPath = path.resolve(process.cwd(), 'agents/config.json');
   try {
-    const raw = fs.readFileSync(cfgPath, 'utf-8');
-    return JSON.parse(raw);
+    return JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
   } catch {
     return {};
   }
 }
 
-export async function POST(req: NextRequest, { params }: { params: { name: string } }) {
-  const { name } = params;
+export async function POST(req: NextRequest, { params }: { params: Promise<{ name: string }> }) {
+  const { error } = await requireAdmin();
+  if (error) return error;
+
+  const { name } = await params;
   const config = loadConfig();
 
-  // try DB first
+  // resolve prompt: DB config first, then file config
   let prompt: string | undefined;
   try {
     const dbCfg = await prisma.agentConfig.findUnique({ where: { agentName: name } });
     if (dbCfg?.config) {
       const cfg = typeof dbCfg.config === 'string' ? JSON.parse(dbCfg.config) : dbCfg.config;
-      prompt = cfg.prompt || cfg.systemPrompt || cfg;
+      prompt = cfg.prompt ?? cfg.systemPrompt;
     }
   } catch {}
 
-  // fallback to file-based config
-  if (!prompt) {
-    prompt = config.agentPrompts?.[name];
-  }
+  if (!prompt) prompt = config.agentPrompts?.[name];
 
   if (!prompt) {
     return NextResponse.json({ error: 'Agent not configured' }, { status: 404 });
   }
 
-  const job = await prisma.agentJob.create({ data: { agentName: name, triggeredBy: 'admin' } });
+  // Create the job upfront so we can return the jobId immediately
+  const job = await prisma.agentJob.create({
+    data: { agentName: name, triggeredBy: 'admin', status: 'RUNNING' },
+  });
 
-  (async () => {
+  // Run the graph in the background — do NOT await
+  ;(async () => {
     const start = Date.now();
     try {
-      const agent = await createAgent({
+      const compiled = await buildGraph({
         name,
-        description: config.agentList?.find((a: any) => a.name === name)?.description || '',
-        systemPrompt: prompt,
+        description: config.agentList?.find((a: any) => a.name === name)?.description ?? '',
+        systemPrompt: prompt!,
         tools: [],
       });
-      const result = await agent.invoke({ messages: [{ role: 'user', content: 'Run now' }] });
+      const result = await compiled.invoke({
+        messages: [{ role: 'user', content: 'Run now and produce a full report.' }],
+      });
+      const text = result?.messages?.at(-1)?.content ?? JSON.stringify(result);
       await prisma.agentJob.update({
         where: { id: job.id },
-        data: { status: 'COMPLETED', result, completedAt: new Date(), durationMs: Date.now() - start },
+        data: {
+          status: 'COMPLETED',
+          result: { text },
+          completedAt: new Date(),
+          durationMs: Date.now() - start,
+        },
       });
-    } catch (e) {
-      await prisma.agentJob.update({ where: { id: job.id }, data: { status: 'FAILED', error: String(e) } });
+    } catch (e: any) {
+      await prisma.agentJob.update({
+        where: { id: job.id },
+        data: { status: 'FAILED', error: String(e?.message ?? e) },
+      });
     }
   })();
 

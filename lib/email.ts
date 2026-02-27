@@ -281,3 +281,89 @@ export async function sendShippingEmail({
 //   })
 //   break
 // }
+
+// ─── NEWSLETTER WELCOME ─────────────────────────────────────
+export async function sendWelcomeEmail({ email }: { email: string }) {
+  const appUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nexus-store.io';
+  const html = `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:40px 20px;background:#000;font-family:Helvetica,Arial,sans-serif;">
+  <table width="600" style="max-width:600px;margin:0 auto;">
+    <tr>
+      <td style="text-align:center;padding-bottom:32px;">
+        <table cellpadding="0" cellspacing="0" style="display:inline-table;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#06b6d4,#9333ea);border-radius:10px;width:36px;height:36px;text-align:center;vertical-align:middle;">
+              <span style="color:#000;font-weight:800;font-size:18px;">N</span>
+            </td>
+            <td style="padding-left:10px;">
+              <span style="color:#fff;font-weight:800;font-size:22px;letter-spacing:-1px;">NEXUS</span>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:16px;padding:40px;text-align:center;">
+        <div style="font-size:48px;margin-bottom:16px;">🎉</div>
+        <h1 style="color:#fff;font-size:24px;font-weight:800;margin:0 0 12px;">Welcome to the NEXUS Community!</h1>
+        <p style="color:#9ca3af;font-size:15px;line-height:1.7;margin:0 0 24px;">
+          You're in. Every week we'll send you the latest products, exclusive deals,
+          and the top AI news — straight to your inbox.
+        </p>
+        <a href="${appUrl}/store" style="display:inline-block;background:linear-gradient(135deg,#06b6d4,#9333ea);color:#fff;font-weight:700;font-size:14px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+          Explore the Store →
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <td style="text-align:center;padding-top:24px;">
+        <p style="color:#374151;font-size:12px;margin:0;">
+          © 2026 NEXUS Technologies &nbsp;·&nbsp;
+          <a href="${appUrl}/unsubscribe?email=${encodeURIComponent(email)}" style="color:#374151;">Unsubscribe</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: '🎉 Welcome to the NEXUS Community!',
+      html,
+    });
+    if (error) { console.error('[email] welcome send error:', error); return { success: false, error }; }
+    return { success: true, data };
+  } catch (err) {
+    console.error('[email] welcome service error:', err);
+    return { success: false, error: err };
+  }
+}
+
+// ─── NEWSLETTER BULK SEND ───────────────────────────────────
+export async function sendNewsletterEmail({
+  subscribers,
+  subject,
+  html,
+}: {
+  subscribers: string[];
+  subject: string;
+  html: string;
+}) {
+  const results = { sent: 0, failed: 0, errors: [] as string[] };
+  for (const email of subscribers) {
+    try {
+      const { error } = await resend.emails.send({ from: FROM, to: email, subject, html });
+      if (error) { results.failed++; results.errors.push(`${email}: ${JSON.stringify(error)}`); }
+      else results.sent++;
+    } catch (e: any) {
+      results.failed++;
+      results.errors.push(`${email}: ${e.message}`);
+    }
+  }
+  return results;
+}

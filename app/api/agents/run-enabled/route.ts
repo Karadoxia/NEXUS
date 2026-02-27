@@ -1,28 +1,36 @@
 import { NextResponse } from 'next/server';
+import { requireAdmin } from '@/lib/server-auth';
 import fs from 'fs';
 import path from 'path';
-import { prisma } from '@/src/lib/prisma';
 
 function loadConfig() {
   const cfgPath = path.resolve(process.cwd(), 'agents/config.json');
   try {
-    const raw = fs.readFileSync(cfgPath, 'utf-8');
-    return JSON.parse(raw);
+    return JSON.parse(fs.readFileSync(cfgPath, 'utf-8'));
   } catch {
     return {};
   }
 }
 
-export async function POST() {
-  const config = loadConfig();
-  const list = config.agentList || [];
-  const enabled = list.filter((a: any) => a.enabled);
-  const results: any[] = [];
+export async function POST(req: Request) {
+  const { error } = await requireAdmin();
+  if (error) return error;
 
+  const config = loadConfig();
+  const enabled = (config.agentList ?? []).filter((a: any) => a.enabled);
+  const base =
+    process.env.NEXT_PUBLIC_BASE_URL ??
+    (req.headers.get('origin') || 'http://localhost:3030');
+
+  const results: any[] = [];
   for (const a of enabled) {
-    const endpoint = `/api/agents/${a.name.replace(/\s+/g,'-').toLowerCase()}/trigger`;
+    const slug = a.name.replace(/\s+/g, '-').toLowerCase();
+    const url = `${base}/api/agents/${slug}/trigger`;
     try {
-      const res = await fetch(endpoint, { method: 'POST' });
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { cookie: req.headers.get('cookie') ?? '' },
+      });
       const data = await res.json();
       results.push({ agent: a.name, data });
     } catch (e) {
