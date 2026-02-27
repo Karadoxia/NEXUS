@@ -20,13 +20,22 @@ export async function POST(request: Request) {
 
   const email = session?.user?.email || customer?.email || '';
 
+  // Pre-validate product IDs to avoid P2025 (stale cart items after DB migrations)
+  const itemIds: string[] = (items ?? []).map((i: any) => i.id);
+  const foundProducts = itemIds.length
+    ? await prisma.product.findMany({ where: { id: { in: itemIds } }, select: { id: true } })
+    : [];
+  const validProductIds = new Set(foundProducts.map((p) => p.id));
+  const validItems = (items ?? []).filter((i: any) => validProductIds.has(i.id));
+
   try {
     const piParams: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100),
       currency: 'eur',
       metadata: { email },
-      // card + paypal — Stripe dashboard controls which are live on your account
-      payment_method_types: ['card', 'paypal'],
+      // automatic_payment_methods shows every method enabled in your Stripe dashboard
+      // (cards, PayPal, Apple Pay, Google Pay, Link, Klarna, etc.)
+      automatic_payment_methods: { enabled: true },
     };
 
     let isPreConfirmed = false;
@@ -37,6 +46,9 @@ export async function POST(request: Request) {
         select: { stripeId: true },
       });
       if (stored?.stripeId) {
+        // Off-session charge — must use explicit payment_method_types, not automatic
+        delete (piParams as any).automatic_payment_methods;
+        piParams.payment_method_types = ['card'];
         piParams.payment_method = stored.stripeId;
         piParams.confirm = true;
         piParams.off_session = true;
@@ -63,13 +75,15 @@ export async function POST(request: Request) {
         shippingAddress: address ?? undefined,
         paymentMethodId: paymentMethodId ?? undefined,
         user: userConnect,
-        items: {
-          create: (items ?? []).map((i: any) => ({
-            product: { connect: { id: i.id } },
-            quantity: i.quantity,
-            price: i.price,
-          })),
-        },
+        ...(validItems.length > 0 && {
+          items: {
+            create: validItems.map((i: any) => ({
+              product: { connect: { id: i.id } },
+              quantity: i.quantity,
+              price: i.price,
+            })),
+          },
+        }),
       },
     });
 
