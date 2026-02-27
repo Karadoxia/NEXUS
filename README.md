@@ -146,6 +146,12 @@ NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
 STRIPE_SECRET_KEY=sk_test_...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
+# --- Grok / LLM -------------------------------------------------------------
+# your Grok API key enables the built-in agents and any GPT-style calls.
+# set this to the key you were provided before starting the dev server.
+# example (do not commit the real key):
+
+
 # --- Authentication -------------------------------------------------------
 # NextAuth uses a database for adapters; sessions are JWT by default.
 # No further variables required unless using OAuth providers.
