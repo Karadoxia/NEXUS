@@ -172,3 +172,27 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # --- Optional 3rd-party services ------------------------------------------
 RESEND_API_KEY=re_...
 GEMINI_API_KEY=AIzaSyBypwgh3aX5BQQ_Xeq-Mxwtvt5o6M9F7d0
+
+# --- Local operations dashboard -------------------------------------------
+The admin panel now includes an **Operations** page (`/admin/monitoring`) that
+provides quick links to a handful of infrastructure consoles typically running
+on `localhost` during development.  These are meant for your convenience and
+are not bundled into production builds.
+
+* WireGuard UI – usually on port 51821
+* Wazuh SIEM – login at `/app/login?nextUrl=%2Fapp%2Fwz-home`
+* Grafana overview panel (metrics & dashboards)
+* Traefik proxy dashboard (middlewares, routers)
+* Cloudflare registrar/dashboard link
+
+You can override the target URLs by setting the following environment variables
+in your development environment or vault:
+  * `NEXT_PUBLIC_WIREGUARD_URL`
+  * `NEXT_PUBLIC_WAZUH_URL`
+  * `NEXT_PUBLIC_GRAFANA_URL`
+  * `NEXT_PUBLIC_TRAEFIK_URL`
+  * `NEXT_PUBLIC_CLOUDFLARE_URL`
+
+These links are intended to be accessed via VPN or when the services are
+running locally.  The admin page will show them only to authenticated
+administrators.
