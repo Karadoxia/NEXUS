@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build TS project
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm run test
+        env:
+          CI: true
+
+      - name: Build wasm helper
+        run: npm run rust:build:wasm
+
+      - name: Setup Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+          cache: cargo
+
+      - name: Build Rust workspace
+        run: cargo build --workspace --release
+
+      - name: Run Rust tests
+        run: cargo test --workspace
+
+      - name: Docker build (optional)
+        if: runner.os == 'Linux' && env.DOCKER_AVAILABLE == 'true'
+        run: |
+          docker compose build nexus-rust-service

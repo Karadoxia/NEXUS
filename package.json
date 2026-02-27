@@ -13,6 +13,8 @@
     "rust:build:wasm": "cd rust-agents/crates/compute && npx wasm-pack build --target web --out-dir ../../pkg --release",
     "rust:build:service": "cd rust-agents/crates/service && cargo build --release",
     "rust:run:service": "cd rust-agents/crates/service && cargo run",
+    "agent:new": "ts-node scripts/newAgent.ts",
+    "agent:sync": "ts-node scripts/syncAgents.ts",
     "postinstall": "npm run rust:build:wasm",
     "dev:rust": "npm run rust:build:wasm && npm run dev"
   },
@@ -71,6 +73,9 @@
     "typescript": "^5",
     "vercel": "^50.18.2",
     "vitest": "^0.34.1",
-    "wasm-pack": "^0.12.1"
+    "wasm-pack": "^0.12.1",
+    "supertest": "^6.3.3",
+    "next-test-api-route-handler": "^1.1.0",
+    "change-case": "^4.1.2"
   }
 }

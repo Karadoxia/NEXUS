@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: nexus_v2
     ports:
-      - "5433:5432" # Use 5433 to avoid collision with the prototype's 5432 port
+      - "5433:5432"
     volumes:
       - nexus_v2_postgres_data:/var/lib/postgresql/data
     networks:
@@ -19,9 +19,21 @@ services:
     image: redis:7-alpine
     container_name: nexus_v2_cache
     ports:
-      - "6380:6379" # Use 6380 to avoid collision with the prototype's 6379 port
+      - "6380:6379"
     networks:
       - nexus_v2_net
+
+  nexus-rust-service:
+    build: ./rust-agents/crates/service
+    container_name: nexus_rust_service
+    ports:
+      - "8081:8081"
+    networks:
+      - nexus_v2_net
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
 
 volumes:
   nexus_v2_postgres_data:

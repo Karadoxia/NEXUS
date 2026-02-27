@@ -50,3 +50,6 @@ next-env.d.ts
 # accidental directories from old SQLite startup bug
 postgresql:/
 rust-agents/target/
+
+# temporary directories created by tests
+/tests/tmp*
