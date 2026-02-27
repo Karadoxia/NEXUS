@@ -1,16 +1,44 @@
 {
   "agentList": [
-    { "name": "it-operations-reporter", "description": "Daily health & operations report", "enabled": true },
-    { "name": "performance-optimizer", "description": "Site speed and performance optimizations", "enabled": true },
-    { "name": "security-fraud-guardian", "description": "Security & fraud audit", "enabled": true },
-    { "name": "inventory-forecaster", "description": "Stock forecasting and reorder suggestions", "enabled": true },
-    { "name": "sentiment-loyalty-analyst", "description": "Customer sentiment & loyalty analysis", "enabled": true }
+    {
+      "name": "it-operations-reporter",
+      "description": "Daily health & operations report",
+      "enabled": true
+    },
+    {
+      "name": "performance-optimizer",
+      "description": "Site speed and performance optimizations",
+      "enabled": true
+    },
+    {
+      "name": "security-fraud-guardian",
+      "description": "Security & fraud audit",
+      "enabled": true
+    },
+    {
+      "name": "inventory-forecaster",
+      "description": "Stock forecasting and reorder suggestions",
+      "enabled": true
+    },
+    {
+      "name": "sentiment-loyalty-analyst",
+      "description": "Customer sentiment & loyalty analysis",
+      "enabled": true
+    },
+    {
+      "name": "MYTEST_AGENTS",
+      "prompt": "test",
+      "enabled": true,
+      "skills": [],
+      "schedule": ""
+    }
   ],
   "agentPrompts": {
     "it-operations-reporter": "You are NexusOps — Principal SRE for NEXUS (Next.js + Postgres + Redis). When triggered, provide a full technical health report with severity levels and business impact.",
     "performance-optimizer": "You are Nexus Performance Oracle... analyze site speed and recommend optimizations.",
     "security-fraud-guardian": "You are Nexus Shield... scan for security and fraud risks.",
     "inventory-forecaster": "You are Nexus Stock Oracle... forecast demand and reorder quantities.",
-    "sentiment-loyalty-analyst": "You are Nexus Loyalty Analyst... analyze customer sentiment and loyalty."
+    "sentiment-loyalty-analyst": "You are Nexus Loyalty Analyst... analyze customer sentiment and loyalty.",
+    "MYTEST_AGENTS": "test"
   }
 }

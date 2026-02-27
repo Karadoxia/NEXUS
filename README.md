@@ -30,10 +30,7 @@
 - Node.js 18+
 - npm or pnpm
 
-> **Note:** The development environment provided by this workspace does **not** include a running PostgreSQL
-> server or allow starting one via Docker due to sandbox restrictions. Any attempt to migrate or connect to
-> `localhost:5432` will fail with `P1001` errors until you point the project at a real database instance
-> (see "Database setup" below) or fall back to SQLite.
+> **Note:** The development environment provided by this workspace does **not** include a running PostgreSQL server or allow starting one via Docker due to sandbox restrictions. Any attempt to migrate or connect to `localhost:5432` will fail with `P1001` errors until you point the project at a real database instance (see "Database setup" below).
 
 ### Installation
 
@@ -53,90 +50,60 @@
 3. Run the development server (you can override the port if 3000 is in use):
 
    ```bash
-   # use PORT=3001 to avoid conflicts with other services like Grafana
-   PORT=3001 npm run dev
+   # use PORT=3030 to avoid conflicts with other services
+   PORT=3030 npm run dev
    ```
 
    or set `PORT` in `.env.local` and then just run `npm run dev`.
 
-4. Open [http://localhost:3001](http://localhost:3001) (or your chosen port)
-   in your browser.
+4. Open [http://localhost:3030](http://localhost:3030) (or your chosen port) in your browser.
 
-## � Architecture
+## 🔧 Environment Variables
 
-![Agents architecture](/images/Agents-Arch.png)
-## 🧠 AI Agents
-
-An admin section at **/admin/agents** lets you manually trigger the central
-"Leader" cycle and review recent job history. Jobs are recorded in the database
-(`AgentJob` and `AgentResult` models) so you can audit what ran and capture
-outputs or errors.  The `Performance` page (linked from the sidebar) shows the
-BI agent's historical metrics and recommendations.
-## �🔧 Environment Variables
-
-Create a `.env.local` file in the project root. A few values are optional for
-mock mode, but the full experience (database, authentication, payments) requires
-real values:
+Create a `.env.local` file in the project root. A few values are optional for mock mode, but the full experience (database, authentication, payments) requires real values:
 
 ### Database setup
 
-> **Agent scheduler URL**
->
-> The agents run in the background using `initAgents()`, which needs to know the
-> base URL of the store so it can call `/api/...` endpoints. By default it
-> assumes `http://localhost:3040`, which is why you’ve seen connection refused
-> messages if you start the server on port 3030. Set one of the following
-> environment variables to the correct address before starting the app:
->
-> ```env
-> NEXT_PUBLIC_BASE_URL=http://localhost:3030   # preferred
-> NEXT_PUBLIC_APP_URL=http://localhost:3030    # fallback
-> PORT=3030                                    # used only if above are unset
-> ```
->
-> Remember to restart the dev server after changing these values.
+This project now **requires PostgreSQL**.  The Prisma schema is defined for `postgresql` and the runtime client expects `DATABASE_URL` to point at a live Postgres server. Provision the database any way that works for you – a local container (see `docker-compose.yml`, which exposes port **5433**), a managed service (Supabase, Railway, etc.), or an existing installation. The app will fail to start with `P1001` if it cannot reach the server.
 
-### Database setup
+> ⚠️ **Sandbox reminder:** the development environment used by this workspace cannot start Docker or host a database. You must run Postgres outside this environment (on your host machine or a remote instance) before launching the app.
 
-The application uses Prisma to manage the schema.  You can run against a
-Postgres server or a local SQLite file; the provider is controlled by the
-`DB_PROVIDER` environment variable.  When working locally set
-`DB_PROVIDER=sqlite` (the `.env.local` shipped with this repo already does this).
-
-**Any time the `schema.prisma` file changes you must run the following commands and restart the dev server:**
+Once the database is available, apply migrations and regenerate the client:
 
 ```bash
-# create or apply new migrations (dev.db will be created automatically if you
-# are using SQLite)
-npx prisma migrate dev --name <meaningful-name>
+# Docker-compose defines user `nexus` and database `nexus_v2` on port 5433
+export DATABASE_URL="postgresql://nexus:password@localhost:5433/nexus_v2"
+# or set the same value in .env.local (see below)
 
-# regenerate the client so TypeScript and the running server understand the
-# new models/fields
+npx prisma migrate dev --name init   # use `migrate deploy` in production
 npx prisma generate
 ```
 
-The `migrate dev` command will prompt you to reset the database if structural
-changes are incompatible; resetting in development is fine, but **do not reset
-your production database**.
+# You can also inspect the database from the host if you need to verify
+# credentials or examine tables.  either install a client or run psql inside
+the container:
+#
+#   docker exec -it nexus_v2_db psql -U nexus -d nexus_v2 -c '\l'
+#
+# (adjust user/db if you changed them in docker-compose)
 
-If you want to use PostgreSQL (recommended for production) you must have an
-accessible server. This can be a local installation (outside the sandbox), a
-Docker container running on your host, or any managed provider such as Supabase,
-Railway, ElephantSQL, or AWS RDS. Once it is running, set `DB_PROVIDER=postgresql`
-and `DATABASE_URL` accordingly before running the migrations above.
+To copy existing data from the old SQLite file (`dev.db`), run the helper script once (it uses `SQLITE_URL` or defaults to `file:./dev.db`):
 
-If you do not have a Postgres instance handy, the project still works with the
-built-in SQLite database; set the variable to `file:./dev.db` or remove
-`DATABASE_URL` entirely. The migration command will operate on `dev.db` by
-default.
+```bash
+npm run migrate:sqlite-to-postgres
+```
+
+After migration you may delete `dev.db` and remove any `SQLITE_URL` variable – the application no longer references SQLite.
+
+Example `.env.local`:
 
 ```env
 # --- Database --------------------------------------------------------------
-# switch to Postgres for production; then run `npx prisma migrate dev`
-DATABASE_URL="postgresql://user:password@localhost:5432/nexus"
+DATABASE_URL="postgresql://postgres:password@localhost:5433/nexus"
 
 # --- Admin ---------------------------------------------------------------
 NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com
+```
 
 # --- Stripe (required for real checkout) ----------------------------------
 STRIPE_SECRET_KEY=sk_test_...
@@ -149,189 +116,3 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # --- Optional 3rd-party services ------------------------------------------
 RESEND_API_KEY=re_...
 GEMINI_API_KEY=AIzaSyBypwgh3aX5BQQ_Xeq-Mxwtvt5o6M9F7d0
-```
-
-During development you can rely on the embedded SQLite database and the mock
-checkout button; however, set `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-to test the real payment flow.
-
-## 🧠 Agent Intelligence & Self‑Improvement
-
-The agent subsystem now includes built-in learning and recovery capabilities:
-
-- A **`Performance`** database table records periodic metrics (orders, returns,
-  downtime) that the `Leader` agent uses to adjust its behaviour over time.
-  Metrics are stored via the new `/api/agents/performance` endpoint and can be
-  queried for analysis via the admin performance UI, which now includes a Chart.js
-  line chart showing orders and returns over time.
-- The **PerformanceAnalyzer** worker now examines historical entries each cycle
-  and produces optimization suggestions (e.g. raising low‑stock thresholds,
-  bumping marketing budgets). It updates `agents/config.json` automatically so
-  changes persist across restarts.
-- New specialist agents:
-  - **MarketingOptimizer** adjusts or recommends marketing budgets based on
-    recent order volume.
-  - **StockForecaster** reviews product stock levels, predicts shortages, and
-    suggests SKUs to reorder.
-  Both integrate with the shared configuration file.
-- Every hour the scheduler runs the **Leader**; after finishing it invokes
-  `leader.selfImprove()`, which fetches current order/return counts, logs them,
-  persists the observation, inspects history for trends, and may modify
-  `agents/config.json` (e.g. enabling a high‑return warning or increasing
-  marketing spend) when thresholds are exceeded.
-- A **SupervisorAgent** health‑checks the storefront every minute. If it detects
-  downtime it logs an outage, records the event in the performance table, sends a
-  Slack alert if `SLACK_WEBHOOK` is configured, and triggers a recovery leader run.
-  The restart behaviour is now configurable: add a `restartCommand` string to
-  `agents/config.json` (e.g. `systemctl restart nexus.service` or a Docker CLI
-  invocation) and the supervisor will execute it on failure.
-- An administrative UI at `/admin/config` allows you to view and edit
-  `agents/config.json` directly from the dashboard. You can change thresholds,
-  set the restart command, adjust marketing budgets, etc. Changes take effect on
-  the next agent cycle or immediately if the leader reads the config file again.
-- All of these behaviours are wired up via `initAgents()` in the layout, so
-  restarting the server immediately brings the whole brain back online.
-
-These enhancements make the platform not just autonomous but **self‑healing
-and capable of incremental self‑improvement**.
-
-## 🏗️ Building for Production
-
-To create an optimized production build:
-
-```bash
-npm run build
-npm start
-```
-
-## 📚 Documentation
-
-- [Architecture Guide](./ARCHITECTURE.md) - Deep dive into state management and patterns.
-- [Deployment Guide](./DEPLOY.md) - How to ship to Vercel.
-- [Future Roadmap](./ROADMAP.md) - Planned features (AI Agents, Animations).
-
-## 🧩 API & Backend
-
-A minimal backend now exists via Next.js API routes to start migrating off the in-browser ``mock backend``:
-
-- **GET** `/api/products` – returns the static product catalogue.
-- **GET/POST** `/api/orders` – list or create orders (stored in memory).
-- **PUT** `/api/orders/[id]` – update status/shipment for a given order.
-
-The Zustand stores call these endpoints; data is now persisted using Prisma
-and the configured `DATABASE_URL` (SQLite by default). Orders are linked to
-authenticated users when available.
-
-## 🧪 Testing
-
-Basic unit tests for the cart store have been added using Vitest.
-Run `npm run test` to execute them. The suite currently covers adding items,
-adjusting quantities, and removing items; more tests can be added as features
-grow.
-
-
-## 🤖 Vision: Hierarchical Agentic AI Company
-
-Imagine your full‑stack online web shop as a living, intelligent digital company — a self‑orchestrating organism where a CEO‑level AI brain oversees specialized
-departments of expert agents. Orders flow seamlessly, stock never surprises you,
-suppliers get negotiated like pros, customers feel personally cared for (even in
-after‑sales/SAV), and the entire system learns and optimizes 24/7. Humans step in
-only for vision, big decisions, or creative sparks. This is **hierarchical agentic
-AI** in action — and in 2026 it’s production‑ready, cost‑effective, and
-transformative for e‑commerce.
-
-### Core Architecture: Hierarchical Multi-Agent System (HMAS)
-
-> **Self‑orchestration & resilience**
->
-> The agent layer is designed to start automatically when the server renders the
-> root layout (`initAgents()` in `app/layout.tsx`). A lightweight scheduler
-> spins up the `Leader` orchestrator every hour and a `SupervisorAgent` every
-> minute. The supervisor pings the site and, if it detects downtime, triggers a
-> recovery run of the leader so that the system can attempt to heal itself after
-> a crash or reboot. This means that simply redeploying or restarting the
-> application brings the entire corporate brain back online with no manual
-> intervention.
->
-> Each leader cycle concludes with a `selfImprove()` step, where agents can
-> introspect past performance metrics and adjust their internal configs. The
-> current implementation is rudimentary (it counts orders and returns) but it
-> illustrates the pattern; future work might include automated tuning, model
-> retraining, and configuration evolution driven by real data.
-
-### Core Architecture: Hierarchical Multi-Agent System (HMAS)
-
-Think of it as a **corporate org chart made of AI**:
-
-- **Strategic Layer** (1 Lead Orchestrator) — high‑level planning, delegation,
-  KPI oversight, conflict resolution, escalation to human.
-- **Tactical Layer** (6–8 Departmental Manager Agents) — break down goals,
-  coordinate sub‑teams, report up.
-- **Execution Layer** (20+ Specialist Worker Agents) — handle granular tasks with
-autonomy.
-
-```mermaid
-flowchart TB
-  CEO([E-Commerce Orchestrator])
-  subgraph Managers
-    Ops(Operations Manager)
-    SC(Supply Chain Manager)
-    Fin(Finance & Payments Manager)
-    CX(Customer Experience Manager)
-    Mkt(Marketing & Catalog Manager)
-    Anal(Analytics & Insights Manager)
-    IT(IT & Security Manager)
-  end
-  CEO --> Managers
-  Ops --> Proc(Procurement)
-  Ops --> Ret(Retention Specialist)
-  SC --> Neg(Negotiation)
-  SC --> Log(Logistics)
-  Fin --> StockF(Stock Forecaster)
-  Fin --> LogF(Logistics)
-  CX --> PayProc(Payment Processor)
-  CX --> Sup(Customer Support)
-  Mkt --> SEO(SEO Optimizer)
-  Mkt --> PayProc2(Payment Processor)
-  Anal --> Fraud(Fraud Detection)
-  Anal --> Content(Content Lister)
-  IT --> Prod(Product Specialist)
-  IT --> Data(Data Analyst)
-```
-
-A visual version of this hierarchy is also saved to `docs/architecture.mmd`.
-
-**Benefits** include specialization, scalability (10k+ orders/day), resilience,
-modularity, and built‑in human‑in‑the‑loop for high‑stakes actions.
-
-### Communication Patterns
-
-Vertical delegation/reporting, horizontal collaboration (e.g. Stock ➜ Procurement),
-shared state via Vector DB + event bus, and event‑driven triggers.
-
-### Recommended 2026 Tech Stack
-
-Briefly:
-- **Orchestration**: CrewAI + LangGraph hybrids
-- **Backend**: Python/FastAPI or Node.js
-- **DBs**: PostgreSQL, Redis, VectorDB (Chroma/PGVector)
-- **LLMs**: mix of Grok‑4, Claude 3.5/4, Llama 3.1, Grok mini
-- **Tools**: LangChain/LlamaIndex, Celery/RabbitMQ, LangSmith/Grafana
-
-A full list of departments, agents, and implementation guidance is described
-in the project roadmap and associated architecture docs.
-
-### Implementation Path
-
-Start with a minimal crew (orchestrator + order/stock/support agents), then
-expand department by department. Use RAG for real‑time data, task decomposition
-for planning, and asynchronous event-driven execution. Monitor with LangSmith or
-your chosen observability stack.
-
-This system can outperform a 20‑person team while giving you god‑mode
-visibility and control. Prototype now, scale fast, and let AI handle the heavy
-lifting.
-
-## 📄 License
-
-This project is licensed under the MIT License.
