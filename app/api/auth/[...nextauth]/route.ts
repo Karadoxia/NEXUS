@@ -37,8 +37,10 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
-        // stamp isAdmin once at sign-in time using the server-only ADMIN_EMAIL var
-        token.isAdmin = user.email === process.env.ADMIN_EMAIL;
+        // stamp isAdmin once at sign-in time.  set ADMIN_EMAIL (server-only)
+        // in your environment.  an absent value means no one is admin.
+        const adminEmail = process.env.ADMIN_EMAIL;
+        token.isAdmin = user.email === adminEmail;
       }
       return token;
     },

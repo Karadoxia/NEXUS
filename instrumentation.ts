@@ -2,35 +2,18 @@
 // Automatically syncs FakeStore products so the catalogue is always populated.
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-    // bail if agents disabled or database not accessible
+    // bail if agents disabled
     if (process.env.DISABLE_AGENTS === 'true') {
       console.log('[startup] FakeStore sync skipped (agents disabled)');
       return;
     }
-    // resolve database path exactly like prisma.ts so we operate on the same file
-    const path = require('path');
-    const fs = require('fs');
-    let dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
-    let dbPath = dbUrl.replace(/^file:/, '');
-    if (!path.isAbsolute(dbPath)) {
-      const projectRoot = path.resolve(process.cwd());
-      dbPath = path.resolve(projectRoot, dbPath);
-    }
 
-    console.log('[startup] using database at', dbPath);
-
-    // ensure containing directory exists and file is present
-    if (!fs.existsSync(dbPath)) {
-      console.log('[startup] database file missing, creating empty sqlite');
-      try {
-        fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-        fs.writeFileSync(dbPath, '');
-      } catch (e) {
-        console.warn('[startup] failed to create db file', e);
-        console.log('[startup] FakeStore sync skipped (database missing)');
-        return;
-      }
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      console.warn('[startup] DATABASE_URL not set — FakeStore sync skipped');
+      return;
     }
+    console.log('[startup] using database at', dbUrl.replace(/:\/\/[^@]+@/, '://***@'));
 
     // Apply pending migrations at startup only when explicitly requested.
     // Running migrations on every cold start can cause issues in clustered or

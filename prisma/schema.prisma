@@ -7,15 +7,7 @@ generator client {
 }
 
 datasource db {
-  // development uses SQLite by default; change to "postgresql" before
-  // deploying to a real server.  The existing migration history was created
-  // against an SQLite file so staying on sqlite keeps things simple.
-  // provider = "sqlite"  // comment out sqlite
   provider = "postgresql"
-
-  // connection URL is supplied via prisma.config.ts (DATABASE_URL env var).
-  // for sqlite use `file:./dev.db`; for postgres use
-  // `postgresql://user:pass@host:port/dbname`.
 }
 
 model User {
