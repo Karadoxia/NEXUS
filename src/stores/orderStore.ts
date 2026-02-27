@@ -100,14 +100,14 @@ export const useOrderStore = create<OrderState>()(
                     const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`);
                     if (res.ok) {
                         const data = await res.json();
-                        // merge into local state for quick access
-                        set({ orders: [...data, ...get().orders] });
+                        // Replace local state — never merge, which would expose other users' orders
+                        set({ orders: Array.isArray(data) ? data : [] });
                         return data;
                     }
                 } catch {
                     // fall back to in-memory
                 }
-                return get().orders.filter(o => o.customer.email === email);
+                return get().orders.filter(o => o.customer?.email === email);
             },
 
             getOrderByTracking: (trackingNumber) => {
@@ -119,7 +119,7 @@ export const useOrderStore = create<OrderState>()(
                     const res = await fetch('/api/orders');
                     if (res.ok) {
                         const data = await res.json();
-                        set({ orders: [...data, ...get().orders] });
+                        set({ orders: Array.isArray(data) ? data : [] });
                         return data;
                     }
                 } catch {
