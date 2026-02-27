@@ -15,6 +15,7 @@ import { z } from "zod";
 import { prisma } from "@/src/lib/prisma";
 import { sendNewsletterEmail, verifyUnsubToken } from "@/lib/email";
 import { buildGraph } from "./base";
+import { safeAgentRun } from "./safe-executor";
 
 // Re-export so the /unsubscribe route can verify tokens without importing email directly
 export { verifyUnsubToken };
@@ -309,7 +310,7 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
     const groqKey = process.env.GROQ_API_KEY ?? process.env.GROK_API_KEY;
     if (groqKey) {
       try {
-        const compiled = await buildGraph({
+        const result = await safeAgentRun({
           name: "newsletter-intro-writer",
           description: "Writes newsletter intro",
           systemPrompt:
@@ -318,8 +319,6 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
             "Mention the stats provided. Be energetic, professional, and human.",
           tools: [],
           temperature: 0.7,
-        });
-        const result = await compiled.invoke({
           messages: [
             {
               role: "user",

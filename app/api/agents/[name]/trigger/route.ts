@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/server-auth';
 import { promises as fsp } from 'fs';
 import path from 'path';
 import { buildGraph } from '@/lib/agents/base';
+import { safeAgentRun } from '@/lib/agents/safe-executor';
 
 const AGENT_TIMEOUT_MS = 120_000; // 2 minutes max per agent run
 
@@ -59,21 +60,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
   after(async () => {
     const start = Date.now();
     try {
-      const compiled = await buildGraph({
+      // execute via the safe executor which handles sanitization, approval, and timeout
+      const result = await safeAgentRun({
         name,
         description: agentDescription,
         systemPrompt: resolvedPrompt,
         tools: [],
+        messages: [{ role: 'user', content: 'Run now and produce a full report.' }],
       });
-
-      // Race the graph against a hard timeout so a hung LLM call doesn't leave
-      // the job record in RUNNING state indefinitely.
-      const result = await Promise.race([
-        compiled.invoke({ messages: [{ role: 'user', content: 'Run now and produce a full report.' }] }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Agent timed out after ${AGENT_TIMEOUT_MS / 1000}s`)), AGENT_TIMEOUT_MS),
-        ),
-      ]);
 
       const text =
         typeof result?.messages?.at(-1)?.content === 'string'

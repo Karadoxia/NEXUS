@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { checkRateLimit, getRequestIp } from '@/lib/rate-limit';
 
 export async function middleware(request: NextRequest) {
+  const ip = getRequestIp(request);
+  // global rate limit: 100 requests per minute per IP
+  if (!checkRateLimit(`global:${ip}`, 100, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/admin')) {
