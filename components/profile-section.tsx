@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { User, MapPin, Plus, Pencil, Trash2, Check, X, CreditCard, Phone, Camera, ShoppingCart } from 'lucide-react';
+import { User, MapPin, Plus, Pencil, Trash2, Check, X, CreditCard, Phone, Camera } from 'lucide-react';
 import { PHONE_CODES } from '@/lib/phone-codes';
 
 interface Address {
@@ -59,16 +59,6 @@ export default function ProfileSection() {
   const [showPmForm, setShowPmForm] = useState(false);
   const [pmForm, setPmForm] = useState({ type: 'card', brand: 'Visa', last4: '', expMonth: '', expYear: '', cardholderName: '', accountEmail: '' });
 
-  // Order history
-  const [orders, setOrders] = useState<any[]>([]);
-
-  useEffect(() => {
-    if (!session?.user?.email) return;
-    fetch('/api/user/orders')
-      .then(r => r.ok ? r.json() : [])
-      .then((o) => setOrders(Array.isArray(o) ? o : []))
-      .catch(() => setOrders([]));
-  }, [session]);
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -606,30 +596,6 @@ export default function ProfileSection() {
                 <X size={14} /> Cancel
               </button>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Order History Card ── */}
-      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-          <ShoppingCart size={18} className="text-cyan-400" /> Order History
-        </h2>
-        {orders.length === 0 ? (
-          <p className="text-sm text-slate-500">You have not placed any orders yet.</p>
-        ) : (
-          <div className="space-y-4">
-            {orders.map((o) => (
-              <div key={o.id} className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-4">
-                <div className="flex justify-between text-sm text-white mb-1">
-                  <span>Order {o.id}</span>
-                  <span>{new Date(o.date).toLocaleDateString()}</span>
-                </div>
-                <div className="text-xs text-slate-400">
-                  {o.status.charAt(0).toUpperCase() + o.status.slice(1)} &middot; €{o.total.toFixed(2)} &middot; {o.items.length} item{o.items.length!==1?'s':''}
-                </div>
-              </div>
-            ))}
           </div>
         )}
       </div>

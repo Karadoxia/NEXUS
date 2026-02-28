@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # NEXUS Next.js app (exposes /metrics if configured)
+  - job_name: 'nexus-app'
+    static_configs:
+      - targets: ['nexus_app:3030']
+    metrics_path: '/api/metrics'
+
+  # Loki log aggregator
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+
+  # Uptime Kuma
+  - job_name: 'uptime-kuma'
+    static_configs:
+      - targets: ['uptime_kuma:3001']
