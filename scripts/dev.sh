@@ -28,12 +28,12 @@ docker compose up -d postgres redis
 # wait for postgres to become healthy
 printf "Waiting for postgres to accept connections...\n"
 # use docker exec psql to poll
-until docker exec -i nexus_v2_db pg_isready -U nexus >/dev/null 2>&1; do
+until docker exec -i nexus_postgres pg_isready -U nexus >/dev/null 2>&1; do
   sleep 1
 done
 
 # retrieve container IP and export DATABASE_URL so prismaclient connects correctly
-IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nexus_v2_db)
+IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nexus_postgres)
 export DATABASE_URL="postgresql://nexus:${POSTGRES_PASSWORD}@${IP}:5432/nexus_v2"
 
 printf "Using DATABASE_URL=%s\n" "$DATABASE_URL"
