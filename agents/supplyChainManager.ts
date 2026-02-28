@@ -10,7 +10,7 @@ export class SupplyChainManager extends Agent {
       const suggestions = low.map((p:any)=>({ id:p.id, slug:p.slug, needed: 50 - p.stock }));
       return { lowStock: low.length, suggestions };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

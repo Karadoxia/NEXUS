@@ -12,7 +12,7 @@ export class StockForecaster extends Agent {
       return { lowStockCount: lowStock.length, suggestions: lowStock.map((p:any)=>p.slug) };
     } catch (e) {
       console.warn('[StockForecaster] error', e);
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

@@ -10,7 +10,7 @@ export class FinanceManager extends Agent {
       const refunds = orders.filter((o:any)=>o.status==='cancelled').length;
       return { revenue, refunds };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

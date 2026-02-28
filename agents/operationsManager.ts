@@ -11,7 +11,7 @@ export class OperationsManager extends Agent {
       // could trigger fulfillment, fraud check etc.
       return { checked: orders.length, valid: valid.length };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

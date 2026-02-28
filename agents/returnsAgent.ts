@@ -9,7 +9,7 @@ export class ReturnsAgent extends Agent {
       const returns = orders.filter((o:any)=>o.status === 'cancelled');
       return { total: orders.length, returns: returns.length };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

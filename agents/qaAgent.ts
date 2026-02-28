@@ -10,7 +10,7 @@ export class QAAgent extends Agent {
       const issues = products.filter((p:any)=>!p.description || p.images?.length===0);
       return { total: products.length, issues: issues.length };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

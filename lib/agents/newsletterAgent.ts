@@ -57,7 +57,7 @@ const getAiNews = tool(
         }));
       return JSON.stringify(articles);
     } catch (e: any) {
-      return `AI news fetch failed: ${e.message}`;
+      return `AI news fetch failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {
@@ -78,7 +78,7 @@ const getFeaturedProducts = tool(
       });
       return JSON.stringify(products);
     } catch (e: any) {
-      return `Product fetch failed: ${e.message}`;
+      return `Product fetch failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {
@@ -99,7 +99,7 @@ const getStoreStats = tool(
       ]);
       return JSON.stringify({ totalProducts, subscribers, weeklyOrders });
     } catch (e: any) {
-      return `Store stats failed: ${e.message}`;
+      return `Store stats failed: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {

@@ -27,7 +27,7 @@ const getDbStats = tool(
       `;
       return JSON.stringify(stats[0] ?? {});
     } catch (e: any) {
-      return `DB stats unavailable: ${e.message}`;
+      return `DB stats unavailable: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {
@@ -80,7 +80,7 @@ const getOrderStats = tool(
         last24hRevenue: revenue._sum.total ?? 0,
       });
     } catch (e: any) {
-      return `Order stats unavailable: ${e.message}`;
+      return `Order stats unavailable: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {
@@ -102,7 +102,7 @@ const getInventoryAlerts = tool(
       const outOfStock = await prisma.product.count({ where: { stock: 0 } });
       return JSON.stringify({ outOfStock, lowStock });
     } catch (e: any) {
-      return `Inventory data unavailable: ${e.message}`;
+      return `Inventory data unavailable: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {

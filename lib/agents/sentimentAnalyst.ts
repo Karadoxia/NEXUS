@@ -34,7 +34,7 @@ const getCustomerMetrics = tool(
           : "0%",
       });
     } catch (e: any) {
-      return `Metrics unavailable: ${e.message}`;
+      return `Metrics unavailable: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {
@@ -63,7 +63,7 @@ const getRetentionData = tool(
         repeatBuyers: Number(multiOrder[0]?.count ?? 0),
       });
     } catch (e: any) {
-      return `Retention data unavailable: ${e.message}`;
+      return `Retention data unavailable: ${e instanceof Error ? e.message : String(e)}`;
     }
   },
   {

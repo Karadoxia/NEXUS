@@ -9,7 +9,7 @@ export class CustomerExperienceManager extends Agent {
       const open = tickets.filter((t:any)=>t.status!=='closed').length;
       return { total: tickets.length, open };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

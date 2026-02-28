@@ -9,7 +9,7 @@ export class MarketingManager extends Agent {
       const recs = products.sort(()=>0.5-Math.random()).slice(0,3);
       return { recommendations: recs };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

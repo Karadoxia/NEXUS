@@ -22,7 +22,7 @@ export class MarketingOptimizer extends Agent {
       return { recommendation, budget: this.ctx.config.marketingBudget };
     } catch (e) {
       console.warn('[MarketingOptimizer] error', e);
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

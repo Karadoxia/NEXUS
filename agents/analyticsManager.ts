@@ -12,7 +12,7 @@ export class AnalyticsManager extends Agent {
       const previous = orders.length - recent;
       return { total: orders.length, recent, previous };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }

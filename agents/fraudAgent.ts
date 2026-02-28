@@ -9,7 +9,7 @@ export class FraudAgent extends Agent {
       const suspicious = orders.filter((o:any)=>o.total > 1000);
       return { checked: orders.length, suspicious: suspicious.length };
     } catch (e) {
-      return { error: e.message };
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
 }
