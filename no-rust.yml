@@ -1,4 +1,0 @@
-services:
-  nexus-rust-service:
-    image: busybox
-    build: false
