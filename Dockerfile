@@ -9,11 +9,13 @@ RUN npm ci
 COPY . .
 RUN npx prisma generate
 
-# Provide a placeholder DATABASE_URL so Prisma doesn't throw at import time
-# during Next.js static-generation ("collect page data"). No actual DB
-# connection is made during the build — the real value is injected at runtime.
+# Provide placeholder env vars for services that throw at import time when
+# their key is missing. No real connections are made during the build —
+# actual values are injected at container runtime via docker-compose.
 ARG DATABASE_URL=postgresql://build:build@placeholder:5432/build
+ARG RESEND_API_KEY=re_placeholder_build_key
 ENV DATABASE_URL=$DATABASE_URL
+ENV RESEND_API_KEY=$RESEND_API_KEY
 
 # Build Next.js
 RUN npm run build
