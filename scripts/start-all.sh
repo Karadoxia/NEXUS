@@ -81,7 +81,12 @@ set +x
 # because those are already owned by the main compose stack above.
 if [ -d vpn-stack ]; then
   echo "Starting vpn-stack services..."
-  (cd vpn-stack && docker compose up -d wg-easy crowdsec node-exporter cadvisor wazuh.indexer wazuh.manager wazuh.dashboard) || true
+  # Excluded from vpn-stack (already in main stack):
+  #   wg-easy      → conflicts with wireguard on port 51820
+  #   vaultwarden  → already started above
+  #   prometheus   → already started above
+  #   grafana      → already started above
+  (cd vpn-stack && docker compose up -d crowdsec node-exporter cadvisor wazuh.indexer wazuh.manager wazuh.dashboard) || true
 fi
 
 # 3. optional dev server
