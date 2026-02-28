@@ -15,6 +15,7 @@ import {
   Mail,
   Bot,
   ScrollText,
+  Wrench,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useOrderStore } from '@/src/stores/orderStore';
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: '/admin/agents',      label: 'Agent Cycles', icon: Bot                            },
   { href: '/admin/config',      label: 'Agent Config', icon: Cpu                            },
   { href: '/admin/logs',        label: 'Audit Log',    icon: ScrollText                     },
+  { href: '/admin/tools',       label: 'Tools',        icon: Wrench                         },
 ] as const;
 
 function cn(...classes: (string | boolean | undefined)[]) {

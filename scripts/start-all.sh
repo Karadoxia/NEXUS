@@ -44,31 +44,18 @@ else
 fi
 
 if [ -d rust-agents/crates/service ]; then
-  echo "(detected rust service directory)" >&2
+  echo "(detected rust service directory — including nexus-rust-service)" >&2
   services="$services nexus-rust-service"
 else
-  echo "(rust service directory not found; using override to skip build)" >&2
-  # create override file that replaces the build instruction with a noop image
-  cat > no-rust.yml <<'EOF'
-services:
-  nexus-rust-service:
-    image: busybox
-    build: false
-EOF
-  services="$services nexus-rust-service"
+  echo "(rust service directory not found — skipping nexus-rust-service)" >&2
+  # clean up any leftover override file from a previous run
+  rm -f no-rust.yml
 fi
 # shellcheck disable=SC2086
 echo "service list: $services" >&2
-# show exact command being executed
 set -x
-# if we created an override file, pass it to compose
-if [ -f no-rust.yml ]; then
-  # shellcheck disable=SC2086
-  docker compose -f docker-compose.yml -f no-rust.yml up -d $services
-else
-  # shellcheck disable=SC2086
-  docker compose up -d $services
-fi
+# shellcheck disable=SC2086
+docker compose up -d $services
 
 # if we are skipping the app container, note that user must run dev server
 if ! $include_app; then

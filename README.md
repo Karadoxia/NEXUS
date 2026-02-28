@@ -340,3 +340,182 @@ in your development environment or vault:
 These links are intended to be accessed via VPN or when the services are
 running locally.  The admin page will show them only to authenticated
 administrators.
+
+---
+
+## Infrastructure Services — Access Guide
+
+All services below are **100% free and self-hosted** (no paid cloud subscriptions).
+
+### Quick Start — Local Browser Access
+
+Run once to register all `.local` hostnames on your machine:
+
+```bash
+sudo ./scripts/register-local-hosts.sh add
+```
+
+Then open any service below directly in your browser at port 80 (no port number needed).
+
+---
+
+### Service URLs & Default Credentials
+
+| Service | Local URL | Public URL (after DNS setup) | Default Login |
+| --- | --- | --- | --- |
+| **NEXUS App** | `http://nexus-app.local` | `https://nexus.yourdomain.com` | See `.env` → `ADMIN_EMAIL` |
+| **Grafana** | `http://nexus-grafana.local` | `https://grafana.yourdomain.com` | `admin` / `$GRAFANA_PASS` |
+| **Prometheus** | `http://nexus-prometheus.local` | *internal only* | No auth |
+| **Loki** | `http://nexus-loki.local` | *internal only* | No auth |
+| **VaultWarden** | `http://nexus-vaultwarden.local` | `https://vault.yourdomain.com` | Create account on first visit |
+| **n8n** | `http://nexus-n8n.local` | `https://n8n.yourdomain.com` | Create account on first visit |
+| **Uptime Kuma** | `http://nexus-uptime.local` | `https://status.yourdomain.com` | Create account on first visit |
+| **WireGuard (wg-easy)** | `http://nexus-vpn.local` | `https://vpn.yourdomain.com` | `$WIREGUARD_PASS` |
+| **Traefik Dashboard** | `http://nexus-traefik.local` | *internal only* | No auth |
+
+---
+
+### Required `.env` Variables
+
+Copy `.env.example` to `.env` and fill in all values before starting:
+
+```env
+# ── Application ──────────────────────────────────────────────
+DATABASE_URL=postgresql://nexus:YOUR_DB_PASS@localhost:5433/nexus_v2
+NEXTAUTH_SECRET=your-long-random-jwt-secret-here   # min 32 chars
+NEXTAUTH_URL=http://localhost:3030
+
+# ── Admin account ────────────────────────────────────────────
+NEXT_PUBLIC_ADMIN_EMAIL=admin@example.com          # first signup → promoted to admin
+
+# ── Database ─────────────────────────────────────────────────
+DB_PASSWORD=your_postgres_password_here
+REDIS_PASSWORD=your_redis_password_here
+
+# ── Email (Resend — free tier: 100 emails/day) ────────────────
+RESEND_KEY=re_xxxxxxxxxxxxxxxxxxxx
+
+# ── AI / LLM ─────────────────────────────────────────────────
+GEMINI_API_KEY=AIzaSy...
+GROQ_API_KEY=gsk_...
+
+# ── Monitoring ────────────────────────────────────────────────
+GRAFANA_PASS=your_grafana_admin_password
+
+# ── Secrets manager ───────────────────────────────────────────
+VAULTWARDEN_ADMIN_TOKEN=your_argon2_or_plain_token
+# Generate:  openssl rand -base64 48
+
+# ── VPN ───────────────────────────────────────────────────────
+WIREGUARD_PASS=your_wg_easy_web_ui_password
+WG_HOST=vpn.yourdomain.com                         # or your server IP
+
+# ── Workflow automation ───────────────────────────────────────
+N8N_ENCRYPTION_KEY=your_32char_n8n_encryption_key
+# Generate:  openssl rand -hex 16
+
+# ── Telegram notifications (optional) ────────────────────────
+TELEGRAM_BOT_TOKEN=123456:ABC-DEFxxxx
+TELEGRAM_CHAT_ID=-100xxxxxxxxxxxx
+
+# ── LangSmith tracing (optional) ─────────────────────────────
+LANGSMITH_API_KEY=ls__xxxx
+```
+
+---
+
+### VaultWarden Admin Panel
+
+VaultWarden's admin panel is at `/admin` and requires the `ADMIN_TOKEN`.
+
+To generate a secure token:
+
+```bash
+# Option A — plain token (works but recommended to use Argon2 for production)
+openssl rand -base64 48
+
+# Option B — Argon2-hashed token (most secure)
+docker run --rm -it vaultwarden/server /vaultwarden hash --preset owasp
+# → paste the output into VAULTWARDEN_ADMIN_TOKEN in .env
+```
+
+**Note:** Set `SIGNUPS_ALLOWED=false` (already done) so only you can create accounts.
+
+---
+
+### Grafana First Login
+
+1. Navigate to `http://nexus-grafana.local`
+2. Login: `admin` / value of `$GRAFANA_PASS` in `.env`
+3. Datasources (Prometheus + Loki) are auto-provisioned on boot
+4. The **NEXUS — Infrastructure Overview** dashboard is pre-loaded from `data/grafana/dashboards/nexus-overview.json`
+
+---
+
+### n8n First Login
+
+1. Navigate to `http://nexus-n8n.local`
+2. Create your admin account on first visit
+3. n8n uses the shared Postgres instance (`nexus` user, `n8n` database — created automatically)
+4. Queue mode uses the shared Redis instance
+
+---
+
+### NEXUS App Admin Account
+
+The **first user** to sign up whose email matches `NEXT_PUBLIC_ADMIN_EMAIL` is automatically granted admin access.
+
+Admin panel: `http://nexus-app.local/admin`
+
+---
+
+### Encrypted Secrets (SOPS + age)
+
+To commit your `.env` safely to Git (encrypted):
+
+```bash
+# 1. Install tools + generate age key + encrypt .env
+./scripts/setup-sops.sh
+
+# 2. Commit the encrypted file
+git add .env.enc .sops.yaml
+git commit -m "chore: add encrypted secrets"
+
+# On a new machine — decrypt
+./scripts/setup-sops.sh --install
+# (copy your age private key to ~/.config/sops/age/nexus.txt)
+./scripts/setup-sops.sh --decrypt
+```
+
+---
+
+### One-Command Infrastructure Startup
+
+```bash
+# Start all services (infrastructure only, run Next.js dev server locally)
+./scripts/start-all.sh
+
+# Start everything including Next.js dev server
+./scripts/start-all.sh
+
+# Infrastructure only (no Next.js)
+./scripts/start-all.sh --no-dev
+
+# After containers are up, provision Grafana datasources + validate health
+./scripts/provision.sh
+```
+
+---
+
+### Updating /etc/hosts (Local Access)
+
+```bash
+# Add all .local entries
+sudo ./scripts/register-local-hosts.sh add
+
+# Remove all entries
+sudo ./scripts/register-local-hosts.sh remove
+
+# Show current status
+./scripts/register-local-hosts.sh status
+```
