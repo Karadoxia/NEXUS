@@ -1,8 +1,12 @@
 #!/bin/sh
 set -e
 
-# ensure we have sensible defaults for passwords (not for production!)
-: "${POSTGRES_PASSWORD:=password}"
+# Read DB password from the Docker secrets file (same source postgres uses).
+# Fall back to POSTGRES_PASSWORD env var for manual dev setups, then 'password'.
+if [ -f db_password.txt ]; then
+  DB_PASSWORD=$(cat db_password.txt)
+fi
+: "${DB_PASSWORD:=${POSTGRES_PASSWORD:-password}}"
 : "${REDIS_PASSWORD:=password}"
 
 # abort if running as root (sudo strips environment variables)
@@ -16,8 +20,8 @@ fi
 
 printf "Starting postgres and redis containers...\n"
 # ensure database password is not empty
-if [ -z "$POSTGRES_PASSWORD" ]; then
-  echo "[error] POSTGRES_PASSWORD is not set; set it before running dev script."
+if [ -z "$DB_PASSWORD" ]; then
+  echo "[error] DB_PASSWORD is not set; create db_password.txt or set DB_PASSWORD."
   exit 1
 fi
 
@@ -34,7 +38,7 @@ done
 
 # retrieve container IP and export DATABASE_URL so prismaclient connects correctly
 IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nexus_postgres)
-export DATABASE_URL="postgresql://nexus:${POSTGRES_PASSWORD}@${IP}:5432/nexus_v2"
+export DATABASE_URL="postgresql://nexus:${DB_PASSWORD}@${IP}:5432/nexus_v2"
 
 printf "Using DATABASE_URL=%s\n" "$DATABASE_URL"
 
