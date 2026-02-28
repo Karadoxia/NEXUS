@@ -18,7 +18,7 @@
     "agent:sync": "ts-node scripts/syncAgents.ts",
     "agent:run": "ts-node agents/runner.ts",
     "dev:full": "sh ./scripts/dev.sh",
-    "postinstall": "npm run rust:build:wasm",
+    "postinstall": "[ -d rust-agents/crates/compute ] && npm run rust:build:wasm || true",
     "dev:rust": "npm run rust:build:wasm && npm run dev",
     "start:all": "bash ./scripts/start-all.sh"
   },
