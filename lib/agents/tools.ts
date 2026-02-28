@@ -1,9 +1,7 @@
-import { Tool } from "@langchain/langgraph";
-
 // Rust service tool that forwards a JSON payload to the Rust microservice.
 // The Rust endpoint is expected to accept `{ operation, numbers }` and return
 // `{ result }` as in the default implementation.
-export function rustTool(): Tool {
+export function rustTool() {
   return {
     name: "rust-service",
     description:

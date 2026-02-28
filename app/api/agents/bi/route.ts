@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   if (error) return error;
 
   // create a job record
-  const job = await prisma.agentJob.create({ data: { agent: 'bi' } });
+  const job = await prisma.agentJob.create({ data: { agentName: 'bi', triggeredBy: 'admin', status: 'RUNNING' } });
 
   try {
     const ctx = {
@@ -17,11 +17,11 @@ export async function POST(request: Request) {
     };
     const agent = new BiAgent(ctx as any);
     const result = await agent.run();
-    await prisma.agentJob.update({ where: { id: job.id }, data: { status: 'succeeded' } });
+    await prisma.agentJob.update({ where: { id: job.id }, data: { status: 'COMPLETED', completedAt: new Date() } });
     await prisma.agentResult.create({ data: { job: { connect: { id: job.id } }, output: result } });
     return NextResponse.json({ success: true, result, jobId: job.id });
   } catch (e: unknown) {
-    await prisma.agentJob.update({ where: { id: job.id }, data: { status: 'failed' } });
+    await prisma.agentJob.update({ where: { id: job.id }, data: { status: 'FAILED' } });
     await prisma.agentResult.create({ data: { job: { connect: { id: job.id } }, output: {}, error: String(e) } });
     return NextResponse.json({ error: 'BI Agent run failed' }, { status: 500 });
   }

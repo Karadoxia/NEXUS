@@ -7,19 +7,17 @@ export class MarketingAgent {
   }
 
   async run() {
-    // Example: Find products with low sales and suggest promotions
-    const lowSalesProducts = await prisma.product.findMany({
-      where: {
-        sales: {
-          lt: 10,
-        },
-      },
-      select: { id: true, name: true, sales: true },
+    // Find recently added products that may need promotion
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const newProducts = await prisma.product.findMany({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+      select: { id: true, name: true, price: true, category: true },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
     });
-    const suggestions = lowSalesProducts.map(p => ({
+    const suggestions = newProducts.map(p => ({
       productId: p.id,
       name: p.name,
-      sales: p.sales,
       promotionSuggested: true,
     }));
     return { suggestions, count: suggestions.length };

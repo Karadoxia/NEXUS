@@ -60,7 +60,7 @@ export function AiAssistant() {
             setMessages(prev => [...prev, aiMsg]);
 
             if (response.intent === 'NAVIGATE' && response.data) {
-                setTimeout(() => router.push(response.data), 1000);
+                setTimeout(() => router.push(response.data!), 1000);
             }
             if (response.intent === 'SEARCH' && response.data) {
                 // Trigger global search (we'll implement this via event dispatch or URL param)

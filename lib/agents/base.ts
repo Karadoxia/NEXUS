@@ -9,7 +9,7 @@ export interface AgentConfig {
   name: string;
   description: string;
   systemPrompt: string;
-  tools: unknown[];
+  tools: any[];
   temperature?: number;
   maxSteps?: number;
 }
@@ -50,18 +50,18 @@ async function buildGraphUncached(config: AgentConfig) {
       messages: { reducer: (x: unknown[], y: unknown[]) => x.concat(y) },
     },
   } as never)
-    .addNode("agent", async (state: { messages: unknown[] }) => {
+    .addNode("agent", async (state: any) => {
       const response = await model.invoke([
         { role: "system", content: config.systemPrompt },
-        ...state.messages,
+        ...(state.messages as any[]),
       ]);
       return { messages: [response] };
     })
     .addNode("tools", toolNode)
     .addEdge(START, "agent")
-    .addConditionalEdges("agent", (state: { messages: Array<{ tool_calls?: unknown[] }> }) => {
-      const last = state.messages[state.messages.length - 1];
-      return last.tool_calls?.length ? "tools" : END;
+    .addConditionalEdges("agent", (state: any) => {
+      const last = state.messages?.[state.messages.length - 1];
+      return last?.tool_calls?.length ? "tools" : END;
     })
     .addEdge("tools", "agent");
 

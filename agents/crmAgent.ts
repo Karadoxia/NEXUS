@@ -7,24 +7,13 @@ export class CRMAgent {
   }
 
   async run() {
-    // Example: Find customers with overdue invoices and send reminders
-    const overdueCustomers = await prisma.customer.findMany({
-      where: {
-        invoices: {
-          some: {
-            dueDate: { lt: new Date() },
-            status: 'unpaid',
-          },
-        },
-      },
-      include: { invoices: true },
+    // Find users with recent orders to identify active customers
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const activeUsers = await prisma.user.findMany({
+      where: { orders: { some: { date: { gte: sevenDaysAgo } } } },
+      select: { id: true, email: true, _count: { select: { orders: true } } },
+      take: 50,
     });
-    // Simulate sending reminders
-    const reminders = overdueCustomers.map(c => ({
-      customerId: c.id,
-      email: c.email,
-      reminderSent: true,
-    }));
-    return { reminders, count: reminders.length };
+    return { activeCustomers: activeUsers.length, sample: activeUsers.slice(0, 5) };
   }
 }

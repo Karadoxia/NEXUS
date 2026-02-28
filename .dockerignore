@@ -1,0 +1,12 @@
+.git
+.next
+node_modules
+npm-debug.log*
+.env.local
+.env*.local
+tests/tmp
+*.txt
+traefik/
+vpn-stack/
+public/uploads/
+.claude/

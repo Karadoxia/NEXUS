@@ -1,18 +1,17 @@
 import NextAuth from 'next-auth';
+import type { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/src/lib/prisma';
 import { checkRateLimit } from '@/lib/rate-limit';
-import type { JWT } from 'next-auth/jwt';
-import type { Session } from 'next-auth';
 
 // Note: PrismaAdapter is intentionally omitted because we use the JWT session
 // strategy which manages state entirely in the signed cookie.  Mixing
 // PrismaAdapter with strategy:'jwt' causes the adapter to create stale
 // Account/Session rows in the DB that are never read back.
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   session: {
-    strategy: 'jwt' as const,
+    strategy: 'jwt',
     maxAge: 24 * 60 * 60, // 24 hours
   },
   providers: [
@@ -40,18 +39,18 @@ export const authOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user?: { id: string; email: string } }) {
-      if (user) {
+    async jwt({ token, user }) {
+      if (user?.email) {
         // Stamp isAdmin once at sign-in time.  Set ADMIN_EMAIL (server-only)
         // in your environment.  An absent value means no one is admin.
         token.isAdmin = user.email === (process.env.ADMIN_EMAIL ?? '');
       }
       return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }) {
+    async session({ session, token }) {
       if (session?.user) {
         session.user.id = token.sub ?? '';
-        session.user.isAdmin = token.isAdmin ?? false;
+        session.user.isAdmin = (token.isAdmin as boolean) ?? false;
       }
       return session;
     },

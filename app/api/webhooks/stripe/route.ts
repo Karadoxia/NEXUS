@@ -74,11 +74,15 @@ export async function POST(request: Request) {
             name: order.user?.name ?? 'Customer',
             items: order.items.map((item) => ({
               ...item.product,
+              brand: item.product.brand ?? '',
+              image: item.product.image ?? '',
+              comparePrice: item.product.comparePrice ?? undefined,
+              category: item.product.category as any,
               images: Array.isArray(item.product.images) ? (item.product.images as string[]) : [],
               specs: (item.product.specs ?? {}) as Record<string, string>,
               tags: Array.isArray(item.product.tags) ? (item.product.tags as string[]) : [],
               quantity: item.quantity,
-            })),
+            })) as any,
             total: order.total,
             address: order.shippingAddress as any,
           }).catch((e) => console.error('[webhook/stripe] confirmation email failed:', e));
