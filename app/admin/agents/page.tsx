@@ -1,6 +1,20 @@
 import { prisma } from '@/src/lib/prisma';
-import { Activity, TrendingDown, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Activity, TrendingDown, TrendingUp, AlertTriangle, Mail } from 'lucide-react';
 import AgentControls from './AgentControls';
+
+/** Extract the human-readable report text from a job record. */
+function reportText(j: Job): string | null {
+  // Most agents store { text: "...markdown..." } in AgentJob.result
+  if (j.result?.text) return String(j.result.text);
+  // BI / some legacy agents write to AgentResult.output
+  const out = j.results?.output;
+  if (out) {
+    if (typeof out === 'string') return out;
+    if (out.text) return String(out.text);
+    return JSON.stringify(out, null, 2);
+  }
+  return null;
+}
 
 const PAGE_SIZE = 30;
 
@@ -10,7 +24,12 @@ type Job = {
   agentName: string;
   status: string;
   triggeredAt: string;
+  // `results` comes from the related AgentResult table (output/error)
   results?: { output: any; error?: string };
+  // `result` is the raw JSON column stored on AgentJob itself. many agents
+  // write their brief summaries here; newsletter-agent uses it for the
+  // email send stats. include it so we can render full text below the table.
+  result?: any;
 };
 
 type Props = {
@@ -31,7 +50,16 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
     prisma.agentJob.findMany({
       orderBy: { triggeredAt: 'desc' },
       take: 10,
-      include: { results: true },
+      // we want both the related AgentResult row and the raw `result`
+      // JSON column from the job itself.  `select` lets us pick them both.
+      select: {
+        id: true,
+        agentName: true,
+        status: true,
+        triggeredAt: true,
+        results: true,
+        result: true,
+      },
     }),
   ])) as unknown as [any, number, Job[]];
 
@@ -46,6 +74,9 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
   const totalOrders  = agg._sum.orders  ?? 0;
   const totalReturns = agg._sum.returns ?? 0;
   const returnRate   = totalOrders > 0 ? ((totalReturns / totalOrders) * 100).toFixed(1) : '0.0';
+
+  // bonus stat: subscriber count
+  const subscriberCount = await prisma.subscriber.count();
 
   return (
     <div className="p-8 max-w-screen-xl">
@@ -63,11 +94,12 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
 
       {/* recent job history */}
       {jobs.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-white mb-2">Recent Agent Jobs</h2>
-          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+        <>
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-white mb-2">Recent Agent Jobs</h2>
+            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-800 bg-slate-900/70">
                     {['Time', 'Agent', 'Status', 'Result'].map((h) => (
@@ -102,18 +134,65 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
                           {j.status}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-xs text-slate-400 max-w-[240px] truncate">
-                        {j.results?.error
-                          ? `ERROR: ${j.results.error}`
-                          : j.results?.output
-                          ? JSON.stringify(j.results.output).slice(0, 80)
-                          : '—'}
+                      <td className="px-5 py-3 text-xs text-slate-400 max-w-[280px] truncate">
+                        {j.result?.details
+                          ? `Sent ${j.result.details.sent ?? 0} · Failed ${j.result.details.failed ?? 0}`
+                          : reportText(j)?.slice(0, 90) ?? '—'}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+        </>
+      )}
+
+      {/* ── Agent Report Panel ─────────────────────────────── */}
+      {jobs.some((j) => j.status === 'COMPLETED' && (reportText(j) || j.result?.details)) && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold text-white mb-3">Agent Reports</h2>
+          <div className="space-y-3">
+            {jobs
+              .filter((j) => j.status === 'COMPLETED')
+              .map((j) => {
+                const text = reportText(j);
+                const details = j.result?.details as { sent?: number; failed?: number } | undefined;
+                if (!text && !details) return null;
+                return (
+                  <details
+                    key={j.id}
+                    className="group bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden"
+                  >
+                    <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none hover:bg-slate-800/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded uppercase">
+                          {j.status}
+                        </span>
+                        <span className="text-sm font-medium text-white capitalize">{j.agentName}</span>
+                        {details && (
+                          <span className="flex items-center gap-1 text-xs text-cyan-400">
+                            <Mail size={11} />
+                            {details.sent ?? 0} sent · {details.failed ?? 0} failed
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-[11px] text-slate-500">
+                          {new Date(j.triggeredAt).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                        <span className="text-slate-500 text-xs group-open:rotate-180 transition-transform">▼</span>
+                      </div>
+                    </summary>
+                    <div className="px-5 pb-5 pt-1 border-t border-slate-800/60">
+                      <pre className="text-xs text-slate-200 whitespace-pre-wrap break-words leading-relaxed font-mono">
+                        {text ?? '—'}
+                      </pre>
+                    </div>
+                  </details>
+                );
+              })}
           </div>
         </div>
       )}
@@ -125,6 +204,7 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
           { label: 'Total Returns', value: totalReturns.toLocaleString(), icon: TrendingDown, ring: 'bg-red-400/10 border-red-400/20 text-red-400' },
           { label: 'Return Rate',   value: `${returnRate}%`,              icon: Activity,     ring: 'bg-amber-400/10 border-amber-400/20 text-amber-400' },
           { label: 'Downtime Events', value: downtimeCount.toString(),    icon: AlertTriangle, ring: 'bg-red-400/10 border-red-400/20 text-red-400' },
+          { label: 'Subscribers', value: subscriberCount.toLocaleString(), icon: Activity, ring: 'bg-green-400/10 border-green-400/20 text-green-400' },
         ].map(({ label, value, icon: Icon, ring }) => (
           <div key={label} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5">
             <div className="flex items-start justify-between mb-3">

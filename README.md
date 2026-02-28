@@ -63,6 +63,16 @@
    npm install
    ```
 
+4. Create your environment file:
+
+   ```bash
+   cp .env.example .env
+   # fill in DATABASE_URL, REDIS_PASSWORD, JWT_SECRET, etc.
+   # the newsletter agent and order confirmation emails require
+   # a valid Resend API key; set RESEND_KEY (aka RESEND_API_KEY)
+   # or the jobs will execute but no emails will be sent.
+   ```
+
 3. Run the development server (you can override the port if 3000 is in use):
 
    ```bash

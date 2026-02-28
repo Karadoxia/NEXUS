@@ -397,17 +397,17 @@ export async function sendNewsletterEmail({
   for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
     const batch = subscribers.slice(i, i + BATCH_SIZE);
     try {
-      const { data, error } = await (resend.batch as {
-        send: (emails: { from: string; to: string; subject: string; html: string }[]) => Promise<{ data: null | { id: string }[]; error: unknown }>
-      }).send(
+      const result = await resend.batch.send(
         batch.map((email) => ({ from: FROM, to: email, subject, html })),
       );
+      const { data, error } = result;
       if (error || !data) {
         results.failed += batch.length;
         results.errors.push(`batch[${i}–${i + batch.length - 1}]: ${JSON.stringify(error)}`);
       } else {
-        results.sent += data.length;
-        results.failed += batch.length - data.length;
+        const sent = Array.isArray(data) ? data.length : (data as { data?: { id: string }[] }).data?.length ?? 0;
+        results.sent += sent;
+        results.failed += batch.length - sent;
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

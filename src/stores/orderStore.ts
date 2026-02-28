@@ -41,6 +41,25 @@ interface OrderState {
     getRevenue: () => number;
 }
 
+/**
+ * Transform a raw order from the REST API (Prisma shape) into the store's Order shape.
+ * Prisma items = { id, orderId, productId, quantity, price, product: { ... } }
+ * Store CartItem = Product & { quantity }
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeApiOrder(raw: any): Order {
+    return {
+        ...raw,
+        date: raw.date ?? raw.createdAt,
+        items: (raw.items ?? []).map((item: any) => ({
+            ...(item.product ?? {}),
+            id: item.product?.id ?? item.productId,
+            price: item.price,
+            quantity: item.quantity,
+        })),
+    };
+}
+
 export const useOrderStore = create<OrderState>()(
     persist(
         (set, get) => ({
@@ -100,9 +119,12 @@ export const useOrderStore = create<OrderState>()(
                     const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`);
                     if (res.ok) {
                         const data = await res.json();
+                        // API returns { orders: [...], total, page, limit }
+                        const raw = Array.isArray(data) ? data : (data.orders ?? []);
+                        const normalized = raw.map(normalizeApiOrder);
                         // Replace local state — never merge, which would expose other users' orders
-                        set({ orders: Array.isArray(data) ? data : [] });
-                        return data;
+                        set({ orders: normalized });
+                        return normalized;
                     }
                 } catch {
                     // fall back to in-memory
@@ -119,8 +141,10 @@ export const useOrderStore = create<OrderState>()(
                     const res = await fetch('/api/orders');
                     if (res.ok) {
                         const data = await res.json();
-                        set({ orders: Array.isArray(data) ? data : [] });
-                        return data;
+                        const raw = Array.isArray(data) ? data : (data.orders ?? []);
+                        const normalized = raw.map(normalizeApiOrder);
+                        set({ orders: normalized });
+                        return normalized;
                     }
                 } catch {
                     // ignore
