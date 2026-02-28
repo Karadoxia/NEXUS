@@ -2,6 +2,7 @@
 # =============================================================================
 # NEXUS Infrastructure Provisioning Script
 # Run this ONCE after first `docker compose up -d` to:
+#   • Generate WireGuard PASSWORD_HASH and add to .env (if not already set)
 #   • Create the n8n Postgres database
 #   • Validate Grafana datasources (auto-provisioned, but verifies them)
 #   • Verify all service health endpoints
@@ -22,15 +23,19 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 # ── Defaults ──────────────────────────────────────────────────────────────
-GRAFANA_URL="${GRAFANA_URL:-http://localhost:3000}"
+# Grafana/Prometheus/Loki are NOT exposed directly on host ports.
+# Reach them via Traefik using Host headers (Traefik listens on :80).
+TRAEFIK_HTTP="http://localhost"
+GRAFANA_HOST="nexus-grafana.local"
+PROMETHEUS_HOST="nexus-prometheus.local"
+LOKI_HOST="nexus-loki.local"
 GRAFANA_USER="${GRAFANA_USER:-admin}"
 GRAFANA_PASS="${GRAFANA_PASS:-admin}"
-PROMETHEUS_URL="${PROMETHEUS_URL:-http://localhost:9090}"
-LOKI_URL="${LOKI_URL:-http://localhost:3100}"
-# VaultWarden is now reachable directly via the localhost port mapping
+# VaultWarden is reachable directly via localhost port mapping
 VAULTWARDEN_URL="${VAULTWARDEN_URL:-http://localhost:8080}"
 POSTGRES_CONTAINER="${POSTGRES_CONTAINER:-nexus_postgres}"
 POSTGRES_USER="${POSTGRES_USER:-nexus}"
+POSTGRES_DB="${POSTGRES_DB:-postgres}"
 
 # ── Colours ───────────────────────────────────────────────────────────────
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
@@ -40,12 +45,22 @@ fail() { echo -e "${RED}[✗]${NC} $*"; }
 info() { echo -e "${CYAN}[i]${NC} $*"; }
 
 # ── Helpers ───────────────────────────────────────────────────────────────
+
+# wait_for NAME URL [MAX_ATTEMPTS] [HOST_HEADER]
+# Polls URL (via Traefik Host header if HOST_HEADER is provided) until 2xx/3xx
 wait_for() {
-  local name="$1" url="$2" max="${3:-60}"
+  local name="$1" url="$2" max="${3:-60}" host="${4:-}"
+  local extra_args=()
+  if [[ -n "$host" ]]; then
+    extra_args+=(-H "Host: $host")
+  fi
   echo -n "    Waiting for $name"
-  for i in $(seq 1 "$max"); do
-    if curl -sf "$url" >/dev/null 2>&1; then
-      echo; ok "$name is up"; return 0
+  for _ in $(seq 1 "$max"); do
+    # -s silent, do NOT use -f (we want to detect any HTTP response, not just 2xx)
+    local code
+    code=$(curl -s -o /dev/null -w "%{http_code}" "${extra_args[@]}" "$url" 2>/dev/null || echo "000")
+    if [[ "$code" != "000" && "$code" != "502" && "$code" != "503" ]]; then
+      echo; ok "$name is up (HTTP $code)"; return 0
     fi
     echo -n '.'
     sleep 2
@@ -53,18 +68,19 @@ wait_for() {
   echo; fail "$name did not become ready after $((max*2))s"; return 1
 }
 
+# gf_api METHOD /path [body]
+# Calls Grafana API via Traefik Host header routing
 gf_api() {
   local method="$1" path="$2" body="${3:-}"
+  local base_args=(-s -H "Host: ${GRAFANA_HOST}" -u "${GRAFANA_USER}:${GRAFANA_PASS}")
   if [[ -n "$body" ]]; then
-    curl -sf -X "$method" \
-      -u "${GRAFANA_USER}:${GRAFANA_PASS}" \
+    curl "${base_args[@]}" -X "$method" \
       -H 'Content-Type: application/json' \
       -d "$body" \
-      "${GRAFANA_URL}${path}"
+      "${TRAEFIK_HTTP}${path}"
   else
-    curl -sf -X "$method" \
-      -u "${GRAFANA_USER}:${GRAFANA_PASS}" \
-      "${GRAFANA_URL}${path}"
+    curl "${base_args[@]}" -X "$method" \
+      "${TRAEFIK_HTTP}${path}"
   fi
 }
 
@@ -93,29 +109,61 @@ if [[ "$ALL_UP" == false ]]; then
   echo ""
 fi
 
-# ── 2. Create n8n Postgres database ──────────────────────────────────────
-# n8n does NOT auto-create its database. The nexus user is a Postgres
-# superuser (POSTGRES_USER), so it has CREATEDB privilege.
+# ── 2. WireGuard — generate PASSWORD_HASH if missing ─────────────────────
+# wg-easy v14+ REMOVED support for plain PASSWORD env var.
+# It REQUIRES a bcrypt hash in PASSWORD_HASH instead.
 echo ""
-echo "▶  n8n database…"
-if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" \
-    -tAc "SELECT 1 FROM pg_database WHERE datname='n8n'" 2>/dev/null | grep -q 1; then
-  ok "n8n database already exists"
+echo "▶  WireGuard password hash…"
+if [[ -n "${WIREGUARD_PASSWORD_HASH:-}" ]]; then
+  ok "WIREGUARD_PASSWORD_HASH already set in .env"
 else
-  if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" \
-      -c "CREATE DATABASE n8n;" >/dev/null 2>&1; then
-    ok "n8n database created — n8n will start successfully on next restart"
-    info "Restarting n8n container to pick up the new database…"
-    docker restart n8n >/dev/null 2>&1 && ok "n8n restarted" || warn "Could not restart n8n (may not be running yet)"
+  warn "WIREGUARD_PASSWORD_HASH not set — generating now…"
+  WG_PASS="${WIREGUARD_PASS:-changeme}"
+  # Use wg-easy's own wgpw command to generate the bcrypt hash
+  RAW_HASH=$(docker run --rm ghcr.io/wg-easy/wg-easy wgpw "$WG_PASS" 2>/dev/null || echo "")
+  # Extract the bcrypt hash (matches $2b$ or $2a$ prefix)
+  HASH=$(echo "$RAW_HASH" | grep -oE '\$2[aby]\$[0-9]+\$[./0-9A-Za-z]{53}' | head -1 || echo "")
+  if [[ -n "$HASH" ]]; then
+    # Escape dollar signs for safe .env storage (wrap in single quotes)
+    echo "WIREGUARD_PASSWORD_HASH='${HASH}'" >> "$ENV_FILE"
+    ok "Hash generated and appended to .env"
+    info "Password: ${WG_PASS} → hash appended as WIREGUARD_PASSWORD_HASH"
+    info "Restarting WireGuard to apply the hash…"
+    docker compose -f "${SCRIPT_DIR}/../docker-compose.yml" up -d wireguard >/dev/null 2>&1 \
+      && ok "WireGuard restarted" || warn "Could not restart WireGuard"
   else
-    fail "Could not create n8n database — is nexus_postgres running?"
+    warn "Could not generate hash automatically"
+    info "Run manually: docker run --rm ghcr.io/wg-easy/wg-easy wgpw YOUR_PASS"
+    info "Then add:    WIREGUARD_PASSWORD_HASH='<hash>' to .env"
+    info "Then:        docker compose up -d wireguard"
   fi
 fi
 
-# ── 3. Wait for Grafana ───────────────────────────────────────────────────
+# ── 3. Create n8n Postgres database ──────────────────────────────────────
+# n8n does NOT auto-create its database.
+# FIX: always connect to the 'postgres' maintenance database (POSTGRES_DB
+#      is 'nexus_v2', so 'psql -U nexus' without -d would fail looking for
+#      a database named 'nexus' which doesn't exist).
+echo ""
+echo "▶  n8n database…"
+if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -tAc "SELECT 1 FROM pg_database WHERE datname='n8n'" 2>/dev/null | grep -q 1; then
+  ok "n8n database already exists"
+else
+  if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+      -c "CREATE DATABASE n8n;" 2>&1; then
+    ok "n8n database created — restarting n8n to pick it up…"
+    docker restart n8n >/dev/null 2>&1 && ok "n8n restarted" || warn "Could not restart n8n"
+  else
+    fail "Could not create n8n database"
+    info "Debug: docker exec nexus_postgres psql -U nexus -d postgres -c '\\l'"
+  fi
+fi
+
+# ── 4. Wait for Grafana ───────────────────────────────────────────────────
 echo ""
 echo "▶  Grafana…"
-if wait_for "Grafana" "${GRAFANA_URL}/api/health"; then
+if wait_for "Grafana" "${TRAEFIK_HTTP}/api/health" 60 "${GRAFANA_HOST}"; then
 
   # Prometheus datasource (should be auto-provisioned from file)
   DS=$(gf_api GET "/api/datasources/name/Prometheus" 2>/dev/null || echo "{}")
@@ -171,23 +219,23 @@ if wait_for "Grafana" "${GRAFANA_URL}/api/health"; then
   fi
 fi
 
-# ── 4. Prometheus health ──────────────────────────────────────────────────
+# ── 5. Prometheus health ──────────────────────────────────────────────────
 echo ""
 echo "▶  Prometheus…"
-if wait_for "Prometheus" "${PROMETHEUS_URL}/-/healthy" 30; then
-  TARGETS=$(curl -sf "${PROMETHEUS_URL}/api/v1/targets" 2>/dev/null | \
+if wait_for "Prometheus" "${TRAEFIK_HTTP}/-/healthy" 30 "${PROMETHEUS_HOST}"; then
+  TARGETS=$(curl -s -H "Host: ${PROMETHEUS_HOST}" "${TRAEFIK_HTTP}/api/v1/targets" 2>/dev/null | \
     python3 -c "import sys,json; d=json.load(sys.stdin); \
     active=d.get('data',{}).get('activeTargets',[]); \
     print(f'{len(active)} active targets')" 2>/dev/null || echo "unknown")
   ok "Prometheus targets: $TARGETS"
 fi
 
-# ── 5. Loki health ────────────────────────────────────────────────────────
+# ── 6. Loki health ────────────────────────────────────────────────────────
 echo ""
 echo "▶  Loki…"
-wait_for "Loki" "${LOKI_URL}/ready" 30 && ok "Loki ready" || true
+wait_for "Loki" "${TRAEFIK_HTTP}/ready" 30 "${LOKI_HOST}" && ok "Loki ready" || true
 
-# ── 6. Redis ping ─────────────────────────────────────────────────────────
+# ── 7. Redis ping ─────────────────────────────────────────────────────────
 echo ""
 echo "▶  Redis…"
 REDIS_PASS="${REDIS_PASSWORD:-}"
@@ -198,15 +246,14 @@ else
   fail "Redis ping failed — check: docker logs nexus_redis"
 fi
 
-# ── 7. VaultWarden ────────────────────────────────────────────────────────
+# ── 8. VaultWarden ────────────────────────────────────────────────────────
 # NOTE: VaultWarden requires a TLS secure context for its web vault.
 # Access it at http://localhost:8080 (localhost IS a secure context).
-# http://nexus-vaultwarden.local will show a 'secure context required' error.
 echo ""
 echo "▶  VaultWarden…"
-VW_STATUS=$(curl -sf "${VAULTWARDEN_URL}/alive" 2>/dev/null || echo "")
-if [[ -n "$VW_STATUS" ]]; then
-  ok "VaultWarden is alive"
+VW_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${VAULTWARDEN_URL}/alive" 2>/dev/null || echo "000")
+if [[ "$VW_STATUS" != "000" ]]; then
+  ok "VaultWarden is alive (HTTP ${VW_STATUS})"
   echo "    Web vault:   ${VAULTWARDEN_URL}"
   echo "    Admin panel: ${VAULTWARDEN_URL}/admin"
   if [[ -z "${VAULTWARDEN_ADMIN_TOKEN:-}" ]]; then
@@ -218,44 +265,49 @@ else
   info "Check: docker logs vaultwarden"
 fi
 
-# ── 8. Uptime Kuma ────────────────────────────────────────────────────────
+# ── 9. Uptime Kuma ────────────────────────────────────────────────────────
 echo ""
 echo "▶  Uptime Kuma…"
-UK_STATUS=$(curl -sf "http://localhost" -H "Host: nexus-uptime.local" -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")
+UK_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: nexus-uptime.local" "${TRAEFIK_HTTP}" 2>/dev/null || echo "000")
 if [[ "$UK_STATUS" != "000" ]]; then
   ok "Uptime Kuma responding (HTTP ${UK_STATUS}) → http://nexus-uptime.local"
 else
   warn "Uptime Kuma not reachable — check: docker logs uptime_kuma"
 fi
 
-# ── 9. n8n health ─────────────────────────────────────────────────────────
+# ── 10. n8n health ────────────────────────────────────────────────────────
 echo ""
 echo "▶  n8n…"
-N8N_STATUS=$(curl -sf "http://localhost" -H "Host: nexus-n8n.local" -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")
-if [[ "$N8N_STATUS" != "000" ]]; then
+N8N_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: nexus-n8n.local" "${TRAEFIK_HTTP}" 2>/dev/null || echo "000")
+if [[ "$N8N_STATUS" != "000" && "$N8N_STATUS" != "502" && "$N8N_STATUS" != "503" ]]; then
   ok "n8n responding (HTTP ${N8N_STATUS}) → http://nexus-n8n.local"
 else
-  warn "n8n not reachable yet — it may still be starting or the database was just created"
-  info "Wait 30 seconds and retry: curl -s http://localhost -H 'Host: nexus-n8n.local' -o /dev/null -w '%{http_code}'"
+  warn "n8n not reachable yet (HTTP ${N8N_STATUS}) — may still be starting"
+  info "Wait 30 s and retry: curl -s -H 'Host: nexus-n8n.local' http://localhost -o /dev/null -w '%{http_code}'"
 fi
 
-# ── 10. WireGuard ─────────────────────────────────────────────────────────
+# ── 11. WireGuard ─────────────────────────────────────────────────────────
 echo ""
 echo "▶  WireGuard…"
 WG_STATUS=$(docker inspect --format='{{.State.Status}}' wireguard 2>/dev/null || echo "missing")
 if [[ "$WG_STATUS" == "running" ]]; then
   ok "WireGuard container is running → http://nexus-vpn.local"
-  info "Web UI password: \$WIREGUARD_PASS from .env"
+  info "Web UI password: set via WIREGUARD_PASS in .env (hash stored as WIREGUARD_PASSWORD_HASH)"
 else
   warn "WireGuard status: ${WG_STATUS}"
-  info "Ensure the host kernel supports WireGuard: lsmod | grep wireguard"
-  info "If missing: sudo modprobe wireguard"
+  if ! lsmod 2>/dev/null | grep -q wireguard; then
+    info "WireGuard kernel module not loaded — try: sudo modprobe wireguard"
+  fi
+  if [[ ! -c /dev/net/tun ]]; then
+    info "/dev/net/tun not found — try: sudo modprobe tun"
+  fi
+  info "Check logs: docker logs wireguard"
 fi
 
-# ── 11. Traefik ───────────────────────────────────────────────────────────
+# ── 12. Traefik ───────────────────────────────────────────────────────────
 echo ""
 echo "▶  Traefik…"
-TK=$(curl -sf "http://localhost:80" -o /dev/null -w "%{http_code}" 2>/dev/null || echo "000")
+TK=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:80" 2>/dev/null || echo "000")
 if [[ "$TK" != "000" ]]; then
   ok "Traefik port 80 responding (HTTP ${TK}) → http://nexus-traefik.local"
 else
@@ -279,4 +331,4 @@ echo "  WireGuard          http://nexus-vpn.local"
 echo "  Traefik dashboard  http://nexus-traefik.local"
 echo "═══════════════════════════════════════════════"
 echo ""
-info "Run first: sudo ./scripts/register-local-hosts.sh add"
+info "Tip: sudo ./scripts/register-local-hosts.sh add  (if .local URLs don't resolve)"
