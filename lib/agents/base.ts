@@ -39,24 +39,9 @@ async function buildGraphUncached(config: AgentConfig) {
     apiKey: getGroqKey(),
   });
 
-  // Attach LangSmith tracer if key is provided and module is available
-  if (process.env.LANGSMITH_API_KEY) {
-    try {
-      const mod = await import("@langchain/tracing");
-      const LangSmithTracer = (mod as Record<string, unknown>)?.LangSmithTracer as new (opts: { apiKey: string }) => unknown;
-      if (LangSmithTracer) {
-        const tracer = new LangSmithTracer({ apiKey: process.env.LANGSMITH_API_KEY });
-        const m = model as Record<string, unknown>;
-        if (typeof m.addTracer === "function") {
-          (m.addTracer as (t: unknown) => void)(tracer);
-        } else if (typeof m.configure === "function") {
-          (m.configure as (opts: { tracer: unknown }) => void)({ tracer });
-        }
-      }
-    } catch (e) {
-      console.warn("LangSmith tracer not available", e);
-    }
-  }
+  // LangSmith tracing is enabled automatically by LangGraph when
+  // LANGCHAIN_TRACING_V2=true and LANGCHAIN_API_KEY are set in the environment.
+  // No explicit tracer attachment is needed.
 
   const toolNode = new ToolNode(config.tools || []);
 
