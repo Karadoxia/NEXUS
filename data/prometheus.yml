@@ -8,7 +8,7 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # NEXUS Next.js app (exposes /metrics if configured)
+  # NEXUS Next.js app (exposes /api/metrics if configured)
   - job_name: 'nexus-app'
     static_configs:
       - targets: ['nexus_app:3030']
@@ -19,7 +19,20 @@ scrape_configs:
     static_configs:
       - targets: ['loki:3100']
 
+  # Grafana (exposes /metrics natively)
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+
+  # Traefik reverse proxy (metrics enabled via --metrics.prometheus)
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: '/metrics'
+
   # Uptime Kuma
   - job_name: 'uptime-kuma'
     static_configs:
       - targets: ['uptime_kuma:3001']
+    metrics_path: '/metrics'

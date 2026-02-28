@@ -123,6 +123,14 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
       - "--api=true"
       - "--api.dashboard=true"
+      # api.insecure exposes the API (and /metrics) on port 8080 inside the container.
+      # Port 8080 is NOT mapped to the host, so this is accessible only to other
+      # containers (e.g. Prometheus) via the proxy Docker network — not publicly.
+      - "--api.insecure=true"
+      # Enable Prometheus metrics endpoint (scraped by prometheus at traefik:8080/metrics)
+      - "--metrics.prometheus=true"
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
     labels:
       - "traefik.enable=true"
       # Local dashboard: http://nexus-traefik.local
@@ -132,6 +140,19 @@ services:
       # Shared HTTPS-redirect middleware used by all public routers
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      # VaultWarden: redirect nexus-vaultwarden.local → http://localhost:8080
+      # (web vault requires a secure context: HTTPS or localhost — .local doesn't qualify)
+      - "traefik.http.routers.vaultwarden-local.rule=Host(`nexus-vaultwarden.local`)"
+      - "traefik.http.routers.vaultwarden-local.entrypoints=web"
+      - "traefik.http.routers.vaultwarden-local.middlewares=vault-local-redirect"
+      - "traefik.http.routers.vaultwarden-local.service=noop@internal"
+      - "traefik.http.middlewares.vault-local-redirect.redirectregex.regex=.*"
+      - "traefik.http.middlewares.vault-local-redirect.redirectregex.replacement=http://localhost:8080"
+      - "traefik.http.middlewares.vault-local-redirect.redirectregex.permanent=false"
+      # Loki: rewrite root / → /metrics (Loki is API-only, no web UI at root)
+      # replacepathregex matches path-only (not full URL), so ^/$ works correctly
+      - "traefik.http.middlewares.loki-root-rewrite.replacepathregex.regex=^/$$"
+      - "traefik.http.middlewares.loki-root-rewrite.replacepathregex.replacement=/metrics"
 
   # === VAULTWARDEN (secrets UI) ===
   # FIX: VaultWarden's web vault requires a TLS secure context (HTTPS or localhost).
@@ -203,8 +224,10 @@ services:
     labels:
       - "traefik.enable=true"
       # Local only — Loki must NOT be publicly exposed
+      # Root / is rewritten to /metrics (API-only service, no web UI at root)
       - "traefik.http.routers.loki-local.rule=Host(`nexus-loki.local`)"
       - "traefik.http.routers.loki-local.entrypoints=web"
+      - "traefik.http.routers.loki-local.middlewares=loki-root-rewrite"
       - "traefik.http.services.loki.loadbalancer.server.port=3100"
 
   grafana:
@@ -365,6 +388,9 @@ services:
       N8N_HOST: ${N8N_HOST:-nexus-n8n.local}
       N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
       WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://nexus-n8n.local}
+      # FIX: n8n sets secure cookies by default which blocks login over plain HTTP.
+      # Set to false when running locally without HTTPS.
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
       EXECUTIONS_MODE: queue
       QUEUE_BULL_REDIS_HOST: redis
       QUEUE_BULL_REDIS_PORT: "6379"
