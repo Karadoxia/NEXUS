@@ -1,0 +1,9 @@
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        sslRedirect: true
+        forceSTSHeader: true
+        stsIncludeSubDomains: true
+        stsPreload: true
+        stsSeconds: 63072000

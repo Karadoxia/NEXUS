@@ -7,14 +7,18 @@ export interface SendEmailOptions {
 }
 
 const RESEND_API_BASE = 'https://api.resend.com';
-const key = process.env.RESEND_API_KEY;
 
-if (!key) {
-  // we don't throw immediately because some parts of the app may not need mail
+function getKey() {
+  return process.env.RESEND_API_KEY;
+}
+
+// warn at import time if missing - still allow startup
+if (!getKey()) {
   console.warn('RESEND_API_KEY is not set – email sending will be disabled');
 }
 
 export async function sendEmail(opts: SendEmailOptions) {
+  const key = getKey();
   if (!key) {
     throw new Error('RESEND_API_KEY not configured');
   }

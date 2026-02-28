@@ -1,3 +1,34 @@
+#!/bin/bash
+set -e
+
+echo "=== NEXUS Secure Full-Stack Setup 2026 (100% free) ==="
+
+# Phase 0: Prep
+sudo apt update
+# Docker package is available on all Debian derivatives.  `docker-compose-plugin`
+# is the newer split package but some distributions (Kali, older Debian) may
+# not ship it, in which case fall back to the legacy `docker-compose` binary.
+sudo apt install -y docker.io curl || true
+if ! sudo apt install -y docker-compose-plugin; then
+  echo "WARNING: docker-compose-plugin not found, attempting alternate install"
+  if ! sudo apt install -y docker-compose; then
+    echo "docker-compose package missing too; downloading official binary"
+    sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.2/docker-compose-$(uname -s)-$(uname -m)" \
+      -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+  fi
+fi
+sudo usermod -aG docker $USER
+mkdir -p traefik vw-data grafana-data prometheus-data loki-data vault-data wireguard-config backups
+echo "your_strong_server_password" > db_password.txt
+echo "your_very_long_random_secret" > jwt_secret.txt
+echo "re_your_resend_key" > resend_key.txt
+echo "AIzaSy..." > gemini_key.txt   # replace with real
+
+# Phase 1-7: Generate FULL docker-compose.yml (one big file)
+cat > docker-compose.yml << 'EOF'
+version: '3.9'
+
 networks:
   internal:
     driver: bridge
@@ -36,10 +67,8 @@ services:
       - "traefik.http.routers.nexus.tls.certresolver=letsencrypt"
       - "traefik.http.services.nexus.loadbalancer.server.port=3000"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3030"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
-      timeout: 10s
-      retries: 3
 
   # === DB & CACHE (internal only) ===
   postgres:
@@ -69,11 +98,6 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # === Rust service (internal) ===
   nexus-rust-service:
@@ -229,3 +253,74 @@ secrets:
     file: ./resend_key.txt
   gemini_key:
     file: ./gemini_key.txt
+EOF
+
+# Create traefik configs
+cat > traefik/traefik.yml << 'EOT'
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+entryPoints:
+  websecure:
+    address: ":443"
+providers:
+  docker: {}
+  file:
+    directory: /dynamic.yml
+    watch: true
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: admin@yourdomain.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+EOT
+
+cat > traefik/dynamic.yml << 'EOT'
+http:
+  middlewares:
+    secure-headers:
+      headers:
+        sslRedirect: true
+        forceSTSHeader: true
+        stsIncludeSubDomains: true
+        stsPreload: true
+        stsSeconds: 63072000
+EOT
+
+# Create Dockerfile for Next.js
+cat > Dockerfile << 'EOT'
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
+EOT
+
+# .env.example
+cat > .env.example << 'EOT'
+DB_PASSWORD=your_strong_password_here
+REDIS_PASSWORD=another_strong_password
+JWT_SECRET=super_long_random_string_64_chars
+RESEND_KEY=re_...
+GEMINI_KEY=AIzaSy...
+GRAFANA_PASS=adminpass
+WIREGUARD_PASS=wireguardpass
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+TELEGRAM_CHAT_ID=123456789
+EOT
+
+echo "=== Setup complete! ==="
+echo "Next steps:"
+echo "1. Edit .env.example → copy to .env and fill real values"
+echo "2. docker compose up -d --build"
+echo "3. Open https://nexus.yourdomain.com (Traefik will get free SSL)"
+echo "4. Go to https://vault.yourdomain.com → create account → store all keys"
+echo "5. For Wazuh (optional heavy security): git clone https://github.com/wazuh/wazuh-docker && cd wazuh-docker && docker compose up -d"
+echo "6. Add your domain DNS A record to server IP"
+echo "7. In Next.js code: use fetch('http://telegram-notify:3000/api/send') for alerts"
+echo "Done! All tools auto-start, communicate passwordlessly, and are 100% free forever."

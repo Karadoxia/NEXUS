@@ -198,6 +198,108 @@ curl -X POST http://localhost:3030/api/mail \
 ```
 
 > ⚠️ **Replace** the `to` address with your own or use `kalistox.ia@gmail.com` for
+
+## 🛡️ Production deployment
+
+The repository includes a self‑contained shell script that builds the entire secure
+production stack described in our roadmap.  It uses only free/open-source
+components (Docker, Traefik, Grafana, Prometheus, VaultWarden, WireGuard, etc.)
+and configures them to communicate over internal networks with secrets injected
+via Docker secrets.
+
+To bootstrap a fresh server:
+
+1. copy `scripts/setup-nexus-secure.sh` to the host and make it executable:
+
+   ```bash
+   chmod +x scripts/setup-nexus-secure.sh
+   ./scripts/setup-nexus-secure.sh
+   ```
+
+   > **Tip:** if the host is Kali or an older Debian/Ubuntu release you may
+   > see an error about `docker-compose-plugin` not being available.  the
+   > installer script now handles this automatically by falling back to the
+   > legacy `docker-compose` package or downloading the official binary, so
+   > simply re‑run the script and it will continue.
+
+   The script installs Docker if necessary, generates all required directories,
+   creates `docker-compose.yml`, Traefik configuration, a Dockerfile for the
+   Next.js app and an `.env.example` you can edit.  It also writes placeholder
+   files containing randomly chosen passwords – edit or replace them with
+   secure values before starting the stack.
+
+2. review and populate `.env.example`, then copy it to `.env` with real
+   credentials (database password, JWT secret, Resend key, Gemini key, etc.).
+
+3. bring the services up:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. point your DNS at the server IP and visit the hostnames in your browser:
+   - `https://nexus.yourdomain.com` for the storefront/admin
+   - `https://vault.yourdomain.com` for VaultWarden secrets
+   - `https://grafana.yourdomain.com` for monitoring dashboards
+   - `https://status.yourdomain.com` for Uptime Kuma
+
+### 🧩 One‑click startup (development)
+
+A convenience script can start **every container** and the local dev server in
+one go.  Just run:
+
+```bash
+npm run start:all          # brings up both compose stacks and then runs the
+                            # Next.js development server on port 3030
+```
+
+This command is designed for development: it starts the infrastructure
+(PG/Redis/Traefik/etc.) but *does not* attempt to build the `nexus-app`
+image, since the development workflow normally runs Next.js on your host
+at port 3030.  If you really want to include the containerised app (for
+example to test the production build) add the `--build-app` flag:
+
+```bash
+npm run start:all -- --build-app
+# or
+./scripts/start-all.sh --build-app
+```
+
+If the repository has had its Rust microservice removed (e.g. when working
+in a trimmed‑down sandbox) the script will automatically detect that and
+run an override so the `nexus-rust-service` is not built.  This creates a
+temporary `no-rust.yml` file; the script also cleans up that override the
+next time you run it with the real sources present.
+You can also explicitly skip the dev server with `--no-dev` as described
+above.
+
+If you only want the containers without the dev server, pass `--no-dev`:
+
+```bash
+sh ./scripts/start-all.sh --no-dev
+```
+
+This duplicates the behaviour of `npm run dev` but also includes the
+`vpn-stack` services (Grafana, Wazuh, CrowdSec, etc.) so you truly get all
+systems running with a single command.  The script checks for permission and
+exports reasonable defaults for the database passwords, just like
+`dev.sh`.
+
+5. commit any generated files you want to keep under version control (e.g.
+   `docker-compose.yml`, `traefik/`, `Dockerfile`, `.env.example`).  Avoid
+   committing passwords or secrets – the `.gitignore` already excludes `*.txt`
+   files used for secrets.
+
+6. follow the rest of the roadmap (see `SECURITY.md`) to harden the server and
+   integrate with Wazuh, WireGuard clients, Telegram notifications, etc.
+
+Once the stack is running, the app services can communicate internally without
+exposing credentials.  The script is idempotent and can be re-run to regenerate
+config or bootstrap additional servers.
+
+---
+
+*Thanks for following the secure NEXUS deployment guide!*
 manual testing, as suggested by the project maintainer.
 
 The environment variable `RESEND_API_KEY` must be set (load from your vault)

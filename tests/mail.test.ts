@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { sendEmail } from '@/src/lib/mail';
+import { sendEmail } from '../lib/mail';
 
 // ensure we clear environment between tests
 
