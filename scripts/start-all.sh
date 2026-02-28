@@ -76,20 +76,7 @@ if ! $include_app; then
 fi
 set +x
 
-# 2. vpn/monitoring stack if present
-# Start only the services unique to the vpn-stack; skip prometheus/grafana/vaultwarden
-# because those are already owned by the main compose stack above.
-if [ -d vpn-stack ]; then
-  echo "Starting vpn-stack services..."
-  # Excluded from vpn-stack (already in main stack):
-  #   wg-easy      → conflicts with wireguard on port 51820
-  #   vaultwarden  → already started above
-  #   prometheus   → already started above
-  #   grafana      → already started above
-  (cd vpn-stack && docker compose up -d crowdsec node-exporter cadvisor wazuh.indexer wazuh.manager wazuh.dashboard) || true
-fi
-
-# 3. optional dev server
+# 2. optional dev server
 if [ "$1" != "--no-dev" ]; then
   echo "Launching Next.js development server on port ${PORT:-3030}..."
   exec sh ./scripts/dev.sh
