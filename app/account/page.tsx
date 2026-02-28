@@ -13,6 +13,7 @@ export default function AccountPage() {
     const { data: session } = useSession();
     const { orders, getOrdersByEmail } = useOrderStore();
     const [isMounted, setIsMounted] = useState(false);
+    const [loadingOrders, setLoadingOrders] = useState(true);
 
     const user = session?.user
         ? { name: session.user.name || 'Customer', email: session.user.email || '', avatar: '👤' }
@@ -20,11 +21,9 @@ export default function AccountPage() {
 
     useEffect(() => {
         setIsMounted(true);
-        if (session?.user?.email) {
-            getOrdersByEmail(session.user.email);
-        } else {
-            getOrdersByEmail(user.email);
-        }
+        const email = session?.user?.email ?? user.email;
+        setLoadingOrders(true);
+        getOrdersByEmail(email).finally(() => setLoadingOrders(false));
     }, [session]);
 
     // Prevent hydration mismatch
@@ -89,15 +88,22 @@ export default function AccountPage() {
                     <div className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden">
                         <div className="p-6 border-b border-slate-800 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-white">Order History</h2>
-                            <span className="text-sm text-slate-500">{orders.length} orders</span>
+                            <span className="text-sm text-slate-500">
+                                {loadingOrders ? '…' : `${orders.length} orders`}
+                            </span>
                         </div>
 
-                        {orders.length === 0 ? (
+                        {loadingOrders ? (
+                            <div className="p-12 text-center text-slate-500">
+                                <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto mb-4" />
+                                <p>Loading orders…</p>
+                            </div>
+                        ) : orders.length === 0 ? (
                             <div className="p-12 text-center text-slate-500">
                                 <Package size={48} className="mx-auto mb-4 opacity-20" />
                                 <p className="mb-6">You haven&apos;t placed any orders yet.</p>
                                 <Link href="/store">
-                                    <button className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
+                                    <button type="button" className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-6 rounded-lg transition-colors">
                                         START SHOPPING
                                     </button>
                                 </Link>
@@ -120,7 +126,7 @@ export default function AccountPage() {
                                                         {order.status.toUpperCase()}
                                                     </span>
                                                     {order.status === 'pending' && !order.cancelled && (
-                                                        <button onClick={async () => {
+                                                        <button type="button" onClick={async () => {
                                                             if (!confirm('Cancel this order?')) return;
                                                             await fetch('/api/orders', {
                                                                 method: 'PUT',
@@ -164,14 +170,14 @@ export default function AccountPage() {
                                             {/* Total & Action */}
                                             <div className="text-right min-w-[120px]">
                                                 <div className="font-bold text-white mb-1">€{order.total.toLocaleString()}</div>
-                                                <Link href={`/account/${order.id}`}> 
-                                                    <button className="text-xs text-cyan-400 flex items-center gap-1 ml-auto group-hover:underline">
+                                                <Link href={`/account/${order.id}`}>
+                                                    <button type="button" className="text-xs text-cyan-400 flex items-center gap-1 ml-auto group-hover:underline">
                                                         Details <ChevronRight size={12} />
                                                     </button>
                                                 </Link>
                                                 {order.trackingNumber && (
-                                                    <Link href={`/tracking?id=${order.trackingNumber}`}> 
-                                                        <button className="mt-2 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2 py-1 rounded flex items-center gap-1 ml-auto hover:bg-cyan-500/20">
+                                                    <Link href={`/tracking?id=${order.trackingNumber}`}>
+                                                        <button type="button" className="mt-2 text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2 py-1 rounded flex items-center gap-1 ml-auto hover:bg-cyan-500/20">
                                                             <Truck size={10} /> TRACK PACKAGE
                                                         </button>
                                                     </Link>

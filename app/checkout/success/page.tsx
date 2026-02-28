@@ -13,7 +13,7 @@ function SuccessContent() {
     const { data: session } = useSession();
     const searchParams = useSearchParams();
     const { clearCart, items } = useCartStore();
-    const { getOrderByTracking, addOrder, storeOrder } = useOrderStore();
+    const { getOrderByTracking, storeOrder } = useOrderStore();
     const [orderId, setOrderId] = useState<string | null>(null);
     const [order, setOrder] = useState<any | null>(null);
 
@@ -26,7 +26,6 @@ function SuccessContent() {
             if (res.ok) {
                 const o = await res.json();
                 setOrder(o);
-                addOrder(o);
                 storeOrder(o);
                 return;
             }
@@ -54,7 +53,6 @@ function SuccessContent() {
                     const newOrder = await checkout({ name: 'Guest User', email: 'guest@example.com' });
                     setOrderId(newOrder.id);
                     setOrder(newOrder);
-                    addOrder(newOrder);
                     storeOrder(newOrder);
                 } catch (e) {
                     console.error('failed to create order on success page', e);

@@ -17,6 +17,7 @@ import {
   ScrollText,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import { useOrderStore } from '@/src/stores/orderStore';
 
 const NAV_ITEMS = [
   { href: '/admin',             label: 'Dashboard',    icon: LayoutDashboard                },
@@ -115,7 +116,7 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
         </div>
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: '/' })}
+          onClick={() => { useOrderStore.setState({ orders: [] }); signOut({ callbackUrl: '/' }); }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent"
         >
           <LogOut size={15} strokeWidth={1.8} />

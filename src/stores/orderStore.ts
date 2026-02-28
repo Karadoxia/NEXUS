@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { CartItem, Address } from '@/types';
 
 export interface ShipmentEvent {
@@ -61,103 +60,98 @@ function normalizeApiOrder(raw: any): Order {
 }
 
 export const useOrderStore = create<OrderState>()(
-    persist(
-        (set, get) => ({
-            orders: [],
+    (set, get) => ({
+        orders: [],
 
-            // create order via backend
-            addOrder: async (order) => {
-                const res = await fetch('/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(order),
-                });
-                const data = await res.json();
-                if (data.success) {
-                    set((state) => ({ orders: [data.order, ...state.orders] }));
+        // create order via backend
+        addOrder: async (order) => {
+            const res = await fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(order),
+            });
+            const data = await res.json();
+            if (data.success) {
+                set((state) => ({ orders: [data.order, ...state.orders] }));
+            }
+        },
+
+        // store order locally without contacting server
+        storeOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
+
+        updateStatus: async (orderId, status) => {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                set((state) => ({
+                    orders: state.orders.map(o =>
+                        o.id === orderId ? { ...o, status } : o
+                    ),
+                }));
+            }
+        },
+
+        updateShipment: async (orderId, trackingNumber, carrier) => {
+            const res = await fetch(`/api/orders/${orderId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trackingNumber, carrier, status: 'shipped' }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                set((state) => ({
+                    orders: state.orders.map(o =>
+                        o.id === orderId ? data.order : o
+                    ),
+                }));
+            }
+        },
+
+        getOrdersByEmail: async (email) => {
+            // Clear immediately so stale in-memory data is never shown while fetching
+            set({ orders: [] });
+            try {
+                const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    // API returns { orders: [...], total, page, limit }
+                    const raw = Array.isArray(data) ? data : (data.orders ?? []);
+                    const normalized = raw.map(normalizeApiOrder);
+                    set({ orders: normalized });
+                    return normalized;
                 }
-            },
+            } catch {
+                // fall back to in-memory (already cleared above, so returns [])
+            }
+            return get().orders;
+        },
 
-            // store order locally without contacting server
-            storeOrder: (order) => set((state) => ({ orders: [order, ...state.orders] })),
+        getOrderByTracking: (trackingNumber) => {
+            return get().orders.find(o => o.trackingNumber === trackingNumber);
+        },
 
-            updateStatus: async (orderId, status) => {
-                const res = await fetch(`/api/orders/${orderId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status }),
-                });
-                const data = await res.json();
-                if (data.success) {
-                    set((state) => ({
-                        orders: state.orders.map(o =>
-                            o.id === orderId ? { ...o, status } : o
-                        ),
-                    }));
+        getAllOrders: async () => {
+            try {
+                const res = await fetch('/api/orders');
+                if (res.ok) {
+                    const data = await res.json();
+                    const raw = Array.isArray(data) ? data : (data.orders ?? []);
+                    const normalized = raw.map(normalizeApiOrder);
+                    set({ orders: normalized });
+                    return normalized;
                 }
-            },
+            } catch {
+                // ignore
+            }
+            return get().orders;
+        },
 
-            updateShipment: async (orderId, trackingNumber, carrier) => {
-                const res = await fetch(`/api/orders/${orderId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ trackingNumber, carrier, status: 'shipped' }),
-                });
-                const data = await res.json();
-                if (data.success) {
-                    set((state) => ({
-                        orders: state.orders.map(o =>
-                            o.id === orderId ? data.order : o
-                        ),
-                    }));
-                }
-            },
-
-            getOrdersByEmail: async (email) => {
-                // attempt to fetch from backend if logged in
-                try {
-                    const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        // API returns { orders: [...], total, page, limit }
-                        const raw = Array.isArray(data) ? data : (data.orders ?? []);
-                        const normalized = raw.map(normalizeApiOrder);
-                        // Replace local state — never merge, which would expose other users' orders
-                        set({ orders: normalized });
-                        return normalized;
-                    }
-                } catch {
-                    // fall back to in-memory
-                }
-                return get().orders.filter(o => o.customer?.email === email);
-            },
-
-            getOrderByTracking: (trackingNumber) => {
-                return get().orders.find(o => o.trackingNumber === trackingNumber);
-            },
-
-            getAllOrders: async () => {
-                try {
-                    const res = await fetch('/api/orders');
-                    if (res.ok) {
-                        const data = await res.json();
-                        const raw = Array.isArray(data) ? data : (data.orders ?? []);
-                        const normalized = raw.map(normalizeApiOrder);
-                        set({ orders: normalized });
-                        return normalized;
-                    }
-                } catch {
-                    // ignore
-                }
-                return get().orders;
-            },
-
-            getRevenue: () => {
-                return get().orders.reduce((acc, curr) => acc + curr.total, 0);
-            },
-        }),
-        {
-            name: 'nexus-orders-storage',
-        }
-    )
+        getRevenue: () => {
+            return get().orders.reduce((acc, curr) => acc + curr.total, 0);
+        },
+    })
 );

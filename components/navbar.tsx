@@ -8,6 +8,7 @@ import { useFavoritesStore } from '@/src/stores/favoritesStore';
 import { useState, useEffect } from 'react';
 import { SearchModal } from './search-modal';
 import { useSession, signOut } from 'next-auth/react';
+import { useOrderStore } from '@/src/stores/orderStore';
 
 
 export function Navbar() {
@@ -127,7 +128,7 @@ function AuthButtons() {
           {displayName}
         </Link>
         <button
-          onClick={() => signOut({ callbackUrl: '/' })}
+          onClick={() => { useOrderStore.setState({ orders: [] }); signOut({ callbackUrl: '/' }); }}
           className="bg-white/10 hover:bg-white/20 text-white border border-white/10 py-1 px-3 rounded text-sm"
         >
           Sign Out
