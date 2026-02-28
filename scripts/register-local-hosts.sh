@@ -29,15 +29,16 @@ MARKER_END="# END NEXUS LOCAL"
 
 # ── Hosts map ─────────────────────────────────────────────────────────────────
 # Format: "hostname description"
+# VaultWarden is NOT in this list — it uses http://localhost:8080 directly.
+# The web vault requires a TLS secure context; .local hostnames don't qualify.
 declare -a NEXUS_HOSTS=(
   "nexus-app.local          NEXUS e-commerce app"
   "nexus-grafana.local      Grafana dashboards"
   "nexus-prometheus.local   Prometheus metrics"
   "nexus-loki.local         Loki log explorer"
-  "nexus-vaultwarden.local  VaultWarden password manager"
   "nexus-n8n.local          n8n workflow automation"
   "nexus-uptime.local       Uptime Kuma monitoring"
-  "nexus-vpn.local          WireGuard VPN admin (wg-easy)"
+  "nexus-vpn.local          WireGuard VPN admin"
   "nexus-traefik.local      Traefik reverse-proxy dashboard"
 )
 
@@ -92,6 +93,8 @@ show_status() {
     fi
     printf "  %-34s %s  [hosts: %s]\n" "http://${hostname}" "$description" "$in_hosts"
   done
+  # VaultWarden is special — always localhost:8080
+  printf "  %-34s %s\n" "http://localhost:8080" "VaultWarden (secure context: localhost)"
   echo "═══════════════════════════════════════════════════════"
   echo ""
 }

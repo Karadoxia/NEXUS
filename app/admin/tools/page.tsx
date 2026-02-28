@@ -63,12 +63,13 @@ const TOOLS: Tool[] = [
   },
   {
     name: 'VaultWarden',
-    description: 'Self-hosted Bitwarden-compatible password & secrets manager.',
-    localUrl: 'http://nexus-vaultwarden.local',
+    description: 'Self-hosted Bitwarden-compatible password manager. Uses localhost:8080 locally — web vault requires a TLS secure context (HTTPS or localhost).',
+    localUrl: 'http://localhost:8080',
     publicUrl: 'https://vault.yourdomain.com',
     icon: Lock,
     color: 'from-blue-500/20 to-blue-500/5 border-blue-500/20 text-blue-400',
     category: 'Infrastructure',
+    badge: 'localhost:8080',
   },
   {
     name: 'Loki',

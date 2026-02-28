@@ -22,7 +22,6 @@ services:
     environment:
       DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2
       NEXTAUTH_SECRET: ${JWT_SECRET}
-      # email key used by newsletter-agent and order confirmations
       RESEND_API_KEY: ${RESEND_KEY}
       GEMINI_API_KEY: ${GEMINI_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
@@ -109,6 +108,9 @@ services:
     command:
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
+      # FIX: tell Traefik which network to use for ALL containers (avoids
+      # picking internal-only IPs for containers on multiple networks)
+      - "--providers.docker.network=proxy"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.letsencrypt.acme.email=admin@yourdomain.com"
@@ -122,11 +124,14 @@ services:
       - "traefik.http.routers.traefik-dashboard.rule=Host(`nexus-traefik.local`)"
       - "traefik.http.routers.traefik-dashboard.entrypoints=web"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      # Shared middleware: HTTPS redirect (used by all public routers)
+      # Shared HTTPS-redirect middleware used by all public routers
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
 
   # === VAULTWARDEN (secrets UI) ===
+  # FIX: VaultWarden's web vault requires a TLS secure context (HTTPS or localhost).
+  # Accessing via http://*.local fails because browsers block SubtleCrypto on non-secure origins.
+  # Solution: bind port 8080 on localhost — http://localhost:8080 IS a secure context.
   vaultwarden:
     image: vaultwarden/server:latest
     container_name: vaultwarden
@@ -134,6 +139,8 @@ services:
     networks:
       - internal
       - proxy
+    ports:
+      - "127.0.0.1:8080:80"
     volumes:
       - vw-data:/data
     environment:
@@ -151,9 +158,6 @@ services:
       - "traefik.http.routers.vault-tls.rule=Host(`vault.yourdomain.com`)"
       - "traefik.http.routers.vault-tls.entrypoints=websecure"
       - "traefik.http.routers.vault-tls.tls.certresolver=letsencrypt"
-      # Local: http://nexus-vaultwarden.local
-      - "traefik.http.routers.vault-local.rule=Host(`nexus-vaultwarden.local`)"
-      - "traefik.http.routers.vault-local.entrypoints=web"
       - "traefik.http.services.vault.loadbalancer.server.port=80"
 
   # === MONITORING (Grafana + Prometheus + Loki) ===
@@ -175,7 +179,7 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     labels:
       - "traefik.enable=true"
-      # Local only (no public exposure for Prometheus)
+      # Local only — Prometheus must NOT be publicly exposed
       - "traefik.http.routers.prometheus-local.rule=Host(`nexus-prometheus.local`)"
       - "traefik.http.routers.prometheus-local.entrypoints=web"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
@@ -193,7 +197,7 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     labels:
       - "traefik.enable=true"
-      # Local only (no public exposure for Loki)
+      # Local only — Loki must NOT be publicly exposed
       - "traefik.http.routers.loki-local.rule=Host(`nexus-loki.local`)"
       - "traefik.http.routers.loki-local.entrypoints=web"
       - "traefik.http.services.loki.loadbalancer.server.port=3100"
@@ -214,10 +218,14 @@ services:
       - ./data/grafana/dashboards:/etc/grafana/dashboards:ro
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASS:-admin}
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: https://grafana.yourdomain.com
+      # FIX: do NOT hardcode GF_SERVER_ROOT_URL to production domain.
+      # When set, Grafana embeds that URL in ALL JS/CSS/API links.
+      # Accessing via http://nexus-grafana.local would then fail because
+      # the browser can't load assets from grafana.yourdomain.com → "Gateway Failed".
+      # Leave unset: Grafana generates relative URLs, works on any hostname.
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
@@ -234,8 +242,11 @@ services:
       - "traefik.http.services.grafana.loadbalancer.server.port=3000"
 
   # === WIREGUARD VPN ===
+  # FIX: switched from unmaintained weejewel/wg-easy to the active fork
+  # ghcr.io/wg-easy/wg-easy which uses PASSWORD_HASH instead of PASSWORD
+  # and correctly handles WG_ALLOWED_IPS, WG_DEFAULT_DNS, etc.
   wireguard:
-    image: weejewel/wg-easy
+    image: ghcr.io/wg-easy/wg-easy
     container_name: wireguard
     restart: unless-stopped
     networks:
@@ -250,9 +261,12 @@ services:
       - net.ipv6.conf.all.forwarding=1
     environment:
       WG_HOST: ${WG_HOST:-vpn.yourdomain.com}
-      PASSWORD: ${WIREGUARD_PASS}
+      # Use PASSWORD for plain-text or PASSWORD_HASH for bcrypt hash
+      # Generate bcrypt: docker run --rm ghcr.io/wg-easy/wg-easy wgpw YOUR_PASSWORD
+      PASSWORD: ${WIREGUARD_PASS:-changeme}
       WG_DEFAULT_DNS: 1.1.1.1,1.0.0.1
-      WG_ALLOWED_IPS: 0.0.0.0/0
+      WG_ALLOWED_IPS: "0.0.0.0/0,::/0"
+      PORT: "51821"
     ports:
       - "51820:51820/udp"
       - "51821:51821/tcp"
@@ -286,7 +300,7 @@ services:
     volumes:
       - ./notify-db:/usr/src/app/db
 
-  # === UPTIME KUMA (bonus free monitoring) ===
+  # === UPTIME KUMA (monitoring) ===
   uptime-kuma:
     image: louislam/uptime-kuma
     container_name: uptime_kuma
@@ -312,6 +326,9 @@ services:
       - "traefik.http.services.uptime.loadbalancer.server.port=3001"
 
   # === N8N (workflow automation) ===
+  # FIX: n8n requires the 'n8n' database to exist in Postgres before starting.
+  # Run ./scripts/provision.sh after first 'docker compose up -d' to create it.
+  # n8n will restart automatically once the database is available.
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n
@@ -331,10 +348,11 @@ services:
       DB_POSTGRESDB_DATABASE: n8n
       DB_POSTGRESDB_USER: nexus
       DB_POSTGRESDB_PASSWORD: ${DB_PASSWORD}
-      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
-      N8N_HOST: n8n.yourdomain.com
-      N8N_PROTOCOL: https
-      WEBHOOK_URL: https://n8n.yourdomain.com
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme32charslongpleasechange}
+      # Local vs production settings — override via .env for production
+      N8N_HOST: ${N8N_HOST:-nexus-n8n.local}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://nexus-n8n.local}
       EXECUTIONS_MODE: queue
       QUEUE_BULL_REDIS_HOST: redis
       QUEUE_BULL_REDIS_PORT: "6379"
