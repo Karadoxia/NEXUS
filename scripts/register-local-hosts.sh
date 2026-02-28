@@ -40,6 +40,8 @@ declare -a NEXUS_HOSTS=(
   "nexus-uptime.local       Uptime Kuma monitoring"
   "nexus-vpn.local          WireGuard VPN admin"
   "nexus-traefik.local      Traefik reverse-proxy dashboard"
+  "nexus-npm.local          Nginx Proxy Manager (SSL certs)"
+  "nexus-vaultwarden.local  VaultWarden (redirects to localhost:8080)"
 )
 
 LOCAL_IP="127.0.0.1"

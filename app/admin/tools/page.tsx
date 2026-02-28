@@ -100,6 +100,16 @@ const TOOLS: Tool[] = [
     color: 'from-violet-500/20 to-violet-500/5 border-violet-500/20 text-violet-400',
     category: 'Security',
   },
+  {
+    name: 'Nginx Proxy Manager',
+    description: 'SSL certificate management UI — issue, view, and auto-renew Let\'s Encrypt certs. Supports DNS challenge for wildcard certs (no port-80 conflict with Traefik). Default login: admin@example.com / changeme.',
+    localUrl: 'http://nexus-npm.local',
+    publicUrl: 'https://npm.yourdomain.com',
+    icon: Lock,
+    color: 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/20 text-emerald-400',
+    category: 'Security',
+    badge: 'localhost:81',
+  },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {

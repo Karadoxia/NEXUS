@@ -413,6 +413,47 @@ services:
       - "traefik.http.routers.n8n-local.entrypoints=web"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
 
+  # === NGINX PROXY MANAGER — SSL Certificate Management UI ===
+  # Free/open-source cert manager with web dashboard and Let's Encrypt auto-renewal.
+  # Complements Traefik: Traefik handles all service routing/certs automatically,
+  # while NPM provides a visual UI to issue, view, and renew additional certs
+  # (useful for DNS-challenge wildcard certs, cert expiry visibility, etc.)
+  #
+  # ⚠ NPM must NOT bind to host ports 80 or 443 — Traefik already owns those.
+  #   Access NPM via:
+  #     http://nexus-npm.local          (through Traefik, local)
+  #     http://localhost:81             (direct — admin UI port)
+  #   Default login: admin@example.com / changeme  (change on first login)
+  #
+  # DNS Challenge: To issue Let's Encrypt certs without needing port 80,
+  #   use "DNS Challenge" in NPM → configure your DNS provider API token.
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx_proxy_manager
+    restart: unless-stopped
+    networks:
+      - proxy
+    ports:
+      # Admin UI — direct access on localhost only (no host 80/443 conflict)
+      - "127.0.0.1:81:81"
+    volumes:
+      - npm-data:/data
+      - npm-letsencrypt:/etc/letsencrypt
+    labels:
+      - "traefik.enable=true"
+      # Public: HTTP → HTTPS redirect
+      - "traefik.http.routers.npm.rule=Host(`npm.yourdomain.com`)"
+      - "traefik.http.routers.npm.entrypoints=web"
+      - "traefik.http.routers.npm.middlewares=https-redirect"
+      # Public: HTTPS (TLS)
+      - "traefik.http.routers.npm-tls.rule=Host(`npm.yourdomain.com`)"
+      - "traefik.http.routers.npm-tls.entrypoints=websecure"
+      - "traefik.http.routers.npm-tls.tls.certresolver=letsencrypt"
+      # Local: http://nexus-npm.local
+      - "traefik.http.routers.npm-local.rule=Host(`nexus-npm.local`)"
+      - "traefik.http.routers.npm-local.entrypoints=web"
+      - "traefik.http.services.npm.loadbalancer.server.port=81"
+
 volumes:
   nexus_v2_postgres_data:
   letsencrypt:
@@ -424,6 +465,8 @@ volumes:
   uptime-data:
   notify-db:
   n8n-data:
+  npm-data:
+  npm-letsencrypt:
 
 secrets:
   db_password:
