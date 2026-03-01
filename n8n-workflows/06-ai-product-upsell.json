@@ -1,0 +1,208 @@
+{
+  "name": "🎯 NEXUS - AI Product Upsell on New Order FULL",
+  "description": "Triggered on paid order - Rust recommender suggests complementary products - Groq writes personalized upsell - email with 15% UPSELL15 code",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM \"Order\" WHERE status = 'paid' AND \"date\" > NOW() - INTERVAL '5 minutes' AND upsell_sent = false ORDER BY date DESC LIMIT 10"
+      },
+      "id": "pg-orders",
+      "name": "Poll Recent Paid Orders",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      },
+      "trigger": "manual"
+    },
+    {
+      "parameters": {
+        "batchSize": 3
+      },
+      "id": "split",
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT u.email, u.name, oi.productId FROM \"Order\" o JOIN \"User\" u ON o.userId = u.id JOIN \"OrderItem\" oi ON o.id = oi.orderId WHERE o.id = '{{ $json.id }}' LIMIT 1"
+      },
+      "id": "pg-user",
+      "name": "Get User & Products",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/recommender",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"productId\": $json[0].productId, \"userId\": $json[0].email, \"limit\": 3} }}"
+      },
+      "id": "rust-recommender",
+      "name": "Rust Product Recommender",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\":\"mixtral-8x7b-32768\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Write a 4-line personalized upsell email for {{ $json[0].name }}. Suggested products: {{ $json[\\\"Rust Product Recommender\\\"].products }}. Include 15% UPSELL15 code. Make it irresistible but brief.\"},{\"role\":\"user\",\"content\":\"Customer just bought. Upsell now.\"}]}"
+      },
+      "id": "groq-upsell",
+      "name": "Groq Upsell Copy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "offers@nexus.store",
+        "toEmail": "={{ $json[0].email }}",
+        "subject": "🎁 Wait, we have something YOU'LL love… (15% off)",
+        "html": "<div style='font-family:sans-serif;padding:20px;'><h3>Hey {{ $json[0].name }},</h3><p>{{ $json[\"Groq Upsell Copy\"].choices[0].message.content }}</p><p style='margin-top:2rem;'><strong>Code: UPSELL15</strong> (15% discount)</p><p style='font-size:0.9em;color:#666;'>Limited to 24h offer</p></div>"
+      },
+      "id": "email-upsell",
+      "name": "Send Upsell Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "Resend SMTP"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "Order",
+        "updateFields": {
+          "upsell_sent": true
+        },
+        "where": "id={{ $json.id }}"
+      },
+      "id": "mark-sent",
+      "name": "Mark Upsell Sent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1560, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"upsell\",\"type\":\"post_purchase\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Upsell sent to: {{ $json[0].email }} | OrderID: {{ $json.id }} | Recommended: {{ $json[\\\"Rust Product Recommender\\\"].products?.length || 0 }} items\"]]}]} }}"
+      },
+      "id": "loki",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1780, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Poll Recent Paid Orders": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches"
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "Get User & Products"
+          }
+        ]
+      ]
+    },
+    "Get User & Products": {
+      "main": [
+        [
+          {
+            "node": "Rust Product Recommender"
+          }
+        ]
+      ]
+    },
+    "Rust Product Recommender": {
+      "main": [
+        [
+          {
+            "node": "Groq Upsell Copy"
+          }
+        ]
+      ]
+    },
+    "Groq Upsell Copy": {
+      "main": [
+        [
+          {
+            "node": "Send Upsell Email"
+          }
+        ]
+      ]
+    },
+    "Send Upsell Email": {
+      "main": [
+        [
+          {
+            "node": "Mark Upsell Sent"
+          }
+        ]
+      ]
+    },
+    "Mark Upsell Sent": {
+      "main": [
+        [
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["marketing", "ai", "revenue", "post-purchase"]
+}

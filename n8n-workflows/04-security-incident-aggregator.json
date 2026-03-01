@@ -1,0 +1,181 @@
+{
+  "name": "🛡️ NEXUS - Security Incident Aggregator FULL",
+  "description": "Webhook handler for Fail2Ban/Uptime Kuma/Grafana alerts - routes to Rust severity analyzer, auto-blocks IPs, logs to Loki, alerts Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "security-alert",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook",
+      "name": "Security Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/severity-score",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"source\": $json.source, \"type\": $json.type, \"ip\": $json.ip, \"message\": $json.message, \"timestamp\": new Date().toISOString()} }}"
+      },
+      "id": "rust",
+      "name": "Rust Severity Analyzer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json[\"Rust Severity Analyzer\"].score }}",
+              "operation": "larger",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "id": "if",
+      "name": "IF Critical (>70)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://traefik:8080/api/http/middlewares/block-ip",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"ip\": $json.ip, \"reason\": $json.message, \"duration\": \"24h\"} }}"
+      },
+      "id": "block",
+      "name": "Auto Block IP (Traefik)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 150],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "🚨 NEXUS SECURITY ALERT\n\nSource: {{ $json.source }}\nType: {{ $json.type }}\nIP: {{ $json.ip }}\nSeverity: {{ $json[\"Rust Severity Analyzer\"].score || \"UNKNOWN\" }}/100\nMessage: {{ $json.message }}\n\nAction: {{ $json[\"Rust Severity Analyzer\"].score > 70 ? '🔒 AUTO-BLOCKED' : '⚠️ MONITORED' }}"
+      },
+      "id": "tg",
+      "name": "Telegram Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [900, 350],
+      "credentials": {
+        "telegram": {
+          "id": "1",
+          "name": "NEXUS Telegram"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"security\",\"severity\":\"{{ $json[\\\"Rust Severity Analyzer\\\"].score > 70 ? 'CRITICAL' : 'WARNING' }}\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Source: {{ $json.source }} | Type: {{ $json.type }} | IP: {{ $json.ip }} | Severity: {{ $json[\\\"Rust Severity Analyzer\\\"].score || 'UNKNOWN' }}\"]]}]} }}"
+      },
+      "id": "loki",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "security@nexus.store",
+        "toEmail": "admin@nexus.store",
+        "subject": "🚨 NEXUS Security Incident - {{ $json.source }}",
+        "text": "Security Incident Report\n\nSource: {{ $json.source }}\nType: {{ $json.type }}\nIP: {{ $json.ip }}\nTimestamp: {{ new Date().toISOString() }}\nSeverity Score: {{ $json[\"Rust Severity Analyzer\"].score || 'ANALYZING' }}/100\n\nMessage:\n{{ $json.message }}\n\nAction Taken: {{ $json[\"Rust Severity Analyzer\"].score > 70 ? 'IP BLOCKED (24h)' : 'MONITORED' }}"
+      },
+      "id": "email",
+      "name": "Admin Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "Resend SMTP"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Security Webhook": {
+      "main": [
+        [
+          {
+            "node": "Rust Severity Analyzer"
+          }
+        ]
+      ]
+    },
+    "Rust Severity Analyzer": {
+      "main": [
+        [
+          {
+            "node": "IF Critical (>70)"
+          }
+        ]
+      ]
+    },
+    "IF Critical (>70)": {
+      "main": [
+        [
+          {
+            "node": "Auto Block IP (Traefik)"
+          },
+          {
+            "node": "Telegram Alert"
+          }
+        ]
+      ]
+    },
+    "Auto Block IP (Traefik)": {
+      "main": [
+        [
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    },
+    "Telegram Alert": {
+      "main": [
+        [
+          {
+            "node": "Admin Email"
+          }
+        ]
+      ]
+    },
+    "Log to Loki": {
+      "main": [
+        [
+          {
+            "node": "Admin Email"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["security", "incident", "auto-remediation"]
+}

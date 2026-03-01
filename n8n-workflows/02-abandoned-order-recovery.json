@@ -1,0 +1,177 @@
+{
+  "name": "💰 NEXUS - Abandoned Order Recovery AI v3 FULL",
+  "description": "Cron-triggered (every 20 min) recovery for orders in pending state >20min - Groq AI generates personalized recovery emails with RECOVER20 code",
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "*/20 * * * *"
+      },
+      "id": "cron",
+      "name": "Every 20min",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT o.id, o.total, o.userId, u.email, u.name, string_agg(p.name, ', ') as items FROM \"Order\" o JOIN \"User\" u ON o.userId = u.id LEFT JOIN \"OrderItem\" oi ON o.id = oi.orderId LEFT JOIN \"Product\" p ON oi.productId = p.id WHERE o.status = 'pending' AND o.date < NOW() - INTERVAL '20 minutes' AND o.cancelled = false GROUP BY o.id, u.id LIMIT 30"
+      },
+      "id": "pg",
+      "name": "Find Abandoned Orders",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 5
+      },
+      "id": "split",
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\":\"mixtral-8x7b-32768\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Generate a 3-line recovery email for abandoned order #{{ $json.id }} with items: {{ $json.items }} (total {{ $json.total }}€). Include RECOVER20 discount code. Keep subject line catchy. Output JSON: {\\\"subject\\\": \\\"...\\\", \\\"body\\\": \\\"...\\\"} ONLY NO MARKDOWN\"},{\"role\":\"user\",\"content\":\"Customer: {{ $json.name }} ({{ $json.email }})\"}]}"
+      },
+      "id": "groq",
+      "name": "Groq Recovery Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "recovery@nexus.store",
+        "toEmail": "={{ $json.email }}",
+        "subject": "😱 Your NEXUS order is waiting… (use code RECOVER20)",
+        "html": "<div style='font-family:sans-serif;'><h3>{{$json[\"Groq Recovery Email\"].choices[0].message.content.split('subject')[1]?.split('body')[0] || 'Your order is waiting'}}</h3><p>{{$json[\"Groq Recovery Email\"].choices[0].message.content}}</p><p style='margin-top:2rem;'><strong>Discount Code: RECOVER20</strong> (20% off recovery)</p></div>"
+      },
+      "id": "email",
+      "name": "Send Recovery",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "Resend SMTP"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "Order",
+        "updateFields": {
+          "status": "abandoned-notified"
+        },
+        "where": "id={{ $json.id }}"
+      },
+      "id": "mark",
+      "name": "Mark Notified",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"recovery\",\"type\":\"abandoned\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Notified: {{ $json.email }} | OrderID: {{ $json.id }} | Total: {{ $json.total }}€\"]]}]} }}"
+      },
+      "id": "loki",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1560, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Every 20min": {
+      "main": [
+        [
+          {
+            "node": "Find Abandoned Orders"
+          }
+        ]
+      ]
+    },
+    "Find Abandoned Orders": {
+      "main": [
+        [
+          {
+            "node": "SplitInBatches"
+          }
+        ]
+      ]
+    },
+    "SplitInBatches": {
+      "main": [
+        [
+          {
+            "node": "Groq Recovery Email"
+          }
+        ]
+      ]
+    },
+    "Groq Recovery Email": {
+      "main": [
+        [
+          {
+            "node": "Send Recovery"
+          }
+        ]
+      ]
+    },
+    "Send Recovery": {
+      "main": [
+        [
+          {
+            "node": "Mark Notified"
+          }
+        ]
+      ]
+    },
+    "Mark Notified": {
+      "main": [
+        [
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["marketing", "ai", "revenue"]
+}

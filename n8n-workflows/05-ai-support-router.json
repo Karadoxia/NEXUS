@@ -1,0 +1,259 @@
+{
+  "name": "💬 NEXUS - AI Support Ticket Router FULL",
+  "description": "Webhook from frontend chat - Groq classifies intent (refund/fraud/shipping/product/other) - routes to appropriate Rust agent - replies via callback",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "support-webhook",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook",
+      "name": "Support Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\":\"llama3-70b-8192\",\"messages\":[{\"role\":\"system\",\"content\":\"Classify customer support intent into ONE: refund, fraud, shipping, product, or other. Return JSON ONLY: {\\\"intent\\\": \\\"<intent>\\\", \\\"confidence\\\": <0-1>}\"},{\"role\":\"user\",\"content\":\"{{ $json.message }}\"}]}"
+      },
+      "id": "classify",
+      "name": "Groq Intent Classifier",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json[\"Groq Intent Classifier\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'other' }}",
+              "operation": "equals",
+              "value2": "refund"
+            }
+          ]
+        }
+      },
+      "id": "switch",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/agents/refund",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"userId\": $json.userId, \"orderId\": $json.orderId, \"message\": $json.message, \"timestamp\": new Date().toISOString()} }}"
+      },
+      "id": "refund",
+      "name": "Refund Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 50],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/agents/fraud",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"userId\": $json.userId, \"orderId\": $json.orderId, \"message\": $json.message, \"timestamp\": new Date().toISOString()} }}"
+      },
+      "id": "fraud",
+      "name": "Fraud Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/agents/shipping",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"userId\": $json.userId, \"orderId\": $json.orderId, \"message\": $json.message, \"timestamp\": new Date().toISOString()} }}"
+      },
+      "id": "shipping",
+      "name": "Shipping Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 350],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/agents/product",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"userId\": $json.userId, \"message\": $json.message, \"timestamp\": new Date().toISOString()} }}"
+      },
+      "id": "product",
+      "name": "Product Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 500],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/agents/default",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"userId\": $json.userId, \"message\": $json.message, \"timestamp\": new Date().toISOString()} }}"
+      },
+      "id": "default",
+      "name": "Default Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 650],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.callbackUrl }}",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"response\": $json.output, \"intent\": \"{{ $json[\\\"Groq Intent Classifier\\\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'unknown' }}\", \"status\": \"completed\"} }}"
+      },
+      "id": "reply",
+      "name": "Reply to Frontend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"support\",\"intent\":\"{{ $json[\\\"Groq Intent Classifier\\\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'unknown' }}\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Ticket: {{ $json.userId }} | Intent: {{ $json[\\\"Groq Intent Classifier\\\"].choices[0].message.content }} | Status: ROUTED\"]]}]} }}"
+      },
+      "id": "loki",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Support Webhook": {
+      "main": [
+        [
+          {
+            "node": "Groq Intent Classifier"
+          }
+        ]
+      ]
+    },
+    "Groq Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent"
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Refund Agent"
+          }
+        ],
+        [
+          {
+            "node": "Fraud Agent"
+          }
+        ],
+        [
+          {
+            "node": "Shipping Agent"
+          }
+        ],
+        [
+          {
+            "node": "Product Agent"
+          }
+        ],
+        [
+          {
+            "node": "Default Agent"
+          }
+        ]
+      ]
+    },
+    "Refund Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to Frontend"
+          }
+        ]
+      ]
+    },
+    "Fraud Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to Frontend"
+          }
+        ]
+      ]
+    },
+    "Shipping Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to Frontend"
+          }
+        ]
+      ]
+    },
+    "Product Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to Frontend"
+          }
+        ]
+      ]
+    },
+    "Default Agent": {
+      "main": [
+        [
+          {
+            "node": "Reply to Frontend"
+          }
+        ]
+      ]
+    },
+    "Reply to Frontend": {
+      "main": [
+        [
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["support", "ai", "routing"]
+}

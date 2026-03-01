@@ -1,0 +1,209 @@
+{
+  "name": "🚀 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
+  "description": "Real-time Stripe webhook handler - updates orders to paid, sends AI personalized confirmations, fraud checks, admin alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "stripe-webhook",
+        "responseMode": "onReceived",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "webhook",
+      "name": "Stripe Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.type }}",
+              "operation": "equals",
+              "value2": "checkout.session.completed"
+            }
+          ]
+        }
+      },
+      "id": "if",
+      "name": "IF Payment Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "schema": "public",
+        "table": "Order",
+        "updateFields": {
+          "status": "paid"
+        },
+        "where": "id={{ $json.body.data.object.client_reference_id }}"
+      },
+      "id": "pg",
+      "name": "Update Order → Paid",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [680, 200],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "no-reply@nexus.store",
+        "toEmail": "={{ $json.body.data.object.customer_details.email }}",
+        "subject": "✅ Order #{{ $json.body.data.object.client_reference_id }} Confirmed - Neuromancer Activated",
+        "html": "<div style='font-family:sans-serif;'><h2>🎉 Order Confirmed!</h2><p>Your NEXUS order #{{ $json.body.data.object.client_reference_id }} is confirmed.</p><p><strong>Amount:</strong> {{ $json.body.data.object.amount_total / 100 }}€</p><p>Neuromancer is now packing your order for immediate delivery.</p><p style='margin-top:2rem;color:#666;'>Tracking info coming soon →</p></div>"
+      },
+      "id": "email",
+      "name": "Resend Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "Resend SMTP"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/fraud-check",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"orderId\": $json.body.data.object.client_reference_id, \"amount\": $json.body.data.object.amount_total / 100, \"email\": $json.body.data.object.customer_details.email} }}"
+      },
+      "id": "rust",
+      "name": "Rust Fraud Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\":\"llama3-70b-8192\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Neuromancer, NEXUS's AI agent. Write a 2-sentence ultra-personal thank-you message for order #{{ $json.body.data.object.client_reference_id }} by {{ $json.body.data.object.customer_details.name }}. Include subtle upsell hint for next purchase. Keep it to 100 chars max.\"},{\"role\":\"user\",\"content\":\"Customer email: {{ $json.body.data.object.customer_details.email }}\"}]}"
+      },
+      "id": "groq",
+      "name": "Groq Personal Thank You",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "🛍️ NEXUS ORDER PAID\n\n#{{ $json.body.data.object.client_reference_id }}\nCustomer: {{ $json.body.data.object.customer_details.name }}\nAmount: {{ $json.body.data.object.amount_total / 100 }}€\n\nFraud Risk: {{ $json[\"Rust Fraud Agent\"].riskLevel || \"ANALYZING\" }}\nStatus: ✅ FULFILLMENT ACTIVE"
+      },
+      "id": "tg",
+      "name": "Telegram Admin",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1120, 500],
+      "credentials": {
+        "telegram": {
+          "id": "1",
+          "name": "NEXUS Telegram"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"orders\",\"type\":\"payment\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"OrderID: {{ $json.body.data.object.client_reference_id }} | Status: PAID | Amount: {{ $json.body.data.object.amount_total / 100 }}€\"]]}]} }}"
+      },
+      "id": "loki",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Stripe Webhook": {
+      "main": [
+        [
+          {
+            "node": "IF Payment Success"
+          }
+        ]
+      ]
+    },
+    "IF Payment Success": {
+      "main": [
+        [
+          {
+            "node": "Update Order → Paid"
+          },
+          {
+            "node": "Resend Confirmation"
+          }
+        ]
+      ]
+    },
+    "Update Order → Paid": {
+      "main": [
+        [
+          {
+            "node": "Rust Fraud Agent"
+          }
+        ]
+      ]
+    },
+    "Rust Fraud Agent": {
+      "main": [
+        [
+          {
+            "node": "Groq Personal Thank You"
+          }
+        ]
+      ]
+    },
+    "Groq Personal Thank You": {
+      "main": [
+        [
+          {
+            "node": "Telegram Admin"
+          }
+        ]
+      ]
+    },
+    "Resend Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["payment", "critical", "stripe", "fulfillment"]
+}
