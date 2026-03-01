@@ -8,12 +8,6 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # NEXUS Next.js app (exposes /api/metrics if configured)
-  - job_name: 'nexus-app'
-    static_configs:
-      - targets: ['nexus_app:3030']
-    metrics_path: '/api/metrics'
-
   # Loki log aggregator
   - job_name: 'loki'
     static_configs:
@@ -31,11 +25,13 @@ scrape_configs:
       - targets: ['traefik:8080']
     metrics_path: '/metrics'
 
-  # Uptime Kuma
+  # Uptime Kuma — /metrics endpoint requires Bearer token auth
   - job_name: 'uptime-kuma'
     static_configs:
       - targets: ['uptime_kuma:3001']
     metrics_path: '/metrics'
+    authorization:
+      credentials: 'uk1__vSY59t4sNCupnB5VG17dO79AZ9JZ-V0oCqamFEp'
 
   # Host machine metrics (CPU, RAM, disk, network) — prom/node-exporter
   - job_name: 'node-exporter'
@@ -56,10 +52,4 @@ scrape_configs:
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
-    metrics_path: '/metrics'
-
-  # n8n workflow engine
-  - job_name: 'n8n'
-    static_configs:
-      - targets: ['n8n:5678']
     metrics_path: '/metrics'

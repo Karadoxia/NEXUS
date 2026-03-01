@@ -140,14 +140,12 @@ export const useOrderStore = create<OrderState>()(
                 if (res.ok) {
                     const data = await res.json();
                     const raw = Array.isArray(data) ? data : (data.orders ?? []);
-                    const normalized = raw.map(normalizeApiOrder);
-                    set({ orders: normalized });
-                    return normalized;
+                    return raw.map(normalizeApiOrder);
                 }
             } catch {
                 // ignore
             }
-            return get().orders;
+            return [];
         },
 
         getRevenue: () => {

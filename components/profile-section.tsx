@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { User, MapPin, Plus, Pencil, Trash2, Check, X, CreditCard, Phone, Camera } from 'lucide-react';
+import { User, MapPin, Plus, Pencil, Trash2, Check, X, CreditCard, Phone, Camera, Lock } from 'lucide-react';
 import { PHONE_CODES } from '@/lib/phone-codes';
 
 interface Address {
@@ -58,6 +58,11 @@ export default function ProfileSection() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [showPmForm, setShowPmForm] = useState(false);
   const [pmForm, setPmForm] = useState({ type: 'card', brand: 'Visa', last4: '', expMonth: '', expYear: '', cardholderName: '', accountEmail: '' });
+
+  // Change password
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwStatus, setPwStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [pwMessage, setPwMessage] = useState('');
 
 
   useEffect(() => {
@@ -152,6 +157,28 @@ export default function ProfileSection() {
       setSaveStatus('error');
       setSaveMessage(err.message || 'Save failed');
       setTimeout(() => setSaveStatus('idle'), 2500);
+    }
+  };
+
+  const changePassword = async () => {
+    if (pwForm.next !== pwForm.confirm) {
+      setPwStatus('error'); setPwMessage('New passwords do not match.'); return;
+    }
+    setPwStatus('saving'); setPwMessage('');
+    try {
+      const res = await fetch('/api/user/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: pwForm.current, newPassword: pwForm.next }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Change failed');
+      setPwStatus('saved');
+      setPwForm({ current: '', next: '', confirm: '' });
+      setTimeout(() => setPwStatus('idle'), 2500);
+    } catch (err: unknown) {
+      setPwStatus('error'); setPwMessage(err instanceof Error ? err.message : 'Change failed');
+      setTimeout(() => setPwStatus('idle'), 3000);
     }
   };
 
@@ -340,10 +367,33 @@ export default function ProfileSection() {
         </div>
 
         <div className="mt-6 border-t border-slate-800 pt-4">
-          <p className="text-xs text-slate-500">
-            This account uses <span className="text-cyan-400">passwordless sign-in</span>.
-            To change your email, contact support. No password is stored.
-          </p>
+          <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+            <Lock size={14} className="text-cyan-400" /> Change Password
+          </h3>
+          <div className="space-y-2">
+            {(['current', 'next', 'confirm'] as const).map((field) => (
+              <input
+                key={field}
+                type="password"
+                placeholder={field === 'current' ? 'Current password' : field === 'next' ? 'New password' : 'Confirm new password'}
+                value={pwForm[field]}
+                onChange={e => setPwForm(f => ({ ...f, [field]: e.target.value }))}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                autoComplete={field === 'current' ? 'current-password' : field === 'next' ? 'new-password' : 'off'}
+              />
+            ))}
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="button"
+                onClick={changePassword}
+                disabled={pwStatus === 'saving' || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                className="bg-slate-700 hover:bg-slate-600 disabled:opacity-40 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
+              >
+                {pwStatus === 'saving' ? 'Saving…' : pwStatus === 'saved' ? <><Check size={14} /> Updated!</> : 'Update Password'}
+              </button>
+              {pwStatus === 'error' && <span className="text-red-400 text-xs">{pwMessage}</span>}
+            </div>
+          </div>
         </div>
       </div>
 
