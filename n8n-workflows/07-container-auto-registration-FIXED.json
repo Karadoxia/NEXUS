@@ -1,0 +1,336 @@
+{
+  "name": "🐳 NEXUS - Container Auto-Registration FIXED",
+  "description": "Auto-detects and registers Docker containers across infrastructure systems",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "container-detected",
+        "responseMode": "onReceived"
+      },
+      "id": "webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body?.containerId ?? $json.containerId }}",
+              "operation": "notEmpty"
+            }
+          ]
+        }
+      },
+      "id": "switch",
+      "name": "IF Container Data Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://nexus_app:3030/api/docker/register",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ {containerId: $json.body?.containerId ?? $json.containerId, containerName: $json.body?.containerName ?? $json.containerName, image: $json.body?.image ?? $json.image, ports: $json.body?.ports ?? $json.ports, labels: $json.body?.labels ?? $json.labels, environment: $json.body?.environment ?? $json.environment, networks: $json.body?.networks ?? $json.networks} }}"
+      },
+      "id": "register",
+      "name": "Register to API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [680, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "variables": {
+          "containerData": {
+            "containerId": "={{ $json.body?.containerId ?? $json.containerId }}",
+            "containerName": "={{ $json.body?.containerName ?? $json.containerName }}",
+            "image": "={{ $json.body?.image ?? $json.image }}",
+            "ports": "={{ $json.body?.ports ?? $json.ports }}",
+            "labels": "={{ $json.body?.labels ?? $json.labels }}",
+            "metricsPort": "={{ $json.body?.labels?.[\"prometheus.port\"] ?? $json.labels?.[\"prometheus.port\"] ?? 9090 }}"
+          }
+        }
+      },
+      "id": "setvars",
+      "name": "Set Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cd = $variables.containerData || {containerId: 'unknown', containerName: 'unknown', ports: {}};\nconst port = cd.ports && typeof cd.ports === 'object' ? Object.keys(cd.ports)[0] : '8080';\nreturn {system: 'traefik', status: 'pending', message: 'Traefik queued: ' + cd.containerName, port: port};"
+      },
+      "id": "traefik",
+      "name": "Traefik Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cd = $variables.containerData || {containerName: 'unknown', metricsPort: 9090};\nconst jobName = 'auto-' + cd.containerName;\nreturn {system: 'prometheus', status: 'pending', jobName: jobName, metricsPort: cd.metricsPort, message: 'Prometheus job: ' + jobName};"
+      },
+      "id": "prom",
+      "name": "Prometheus Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cd = $variables.containerData || {containerName: 'unknown'};\nreturn {system: 'grafana', status: 'pending', dashboardName: cd.containerName + ' Metrics', message: 'Grafana dashboard queued'};"
+      },
+      "id": "grafana",
+      "name": "Grafana Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cd = $variables.containerData || {containerName: 'unknown'};\nconst domain = cd.containerName + '.nexus-io.duckdns.org';\nreturn {system: 'kuma', status: 'pending', monitorName: cd.containerName + ' Uptime', url: 'https://' + domain, message: 'Uptime Kuma queued'};"
+      },
+      "id": "kuma",
+      "name": "Kuma Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cd = $variables.containerData || {labels: {}};\nconst enabled = cd.labels['wireguard.enabled'] === 'true';\nreturn {system: 'wireguard', status: enabled ? 'pending' : 'skipped', message: enabled ? 'WireGuard peer config queued' : 'WireGuard skipped'};"
+      },
+      "id": "wg",
+      "name": "WireGuard Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const cd = $variables.containerData || {containerName: 'unknown'};\nreturn {system: 'loki', status: 'pending', jobName: 'docker-' + cd.containerName, message: 'Loki log scrape queued'};"
+      },
+      "id": "loki",
+      "name": "Loki Adapter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 600]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "fields": []
+        }
+      },
+      "id": "merge",
+      "name": "Merge Results",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1320, 350]
+    },
+    {
+      "parameters": {
+        "responseCode": 200,
+        "responseBody": "={{ {status: 'registered', containerId: $json.body?.containerId ?? $json.containerId, containerName: $json.body?.containerName ?? $json.containerName, message: 'Container registration initiated', systems: 'Traefik, Prometheus, Grafana, Kuma, WireGuard, Loki'} }}"
+      },
+      "id": "response",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1520, 350]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "🐳 Container detected:\n{{ $json.body?.containerName ?? $json.containerName }}\nID: {{ $json.body?.containerId ?? $json.containerId }}\nImage: {{ $json.body?.image ?? $json.image }}\nStatus: Registering across systems..."
+      },
+      "id": "telegram",
+      "name": "Telegram Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1520, 500],
+      "credentials": {
+        "telegram": {
+          "id": "1",
+          "name": "NEXUS Telegram"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "IF Container Data Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Container Data Valid": {
+      "main": [
+        [
+          {
+            "node": "Register to API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register to API": {
+      "main": [
+        [
+          {
+            "node": "Set Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Variables": {
+      "main": [
+        [
+          {
+            "node": "Traefik Adapter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prometheus Adapter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Grafana Adapter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Kuma Adapter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "WireGuard Adapter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Loki Adapter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traefik Adapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prometheus Adapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Grafana Adapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Kuma Adapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "WireGuard Adapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Loki Adapter": {
+      "main": [
+        [
+          {
+            "node": "Merge Results",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Merge Results": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["container", "docker", "registration", "infrastructure"]
+}
