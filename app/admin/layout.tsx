@@ -5,11 +5,19 @@ import AdminSidebar from './_components/sidebar';
 
 export const metadata = { title: 'NEXUS Admin' };
 
+const TEAM_ROLES = ['admin', 'manager', 'marketing', 'it', 'support', 'editor', 'trainee'];
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.email || !(session.user as { isAdmin?: boolean }).isAdmin) {
+  if (!session?.user?.email) {
     redirect('/signin');
+  }
+
+  // Allow admin OR any valid team role (middleware handles path-level restrictions)
+  const userRole = (session.user as { role?: string }).role?.toLowerCase() || 'user';
+  if (!TEAM_ROLES.includes(userRole)) {
+    redirect('/');
   }
 
   return (

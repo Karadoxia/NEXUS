@@ -26,3 +26,25 @@ export { MARKETING_AGENT as MARKETING_BOOSTER } from './marketingOptimizer';
 export { PROCUREMENT_AGENT as PROCUREMENT_NEGOTIATOR } from './procurementNegotiator';
 export { CRM_AGENT as CRM_RECLAMATIONS } from './crmReclamations';
 export { BI_AGENT as BUSINESS_INTELLIGENCE } from './biAnalyst';
+
+export { IT_OPERATIONS_REPORTER } from './itOperationsReporter';
+
+export { PERFORMANCE_OPTIMIZER } from './performanceOptimizer';
+
+export { SECURITY_FRAUD_GUARDIAN } from './security-fraud-guardian';
+
+export { INVENTORY_FORECASTER } from './inventoryForecaster';
+
+export { SENTIMENT_LOYALTY_ANALYST } from './sentiment-loyalty-analyst';
+
+export { NEWSLETTER_AGENT } from './newsletterAgent';
+
+export { FINANCE_GUARDIAN } from './financeGuardian';
+
+export { MARKETING_BOOSTER } from './marketing-booster';
+
+export { PROCUREMENT_NEGOTIATOR } from './procurementNegotiator';
+
+export { CRM_RECLAMATIONS } from './crmReclamations';
+
+export { BUSINESS_INTELLIGENCE } from './business-intelligence';
