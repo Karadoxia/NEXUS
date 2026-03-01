@@ -1,0 +1,127 @@
+{
+  "name": "🤖 NEXUS - Full Site Audit Bot",
+  "description": "Weekly comprehensive site audit with auto-fixes",
+  "version": 1,
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 3 * * 0"
+      },
+      "id": "cron_weekly",
+      "name": "Every Sunday 3am UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/audit/database",
+        "method": "POST",
+        "jsonBody": true,
+        "body": "{\"checkIntegrity\": true, \"checkIndexes\": true, \"checkForeignKeys\": true}"
+      },
+      "id": "audit_database",
+      "name": "Audit Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/audit/security",
+        "method": "POST",
+        "jsonBody": true,
+        "body": "{\"checkSSL\": true, \"checkHeaders\": true, \"checkVulnerabilities\": true}"
+      },
+      "id": "audit_security",
+      "name": "Audit Security",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/audit/links",
+        "method": "POST",
+        "jsonBody": true,
+        "body": "{\"crawlDepth\": 3, \"timeout\": 30, \"skipExternal\": false}"
+      },
+      "id": "audit_links",
+      "name": "Check Broken Links",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Analyze site audit results and generate a comprehensive report. Include: issues found, severity, and recommended actions.\"}, {\"role\": \"user\", \"content\": \"Database: {{ $json.database }}, Security: {{ $json.security }}, Links: {{ $json.links }}\"}]}"
+      },
+      "id": "groq_audit_summary",
+      "name": "Groq: Generate Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "audit@nexus.store",
+        "toEmail": "{{ $env.ADMIN_EMAIL }}",
+        "subject": "🤖 Weekly Site Audit Report",
+        "html": "={{ $response.body.choices[0].message.content }}"
+      },
+      "id": "send_audit_report",
+      "name": "Send Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "credentials": {
+        "smtp": "Resend SMTP"
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "✅ Weekly site audit completed\\nCheck email for full report"
+      },
+      "id": "notify_audit",
+      "name": "Notify Completion",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1560, 300],
+      "credentials": {
+        "telegram": "NEXUS Telegram"
+      }
+    }
+  ],
+  "connections": {
+    "Every Sunday 3am UTC": {
+      "main": [[{ "node": "Audit Database", "type": "main", "index": 0 }, { "node": "Audit Security", "type": "main", "index": 0 }, { "node": "Check Broken Links", "type": "main", "index": 0 }]]
+    },
+    "Audit Database": {
+      "main": [[{ "node": "Groq: Generate Report", "type": "main", "index": 0 }]]
+    },
+    "Audit Security": {
+      "main": [[{ "node": "Groq: Generate Report", "type": "main", "index": 0 }]]
+    },
+    "Check Broken Links": {
+      "main": [[{ "node": "Groq: Generate Report", "type": "main", "index": 0 }]]
+    },
+    "Groq: Generate Report": {
+      "main": [[{ "node": "Send Report", "type": "main", "index": 0 }]]
+    },
+    "Send Report": {
+      "main": [[{ "node": "Notify Completion", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["maintenance", "audit", "quality-assurance", "ai"]
+}

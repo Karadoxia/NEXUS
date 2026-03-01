@@ -1,0 +1,114 @@
+{
+  "name": "📊 NEXUS - Performance Monitor + Auto-Optimize",
+  "description": "Monitors site performance and triggers auto-optimization",
+  "version": 1,
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 * * * *"
+      },
+      "id": "cron_hourly",
+      "name": "Every Hour",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://prometheus:9090/api/v1/query",
+        "method": "GET",
+        "qs": {
+          "query": "avg(response_time_ms) by (endpoint)"
+        }
+      },
+      "id": "fetch_metrics",
+      "name": "Fetch Prometheus Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Analyze performance metrics. Identify slow endpoints and suggest optimizations.\"}, {\"role\": \"user\", \"content\": \"{{ JSON.stringify($json) }}\"}]}"
+      },
+      "id": "analyze_performance",
+      "name": "Groq: Analyze Performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $response.body.choices[0].message.content }}",
+              "operation": "contains",
+              "value2": "slow"
+            }
+          ]
+        }
+      },
+      "id": "check_slow",
+      "name": "IF Performance Issues",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/optimize",
+        "method": "POST",
+        "jsonBody": true,
+        "body": "{\"type\": \"auto-optimize\", \"targets\": \"database,cache\"}"
+      },
+      "id": "trigger_optimization",
+      "name": "Trigger Optimization",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "⚡ Auto-optimization triggered\\nIssues: {{ $response.body.choices[0].message.content }}"
+      },
+      "id": "notify_optimization",
+      "name": "Notify Admin",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "credentials": {
+        "telegram": "NEXUS Telegram"
+      }
+    }
+  ],
+  "connections": {
+    "Every Hour": {
+      "main": [[{ "node": "Fetch Prometheus Metrics", "type": "main", "index": 0 }]]
+    },
+    "Fetch Prometheus Metrics": {
+      "main": [[{ "node": "Groq: Analyze Performance", "type": "main", "index": 0 }]]
+    },
+    "Groq: Analyze Performance": {
+      "main": [[{ "node": "IF Performance Issues", "type": "main", "index": 0 }]]
+    },
+    "IF Performance Issues": {
+      "main": [[{ "node": "Trigger Optimization", "type": "main", "index": 0 }]]
+    },
+    "Trigger Optimization": {
+      "main": [[{ "node": "Notify Admin", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["monitoring", "performance", "optimization", "ai"]
+}

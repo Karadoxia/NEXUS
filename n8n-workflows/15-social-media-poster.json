@@ -1,0 +1,93 @@
+{
+  "name": "📱 NEXUS - Social Media Auto-Poster",
+  "description": "Auto-generates and posts content to social media",
+  "version": 1,
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "product-featured"
+      },
+      "id": "webhook_feature",
+      "name": "Feature Product Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Create engaging social media post copy for Twitter/X. Keep it under 280 chars, include relevant emojis and hashtags.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Price: ${{ $json.price }}, Features: {{ $json.features }}\"}]}"
+      },
+      "id": "groq_social_copy",
+      "name": "Groq: Generate Copy",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 2
+      },
+      "id": "split_social_platforms",
+      "name": "For Each Platform",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.twitter.com/2/tweets",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.TWITTER_BEARER_TOKEN }}",
+        "jsonBody": true,
+        "body": "{\"text\": \"{{ $response.body.choices[0].message.content }}\"}"
+      },
+      "id": "post_twitter",
+      "name": "Post to Twitter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "📱 Social post published for {{ $json.name }}\\n{{ $response.body.choices[0].message.content }}"
+      },
+      "id": "notify_posted",
+      "name": "Notify Posted",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "credentials": {
+        "telegram": "NEXUS Telegram"
+      }
+    }
+  ],
+  "connections": {
+    "Feature Product Webhook": {
+      "main": [[{ "node": "Groq: Generate Copy", "type": "main", "index": 0 }]]
+    },
+    "Groq: Generate Copy": {
+      "main": [[{ "node": "For Each Platform", "type": "main", "index": 0 }]]
+    },
+    "For Each Platform": {
+      "main": [[{ "node": "Post to Twitter", "type": "main", "index": 0 }]]
+    },
+    "Post to Twitter": {
+      "main": [[{ "node": "Notify Posted", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["marketing", "social", "ai", "automation"]
+}

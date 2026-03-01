@@ -1,0 +1,130 @@
+{
+  "name": "📉 NEXUS - Churn Predictor + Retention",
+  "description": "Predicts customer churn and sends retention campaigns",
+  "version": 1,
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 0 1 * *"
+      },
+      "id": "cron_monthly",
+      "name": "First Day of Month",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT u.id, u.email, u.name, COUNT(o.id) as orderCount, MAX(o.\"createdAt\") as lastOrder FROM \"User\" u LEFT JOIN \"Order\" o ON u.id = o.\"userId\" WHERE u.\"createdAt\" > NOW() - INTERVAL '180 days' GROUP BY u.id HAVING COUNT(o.id) > 0"
+      },
+      "id": "query_users",
+      "name": "Get Active Users",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": "NEXUS Postgres"
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 100
+      },
+      "id": "split_users",
+      "name": "Batch Users",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.gemini.google.com/v1/models/gemini-1.5-pro:generateContent",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GEMINI_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"contents\": {\"parts\": [{\"text\": \"Analyze customer activity and predict churn risk (0-100). User: {{ $json.name }}, Orders: {{ $json.orderCount }}, Last Order: {{ $json.lastOrder }}, Account Age: 6 months. Return JSON: {\\\"churnRisk\\\": number, \\\"reason\\\": string}\"}]}}"
+      },
+      "id": "gemini_churn_analysis",
+      "name": "Gemini: Predict Churn",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.churnRisk }}",
+              "operation": ">",
+              "value2": 70
+            }
+          ]
+        }
+      },
+      "id": "check_high_churn",
+      "name": "IF High Churn Risk",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "retention@nexus.store",
+        "toEmail": "={{ $json.email }}",
+        "subject": "We miss you! Here's 25% off your next purchase 💝",
+        "html": "<h2>Hi {{ $json.name }},</h2><p>We noticed you haven't visited in a while. Here's {{ $json.couponCode }} for 25% off!</p>"
+      },
+      "id": "send_retention",
+      "name": "Send Retention Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1340, 200],
+      "credentials": {
+        "smtp": "Resend SMTP"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO \"RetentionCampaign\" (\"userId\", \"riskScore\", \"sentAt\") VALUES ('{{ $json.id }}', {{ $json.churnRisk }}, NOW())"
+      },
+      "id": "log_campaign",
+      "name": "Log Campaign",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1560, 200],
+      "credentials": {
+        "postgres": "NEXUS Postgres"
+      }
+    }
+  ],
+  "connections": {
+    "First Day of Month": {
+      "main": [[{ "node": "Get Active Users", "type": "main", "index": 0 }]]
+    },
+    "Get Active Users": {
+      "main": [[{ "node": "Batch Users", "type": "main", "index": 0 }]]
+    },
+    "Batch Users": {
+      "main": [[{ "node": "Gemini: Predict Churn", "type": "main", "index": 0 }]]
+    },
+    "Gemini: Predict Churn": {
+      "main": [[{ "node": "IF High Churn Risk", "type": "main", "index": 0 }]]
+    },
+    "IF High Churn Risk": {
+      "main": [[{ "node": "Send Retention Email", "type": "main", "index": 0 }]]
+    },
+    "Send Retention Email": {
+      "main": [[{ "node": "Log Campaign", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["retention", "churn", "ai", "customer-lifetime-value"]
+}

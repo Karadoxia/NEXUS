@@ -1,0 +1,92 @@
+{
+  "name": "🔍 NEXUS - SEO Content Optimizer",
+  "description": "Auto-generates SEO-optimized meta tags and submits to search engines",
+  "version": 1,
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "product-created"
+      },
+      "id": "webhook_new_product",
+      "name": "New Product Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Generate SEO-optimized metadata. Return JSON with: metaTitle (60 chars), metaDescription (160 chars), keywords (5-7), and schema markup.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Category: {{ $json.category }}, Description: {{ $json.description }}\"}]}"
+      },
+      "id": "groq_seo_meta",
+      "name": "Groq: Generate SEO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE \"Product\" SET \"metaTitle\" = '{{ $json.metaTitle }}', \"metaDescription\" = '{{ $json.metaDescription }}', \"keywords\" = '{{ $json.keywords | join(\",\") }}', \"schemaMarkup\" = '{{ $json.schema }}' WHERE id = '{{ $json.id }}'"
+      },
+      "id": "update_product_meta",
+      "name": "Update Product Meta",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "credentials": {
+        "postgres": "NEXUS Postgres"
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://www.google.com/ping?sitemap=https://{{ $env.DOMAIN }}/sitemap.xml",
+        "method": "GET"
+      },
+      "id": "submit_google_sitemap",
+      "name": "Submit to Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "🔍 SEO optimized for product: {{ $json.name }}\\nKeywords: {{ $json.keywords | join(\", \") }}"
+      },
+      "id": "notify_seo",
+      "name": "Notify SEO Update",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "credentials": {
+        "telegram": "NEXUS Telegram"
+      }
+    }
+  ],
+  "connections": {
+    "New Product Webhook": {
+      "main": [[{ "node": "Groq: Generate SEO", "type": "main", "index": 0 }]]
+    },
+    "Groq: Generate SEO": {
+      "main": [[{ "node": "Update Product Meta", "type": "main", "index": 0 }]]
+    },
+    "Update Product Meta": {
+      "main": [[{ "node": "Submit to Google", "type": "main", "index": 0 }]]
+    },
+    "Submit to Google": {
+      "main": [[{ "node": "Notify SEO Update", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["seo", "marketing", "ai", "content"]
+}
