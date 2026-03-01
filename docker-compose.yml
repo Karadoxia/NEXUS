@@ -34,11 +34,11 @@ services:
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.nexus.rule=Host(`nexus.yourdomain.com`)"
+      - "traefik.http.routers.nexus.rule=Host(`nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus.entrypoints=web"
       - "traefik.http.routers.nexus.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.nexus-tls.rule=Host(`nexus.yourdomain.com`)"
+      - "traefik.http.routers.nexus-tls.rule=Host(`nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus-tls.entrypoints=websecure"
       - "traefik.http.routers.nexus-tls.tls.certresolver=letsencrypt"
       # Local: http://nexus-app.local
@@ -107,6 +107,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - letsencrypt:/letsencrypt
@@ -118,9 +120,11 @@ services:
       - "--providers.docker.network=proxy"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.letsencrypt.acme.email=admin@yourdomain.com"
+      - "--certificatesresolvers.letsencrypt.acme.email=caspertech92@gmail.com"
       - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
       - "--api=true"
       - "--api.dashboard=true"
       # api.insecure exposes the API (and /metrics) on port 8080 inside the container.
@@ -170,18 +174,18 @@ services:
     volumes:
       - vw-data:/data
     environment:
-      DOMAIN: https://vault.yourdomain.com
+      DOMAIN: https://vault.nexus-io.duckdns.org
       SIGNUPS_ALLOWED: "false"
       ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN:-}
       ROCKET_PORT: "80"
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.vault.rule=Host(`vault.yourdomain.com`)"
+      - "traefik.http.routers.vault.rule=Host(`vault.nexus-io.duckdns.org`)"
       - "traefik.http.routers.vault.entrypoints=web"
       - "traefik.http.routers.vault.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.vault-tls.rule=Host(`vault.yourdomain.com`)"
+      - "traefik.http.routers.vault-tls.rule=Host(`vault.nexus-io.duckdns.org`)"
       - "traefik.http.routers.vault-tls.entrypoints=websecure"
       - "traefik.http.routers.vault-tls.tls.certresolver=letsencrypt"
       - "traefik.http.services.vault.loadbalancer.server.port=80"
@@ -252,16 +256,16 @@ services:
       # FIX: do NOT hardcode GF_SERVER_ROOT_URL to production domain.
       # When set, Grafana embeds that URL in ALL JS/CSS/API links.
       # Accessing via http://nexus-grafana.local would then fail because
-      # the browser can't load assets from grafana.yourdomain.com → "Gateway Failed".
+      # the browser can't load assets from grafana.nexus-io.duckdns.org → "Gateway Failed".
       # Leave unset: Grafana generates relative URLs, works on any hostname.
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.grafana.rule=Host(`grafana.yourdomain.com`)"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.nexus-io.duckdns.org`)"
       - "traefik.http.routers.grafana.entrypoints=web"
       - "traefik.http.routers.grafana.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.grafana-tls.rule=Host(`grafana.yourdomain.com`)"
+      - "traefik.http.routers.grafana-tls.rule=Host(`grafana.nexus-io.duckdns.org`)"
       - "traefik.http.routers.grafana-tls.entrypoints=websecure"
       - "traefik.http.routers.grafana-tls.tls.certresolver=letsencrypt"
       # Local: http://nexus-grafana.local
@@ -290,7 +294,7 @@ services:
       # Required for iptables masquerade to work inside the container
       - net.ipv4.conf.all.src_valid_mark=1
     environment:
-      WG_HOST: ${WG_HOST:-vpn.yourdomain.com}
+      WG_HOST: ${WG_HOST:-vpn.nexus-io.duckdns.org}
       # wg-easy v14+ requires a bcrypt hash — plain PASSWORD is no longer accepted.
       # Generate via provision.sh (auto) or manually:
       #   docker run --rm ghcr.io/wg-easy/wg-easy wgpw YOUR_PASS
@@ -310,11 +314,11 @@ services:
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.wireguard.rule=Host(`vpn.yourdomain.com`)"
+      - "traefik.http.routers.wireguard.rule=Host(`vpn.nexus-io.duckdns.org`)"
       - "traefik.http.routers.wireguard.entrypoints=web"
       - "traefik.http.routers.wireguard.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.wireguard-tls.rule=Host(`vpn.yourdomain.com`)"
+      - "traefik.http.routers.wireguard-tls.rule=Host(`vpn.nexus-io.duckdns.org`)"
       - "traefik.http.routers.wireguard-tls.entrypoints=websecure"
       - "traefik.http.routers.wireguard-tls.tls.certresolver=letsencrypt"
       # Local: http://nexus-vpn.local
@@ -348,11 +352,11 @@ services:
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.uptime.rule=Host(`status.yourdomain.com`)"
+      - "traefik.http.routers.uptime.rule=Host(`status.nexus-io.duckdns.org`)"
       - "traefik.http.routers.uptime.entrypoints=web"
       - "traefik.http.routers.uptime.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.uptime-tls.rule=Host(`status.yourdomain.com`)"
+      - "traefik.http.routers.uptime-tls.rule=Host(`status.nexus-io.duckdns.org`)"
       - "traefik.http.routers.uptime-tls.entrypoints=websecure"
       - "traefik.http.routers.uptime-tls.tls.certresolver=letsencrypt"
       # Local: http://nexus-uptime.local
@@ -385,12 +389,10 @@ services:
       DB_POSTGRESDB_PASSWORD: ${DB_PASSWORD}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme32charslongpleasechange}
       # Local vs production settings — override via .env for production
-      N8N_HOST: ${N8N_HOST:-nexus-n8n.local}
-      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
-      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://nexus-n8n.local}
-      # FIX: n8n sets secure cookies by default which blocks login over plain HTTP.
-      # Set to false when running locally without HTTPS.
-      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
+      N8N_HOST: ${N8N_HOST:-n8n.nexus-io.duckdns.org}
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-https://n8n.nexus-io.duckdns.org}
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-true}
       EXECUTIONS_MODE: queue
       QUEUE_BULL_REDIS_HOST: redis
       QUEUE_BULL_REDIS_PORT: "6379"
@@ -401,11 +403,11 @@ services:
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.n8n.rule=Host(`n8n.yourdomain.com`)"
+      - "traefik.http.routers.n8n.rule=Host(`n8n.nexus-io.duckdns.org`)"
       - "traefik.http.routers.n8n.entrypoints=web"
       - "traefik.http.routers.n8n.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.n8n-tls.rule=Host(`n8n.yourdomain.com`)"
+      - "traefik.http.routers.n8n-tls.rule=Host(`n8n.nexus-io.duckdns.org`)"
       - "traefik.http.routers.n8n-tls.entrypoints=websecure"
       - "traefik.http.routers.n8n-tls.tls.certresolver=letsencrypt"
       # Local: http://nexus-n8n.local
@@ -442,11 +444,11 @@ services:
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.npm.rule=Host(`npm.yourdomain.com`)"
+      - "traefik.http.routers.npm.rule=Host(`npm.nexus-io.duckdns.org`)"
       - "traefik.http.routers.npm.entrypoints=web"
       - "traefik.http.routers.npm.middlewares=https-redirect"
       # Public: HTTPS (TLS)
-      - "traefik.http.routers.npm-tls.rule=Host(`npm.yourdomain.com`)"
+      - "traefik.http.routers.npm-tls.rule=Host(`npm.nexus-io.duckdns.org`)"
       - "traefik.http.routers.npm-tls.entrypoints=websecure"
       - "traefik.http.routers.npm-tls.tls.certresolver=letsencrypt"
       # Local: http://nexus-npm.local
