@@ -53,3 +53,16 @@ rust-agents/target/
 
 # temporary directories created by tests
 /tests/tmp*
+
+# secret flat-files used by Docker secrets — never commit
+db_password.txt
+jwt_secret.txt
+resend_key.txt
+gemini_key.txt
+*.secret.txt
+
+# personal notes / scratch
+000-MyNotes/
+
+# VPN / infra sub-stacks (separate repos or too large)
+vpn-stack/
