@@ -30,8 +30,7 @@ scrape_configs:
     static_configs:
       - targets: ['uptime_kuma:3001']
     metrics_path: '/metrics'
-    authorization:
-      credentials: 'uk1__vSY59t4sNCupnB5VG17dO79AZ9JZ-V0oCqamFEp'
+    bearer_token: 'uk1__vSY59t4sNCupnB5VG17dO79AZ9JZ-V0oCqamFEp'
 
   # Host machine metrics (CPU, RAM, disk, network) — prom/node-exporter
   - job_name: 'node-exporter'
