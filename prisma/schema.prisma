@@ -229,3 +229,76 @@ model AgentResult {
   error     String?
   createdAt DateTime @default(now())
 }
+
+/// Track all Docker containers registered in infrastructure
+model ContainerRegistry {
+  id                 String   @id @default(cuid())
+  containerId        String   @unique
+  containerName      String
+  image              String?
+  status             String   @default("active")  // active | inactive | failed
+
+  // Extracted metadata
+  ports              Json?    @default("{}")
+  labels             Json?    @default("{}")
+  environment        Json?    @default("{}")
+  networks           String[]
+
+  // Registration status per system
+  traefikRegistered  Boolean  @default(false)
+  traefikUpdatedAt   DateTime?
+  traefikConfig      Json?
+
+  prometheusRegistered Boolean @default(false)
+  prometheusUpdatedAt  DateTime?
+  prometheusJobName    String?
+
+  grafanaRegistered  Boolean  @default(false)
+  grafanaUpdatedAt   DateTime?
+  grafanaPanelIds    Int[]
+
+  kumaRegistered     Boolean  @default(false)
+  kumaUpdatedAt      DateTime?
+  kumaMonitorId      Int?
+
+  wireguardRegistered Boolean @default(false)
+  wireguardUpdatedAt  DateTime?
+  wireguardIp        String?
+
+  lokiRegistered     Boolean  @default(false)
+  lokiUpdatedAt      DateTime?
+
+  // Audit trail
+  firstDetectedAt    DateTime @default(now())
+  lastEventAt        DateTime @default(now())
+  registrationCompletedAt DateTime?
+  lastHealthCheck    DateTime?
+
+  createdBy          String   @default("system")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  events             RegistrationEvent[]
+
+  @@index([status])
+  @@index([containerName])
+}
+
+/// Track registration events for containers
+model RegistrationEvent {
+  id             String   @id @default(cuid())
+  containerId    String
+  container      ContainerRegistry @relation(fields: [containerId], references: [containerId], onDelete: Cascade)
+
+  eventType      String   // detected | validated | registered | failed
+  system         String   // traefik | prometheus | grafana | kuma | wireguard | loki
+  status         String   // success | failed | pending
+  message        String?
+  errorDetails   Json?
+
+  timestamp      DateTime @default(now())
+
+  @@index([containerId])
+  @@index([timestamp])
+  @@index([system])
+}
