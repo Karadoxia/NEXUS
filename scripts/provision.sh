@@ -16,10 +16,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/../.env"
 if [[ -f "$ENV_FILE" ]]; then
-  set -o allexport
-  # shellcheck disable=SC1091
-  source "$ENV_FILE"
-  set +o allexport
+  # Safely load .env without sourcing (avoids issues with special chars like <>)
+  while IFS='=' read -r key value; do
+    [[ ! "$key" =~ ^#|^[[:space:]]*$ ]] && export "$key=$value"
+  done < "$ENV_FILE"
 fi
 
 # ── Defaults ──────────────────────────────────────────────────────────────
