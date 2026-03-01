@@ -1,5 +1,5 @@
 import { createAgent } from "./base";
-import { rustTool } from "../lib/agents/tools";
+import { rustTool } from "./tools";
 
 const PROMPT = `Assess current campaigns, allocate budgets across channels, and propose ideas to boost conversions with a focus on ROI.`;
 

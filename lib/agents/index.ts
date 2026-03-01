@@ -13,7 +13,7 @@ export { REVENUE_FORECASTER } from './revenueForecaster';
 export { RUST_SUM } from './rust-sum';
 export { SUPPORT_BOT } from './supportBot';
 
-export { IT_OPERATIONS_REPORTER } from './itOperationsReporter';
+export { ITOPS_AGENT as IT_OPERATIONS_REPORTER } from './itOperationsReporter';
 
 export { PERFORMANCE_OPTIMIZER } from './performanceOptimizer';
 
@@ -34,3 +34,5 @@ export { PROCUREMENT_NEGOTIATOR } from './procurementNegotiator';
 export { CRM_RECLAMATIONS } from './crmReclamations';
 
 export { BUSINESS_INTELLIGENCE } from './business-intelligence';
+
+export { IT_OPERATIONS_REPORTER } from './itOperationsReporter';

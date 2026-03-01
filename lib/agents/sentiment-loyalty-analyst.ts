@@ -1,5 +1,5 @@
 import { createAgent } from "./base";
-import { rustTool } from "../lib/agents/tools";
+import { rustTool } from "./tools";
 
 const PROMPT = `You are Nexus Loyalty Analyst. Use all tools to gather data, then produce a customer health report covering retention, cancellation trends, and recommendations.`;
 

@@ -1,5 +1,5 @@
 import { createAgent } from "./base";
-import { rustTool } from "../lib/agents/tools";
+import { rustTool } from "./tools";
 
 const PROMPT = `Aggregate data from sales, inventory, marketing, and finance; produce an executive summary of trends and opportunity areas.`;
 
