@@ -590,6 +590,42 @@ services:
       - crowdsec-config:/etc/crowdsec
       - /var/log/traefik:/var/log/traefik:ro
 
+  # === CLOUDFLARE TUNNEL (Secure Remote Access) ================================
+  # Provides secure public access without port forwarding
+  # Requires: CLOUDFLARE_TUNNEL_TOKEN set in .env
+  # Setup: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    networks:
+      - proxy
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    profiles:
+      - cloudflare-tunnel
+
+  # === FAIL2BAN (SSH Brute Force Protection) ===================================
+  # Monitors logs and bans IPs after failed login attempts
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: fail2ban
+    restart: unless-stopped
+    networks:
+      - internal
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    environment:
+      F2B_LOG_LEVEL: INFO
+      F2B_DB_PURGE_AGE: 7d
+    volumes:
+      - /var/log/auth.log:/var/log/auth.log:ro
+      - /var/log/syslog:/var/log/syslog:ro
+    profiles:
+      - fail2ban
+
 volumes:
   nexus_v2_postgres_data:
   letsencrypt:
