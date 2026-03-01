@@ -127,7 +127,8 @@ function ToolCard({ tool }: { tool: Tool }) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <span className={`p-2 rounded-xl border bg-slate-900/60 ${tool.color}`}>
-            <Icon size={18} strokeWidth={1.8} />
+            {/* @ts-ignore */}
+            <Icon size={18} />
           </span>
           <div>
             <p className="text-sm font-semibold text-white">{tool.name}</p>
