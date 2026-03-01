@@ -109,6 +109,26 @@ export async function POST(request: Request) {
 
     piParams.metadata = { ...piParams.metadata, orderId: order.id };
 
+    // Fire order notification to n8n (best-effort — never block the checkout)
+    const orderItems = await prisma.cartItem.findMany({
+      where: { orderId: order.id },
+      include: { product: { select: { name: true } } },
+    });
+    fetch('http://n8n:5678/webhook/new-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: order.id,
+        customer: customer?.name || session?.user?.name || 'Customer',
+        email,
+        items: orderItems.map(i => ({ name: i.product.name, quantity: i.quantity, price: i.price })),
+        total: amount.toFixed(2),
+        status: 'pending',
+        shippingAddress: address ? `${address.line1 ?? ''}, ${address.city ?? ''}`.trim().replace(/^,\s*/, '') : 'N/A',
+        orderUrl: `http://nexus-app.local/account/${order.id}`,
+      }),
+    }).catch(() => { /* n8n not reachable — ignore */ });
+
     const paymentIntent = await stripe.paymentIntents.create(piParams);
 
     // For pre-confirmed (off-session) intents that already succeeded, transition

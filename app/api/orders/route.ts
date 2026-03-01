@@ -83,8 +83,29 @@ export async function POST(request: Request) {
           })),
         },
       },
-      include: { items: true },
+      include: { items: { include: { product: { select: { name: true } } } } },
     });
+
+    // Fire order notification to n8n (best-effort)
+    fetch('http://n8n:5678/webhook/new-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: order.id,
+        customer: user?.name || session.user.email,
+        email: session.user.email,
+        items: order.items.map((i: { product: { name: string }; quantity: number; price: number }) => ({
+          name: i.product.name, quantity: i.quantity, price: i.price,
+        })),
+        total: serverTotal.toFixed(2),
+        status: 'pending',
+        shippingAddress: shippingAddress
+          ? `${shippingAddress.line1 ?? ''}, ${shippingAddress.city ?? ''}`.trim().replace(/^,\s*/, '')
+          : 'N/A',
+        orderUrl: `http://nexus-app.local/account/${order.id}`,
+      }),
+    }).catch(() => { /* n8n not reachable — ignore */ });
+
     return NextResponse.json({ success: true, order });
   } catch (e: unknown) {
     console.error('[orders POST]', e);
