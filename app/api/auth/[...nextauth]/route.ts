@@ -4,6 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/src/lib/prisma';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { getPrismaHR } from '@/src/lib/prisma-hr';
 
 // Note: PrismaAdapter is intentionally omitted because we use the JWT session
 // strategy which manages state entirely in the signed cookie.  Mixing
@@ -31,6 +32,41 @@ export const authOptions: AuthOptions = {
           throw new Error('Too many login attempts. Please wait a minute and try again.');
         }
 
+        // 1. Check HR database first (employees/admins)
+        try {
+          const client = getPrismaHR();
+          const result = await client.query(
+            'SELECT * FROM "Employee" WHERE email = $1',
+            [credentials.email]
+          );
+          const employee = result.rows[0];
+
+          if (employee) {
+            if (!employee.isActive) {
+              throw new Error('Account is deactivated.');
+            }
+            const isValid = await bcrypt.compare(credentials.password, employee.hashedPassword);
+            if (!isValid) {
+              throw new Error('Incorrect password. Please try again.');
+            }
+            // Update lastLogin
+            await client.query(
+              'UPDATE "Employee" SET "lastLogin" = NOW() WHERE id = $1',
+              [employee.id]
+            );
+            return {
+              id: employee.id,
+              email: employee.email,
+              name: employee.name,
+              role: employee.role.toLowerCase()
+            };
+          }
+        } catch (e: any) {
+          // If HR DB is unavailable, fall through to customer table
+          console.warn('HR database check failed, falling back to customer users:', e.message);
+        }
+
+        // 2. Fall through: check customer User table
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
 
         // User not found

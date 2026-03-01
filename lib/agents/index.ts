@@ -14,7 +14,7 @@ export { REVENUE_FORECASTER } from './revenueForecaster';
 export { RUST_SUM } from './rust-sum';
 export { SUPPORT_BOT } from './supportBot';
 
-// Aliases for backwards compatibility
+// Aliases for backwards compatibility (re-exported with same source)
 export { ITOPS_AGENT as IT_OPERATIONS_REPORTER } from './itOperationsReporter';
 export { PERF_AGENT as PERFORMANCE_OPTIMIZER } from './performanceOptimizer';
 export { SECURITY_AGENT as SECURITY_FRAUD_GUARDIAN } from './securityGuardian';
