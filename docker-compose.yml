@@ -37,10 +37,12 @@ services:
       - "traefik.http.routers.nexus.rule=Host(`nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus.entrypoints=web"
       - "traefik.http.routers.nexus.middlewares=https-redirect"
-      # Public: HTTPS (TLS)
+      # Public: HTTPS (TLS) — request wildcard cert covering all *.nexus-io.duckdns.org
       - "traefik.http.routers.nexus-tls.rule=Host(`nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus-tls.entrypoints=websecure"
       - "traefik.http.routers.nexus-tls.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.nexus-tls.tls.domains[0].main=nexus-io.duckdns.org"
+      - "traefik.http.routers.nexus-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
       # Local: http://nexus-app.local
       - "traefik.http.routers.nexus-local.rule=Host(`nexus-app.local`)"
       - "traefik.http.routers.nexus-local.entrypoints=web"
