@@ -30,6 +30,7 @@ export async function sendEmail(opts: SendEmailOptions) {
       Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
+      from: process.env.EMAIL_FROM ?? 'NEXUS Store <onboarding@resend.dev>',
       to: opts.to,
       subject: opts.subject,
       html: opts.html,

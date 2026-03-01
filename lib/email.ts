@@ -16,7 +16,7 @@ if (!process.env.RESEND_API_KEY) {
 }
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.EMAIL_FROM ?? 'NEXUS Store <orders@nexus-store.io>'
+const FROM = process.env.EMAIL_FROM ?? 'NEXUS Store <onboarding@resend.dev>'
 
 /**
  * Minimal HTML entity escaper — prevents user-controlled strings from being
