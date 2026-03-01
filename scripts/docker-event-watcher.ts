@@ -14,17 +14,19 @@
  *     volumes:
  *       - /var/run/docker.sock:/var/run/docker.sock:ro
  *     environment:
- *       WEBHOOK_URL: https://n8n.nexus-io.duckdns.org/webhook/container-detected
+ *       WEBHOOK_URL: http://nexus-n8n.local/webhook/container-detected
  *       WEBHOOK_TOKEN_DOCKER: ${WEBHOOK_TOKEN_DOCKER}
  */
 
-import Dockerode from 'dockerode';
+import Dockerode = require('dockerode');
 
-const WEBHOOK_URL = process.env.WEBHOOK_URL || 'https://n8n.nexus-io.duckdns.org/webhook/container-detected';
+const WEBHOOK_URL = process.env.WEBHOOK_URL || 'http://nexus-n8n.local/webhook/container-detected';
 const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN_DOCKER || '';
+const REQUIRE_WEBHOOK_TOKEN =
+  (process.env.REQUIRE_WEBHOOK_TOKEN || 'false').toLowerCase() === 'true';
 
-if (!WEBHOOK_TOKEN) {
-  console.error('ERROR: WEBHOOK_TOKEN_DOCKER environment variable is required');
+if (REQUIRE_WEBHOOK_TOKEN && !WEBHOOK_TOKEN) {
+  console.error('ERROR: WEBHOOK_TOKEN_DOCKER is required when REQUIRE_WEBHOOK_TOKEN=true');
   process.exit(1);
 }
 
@@ -32,12 +34,17 @@ const docker = new Dockerode({ socketPath: '/var/run/docker.sock' });
 
 async function sendToWebhook(payload: any) {
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (WEBHOOK_TOKEN) {
+      headers.Authorization = `Bearer ${WEBHOOK_TOKEN}`;
+    }
+
     const response = await fetch(WEBHOOK_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${WEBHOOK_TOKEN}`,
-      },
+      headers,
       body: JSON.stringify(payload),
     });
 
@@ -119,6 +126,7 @@ async function processContainerEvent(event: any) {
 async function startEventListener() {
   console.log('🚀 Docker Event Watcher started');
   console.log(`📡 Webhook URL: ${WEBHOOK_URL}`);
+  console.log(`🔐 Auth mode: ${WEBHOOK_TOKEN ? 'Bearer token enabled' : 'No token (dev mode)'}`);
   console.log('⏳ Listening for container start events...\n');
 
   try {
@@ -153,7 +161,8 @@ async function startEventListener() {
     // Handle graceful shutdown
     process.on('SIGINT', () => {
       console.log('\n🛑 Shutting down Docker Event Watcher');
-      stream.destroy();
+      const destroyableStream = stream as unknown as { destroy?: () => void };
+      destroyableStream.destroy?.();
       process.exit(0);
     });
   } catch (err) {

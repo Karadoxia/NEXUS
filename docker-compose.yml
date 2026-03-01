@@ -450,10 +450,11 @@ services:
       N8N_PROTOCOL: ${N8N_PROTOCOL:-https}
       WEBHOOK_URL: ${N8N_WEBHOOK_URL:-https://n8n.nexus-io.duckdns.org}
       N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-true}
-      EXECUTIONS_MODE: queue
-      QUEUE_BULL_REDIS_HOST: redis
-      QUEUE_BULL_REDIS_PORT: "6379"
-      QUEUE_BULL_REDIS_PASSWORD: ${REDIS_PASSWORD}
+      EXECUTIONS_MODE: regular
+      # Queue mode disabled - no workers configured
+      # QUEUE_BULL_REDIS_HOST: redis
+      # QUEUE_BULL_REDIS_PORT: "6379"
+      # QUEUE_BULL_REDIS_PASSWORD: ${REDIS_PASSWORD}
       N8N_LOG_LEVEL: info
     volumes:
       - n8n-data:/home/node/.n8n

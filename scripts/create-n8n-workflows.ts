@@ -22,33 +22,76 @@ interface N8nNode {
 
 interface N8nConnection {
   [key: string]: {
-    [key: string]: Array<{
+    [key: string]: Array<Array<{
       node: string;
       type: string;
       index: number;
-    }>;
+    }>>;
   };
 }
 
 const N8N_URL = process.env.N8N_URL || 'http://n8n:5678';
+const N8N_API_KEY = process.env.N8N_API_KEY || '';
+const N8N_WEBHOOK_PATH = process.env.N8N_WEBHOOK_PATH || 'container-detected';
+const APP_DOCKER_REGISTER_URL =
+  process.env.APP_DOCKER_REGISTER_URL ||
+  'http://nexus_app:3030/api/docker/register';
+const WEBHOOK_TOKEN_DOCKER = process.env.WEBHOOK_TOKEN_DOCKER || '';
+const WORKFLOW_ACTIVE = (process.env.N8N_WORKFLOW_ACTIVE || 'true').toLowerCase() === 'true';
 
-async function createWorkflow(workflowData: any) {
+const payloadExpr = (field: string) =>
+  `{{ $json.body?.${field} ?? $json.${field} ?? $item(0).$node["Webhook"].json.body?.${field} ?? $item(0).$node["Webhook"].json.${field} }}`;
+
+async function createWorkflow(workflowData: any, options?: { description?: string; active?: boolean }) {
+  // ensure prefix convention is applied
+  const prefix = 'NEXUS — ';
+  if (workflowData.name && !workflowData.name.startsWith(prefix)) {
+    workflowData.name = prefix + workflowData.name;
+  }
+
   try {
     const response = await fetch(`${N8N_URL}/api/v1/workflows`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-N8N-API-Key': process.env.N8N_API_KEY || '',
+        'X-N8N-API-Key': N8N_API_KEY,
       },
       body: JSON.stringify(workflowData),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to create workflow: ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error('API Error Response:', errorBody);
+      throw new Error(`Failed to create workflow: ${response.statusText} - ${errorBody}`);
     }
 
     const result = await response.json();
     console.log(`✅ Created workflow: ${result.name}`);
+    
+    // Update with description and active if provided
+    if (options?.description || options?.active !== undefined) {
+      const updateData: any = {};
+      if (options.description) updateData.description = options.description;
+      if (options.active !== undefined) updateData.active = options.active;
+      
+      const updateResponse = await fetch(`${N8N_URL}/api/v1/workflows/${result.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-N8N-API-Key': N8N_API_KEY,
+        },
+        body: JSON.stringify(updateData),
+      });
+      
+      if (!updateResponse.ok) {
+        console.warn('⚠️  Warning: Could not update workflow properties');
+      } else {
+        const updated = await updateResponse.json();
+        console.log(`✅ Updated workflow properties (active: ${updated.active})`);
+        return updated;
+      }
+    }
+    
     return result;
   } catch (error) {
     console.error(`❌ Failed to create workflow:`, error);
@@ -58,17 +101,18 @@ async function createWorkflow(workflowData: any) {
 
 // Main workflow definition
 const mainWorkflow = {
-  name: 'Container Auto-Registration',
-  description:
-    'Automatically registers Docker containers across infrastructure (Traefik, Prometheus, Grafana, Kuma, WireGuard, Loki)',
-  active: true,
+  name: 'NEXUS — Container Auto-Registration',
+  settings: {
+    executionOrder: 'v1',
+    availableInMCP: false,
+  },
   nodes: [
     {
       name: 'Webhook',
       type: 'n8n-nodes-base.webhook',
       position: [250, 300],
       parameters: {
-        path: 'container-detected',
+        path: N8N_WEBHOOK_PATH,
         httpMethod: 'POST',
       },
       typeVersion: 1,
@@ -83,7 +127,7 @@ const mainWorkflow = {
           {
             condition: 'expression',
             value:
-              '{{ $json.body?.labels?.["auto-register"] === "true" }}',
+              '{{ ($json.body?.labels?.["auto-register"] ?? $json.labels?.["auto-register"] ?? "false") === "true" }}',
           },
         ],
       },
@@ -95,18 +139,19 @@ const mainWorkflow = {
       position: [750, 300],
       parameters: {
         method: 'POST',
-        url: 'https://app.nexus-io.duckdns.org/api/docker/register',
+        url: APP_DOCKER_REGISTER_URL,
         headers: {
           'Content-Type': 'application/json',
+          ...(WEBHOOK_TOKEN_DOCKER ? { Authorization: `Bearer ${WEBHOOK_TOKEN_DOCKER}` } : {}),
         },
         body: JSON.stringify({
-          containerId: '{{ $json.body.containerId }}',
-          containerName: '{{ $json.body.containerName }}',
-          image: '{{ $json.body.image }}',
-          ports: '{{ $json.body.ports }}',
-          labels: '{{ $json.body.labels }}',
-          environment: '{{ $json.body.environment }}',
-          networks: '{{ $json.body.networks }}',
+          containerId: payloadExpr('containerId'),
+          containerName: payloadExpr('containerName'),
+          image: payloadExpr('image'),
+          ports: payloadExpr('ports'),
+          labels: payloadExpr('labels'),
+          environment: payloadExpr('environment'),
+          networks: payloadExpr('networks'),
         }),
       },
       typeVersion: 4,
@@ -118,13 +163,13 @@ const mainWorkflow = {
       parameters: {
         variables: {
           containerData: {
-            containerId: '{{ $json.body.containerId }}',
-            containerName: '{{ $json.body.containerName }}',
-            image: '{{ $json.body.image }}',
-            ports: '{{ $json.body.ports }}',
-            labels: '{{ $json.body.labels }}',
+            containerId: payloadExpr('containerId'),
+            containerName: payloadExpr('containerName'),
+            image: payloadExpr('image'),
+            ports: payloadExpr('ports'),
+            labels: payloadExpr('labels'),
             metricsPort:
-              '{{ $json.body.labels?.["prometheus.port"] || 9090 }}',
+              '{{ $json.body?.labels?.["prometheus.port"] ?? $json.labels?.["prometheus.port"] ?? 9090 }}',
           },
         },
       },
@@ -246,8 +291,8 @@ return {
         responseCode: 200,
         body: JSON.stringify({
           status: 'registered',
-          containerId: '{{ $json.body.containerId }}',
-          containerName: '{{ $json.body.containerName }}',
+          containerId: payloadExpr('containerId'),
+          containerName: payloadExpr('containerName'),
           systems: [
             { name: 'traefik', status: 'queued' },
             { name: 'prometheus', status: 'queued' },
@@ -395,12 +440,25 @@ async function main() {
   console.log('╚════════════════════════════════════════════════════════╝\n');
 
   console.log(`📡 n8n URL: ${N8N_URL}`);
-  console.log(`🔑 API Key: ${process.env.N8N_API_KEY ? '***set***' : '(none)'}\n`);
+  console.log(`🔑 API Key: ${N8N_API_KEY ? '***set***' : '(none)'}`);
+  console.log(`🪝 Webhook Path: ${N8N_WEBHOOK_PATH}`);
+  console.log(`🧭 Register URL: ${APP_DOCKER_REGISTER_URL}`);
+  console.log(`🔐 Docker Token Header: ${WEBHOOK_TOKEN_DOCKER ? 'enabled' : 'disabled'}\n`);
+
+  if (!N8N_API_KEY) {
+    console.error('❌ Missing N8N_API_KEY. Set it in your environment before running this script.');
+    process.exit(1);
+  }
 
   try {
     // Create main workflow
     console.log('Creating main workflow...');
-    const workflow = await createWorkflow(mainWorkflow);
+  // prefix is also applied inside createWorkflow but set here for clarity
+  mainWorkflow.name = mainWorkflow.name.startsWith('NEXUS — ') ? mainWorkflow.name : 'NEXUS — ' + mainWorkflow.name;
+    const workflow = await createWorkflow(mainWorkflow, {
+      description: 'Automatically registers Docker containers across infrastructure (Traefik, Prometheus, Grafana, Kuma, WireGuard, Loki)',
+      active: WORKFLOW_ACTIVE,
+    });
 
     console.log('\n✅ Workflow created successfully!\n');
     console.log('Workflow Details:');
@@ -415,11 +473,11 @@ async function main() {
     );
     if (webhookNode) {
       console.log(`\n🔗 Webhook Path: ${webhookNode.parameters.path}`);
-      console.log(`🌐 Webhook URL: https://n8n.nexus-io.duckdns.org/webhook/${webhookNode.parameters.path}`);
+      console.log(`🌐 Webhook URL: ${process.env.N8N_WEBHOOK_URL || 'http://nexus-n8n.local/webhook'}/${webhookNode.parameters.path}`);
     }
 
     console.log('\n📝 Next Steps:');
-    console.log('  1. Open n8n: https://n8n.nexus-io.duckdns.org');
+    console.log('  1. Open n8n: http://nexus-n8n.local');
     console.log('  2. Go to Workflows → Container Auto-Registration');
     console.log('  3. Click the Play button to activate');
     console.log('  4. Test with: scripts/test-container-registration.sh');

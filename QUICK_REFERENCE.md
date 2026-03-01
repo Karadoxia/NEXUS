@@ -33,8 +33,20 @@ bash scripts/provision.sh
 # Option 1: Manual (10 min) - Follow this guide
 cat docs/n8n-quick-setup.md
 
+# JSON mapping/contract (UI + API workflow parity)
+cat docs/n8n-workflow-json-mapping.md
+
 # Option 2: Auto-create via API
 npx tsx scripts/create-n8n-workflows.ts
+```
+
+Required env for API-based creation:
+```bash
+export N8N_API_KEY="<your-n8n-api-key>"
+# Optional overrides
+export N8N_URL="http://n8n:5678"
+export APP_DOCKER_REGISTER_URL="https://app.nexus-io.duckdns.org/api/docker/register"
+export N8N_WEBHOOK_PATH="container-detected"
 ```
 
 ### Test Container Registration

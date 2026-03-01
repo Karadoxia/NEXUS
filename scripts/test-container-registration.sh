@@ -14,9 +14,10 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 # Configuration
-N8N_WEBHOOK_URL="${N8N_WEBHOOK_URL:-https://n8n.nexus-io.duckdns.org/webhook/container-detected}"
+N8N_WEBHOOK_URL="${N8N_WEBHOOK_URL:-http://nexus-n8n.local/webhook/container-detected}"
 WEBHOOK_TOKEN="${WEBHOOK_TOKEN_DOCKER:-}"
-ADMIN_API="${ADMIN_API:-https://app.nexus-io.duckdns.org/api/docker}"
+ADMIN_API="${ADMIN_API:-http://localhost:3030/api/docker}"
+N8N_WEBHOOK_HOST_HEADER="${N8N_WEBHOOK_HOST_HEADER:-}"
 
 echo ""
 echo "╔════════════════════════════════════════════════════════╗"
@@ -30,7 +31,16 @@ warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 fail() { echo -e "${RED}[✗]${NC} $*"; exit 1; }
 info() { echo -e "${CYAN}[i]${NC} $*"; }
 
+for cmd in curl jq; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    fail "Missing required command: $cmd"
+  fi
+done
+
 info "Webhook URL: $N8N_WEBHOOK_URL"
+if [[ -n "$N8N_WEBHOOK_HOST_HEADER" ]]; then
+  info "Webhook Host header: $N8N_WEBHOOK_HOST_HEADER"
+fi
 if [[ -n "$WEBHOOK_TOKEN" ]]; then
   info "Token: ***configured***"
 else
@@ -72,6 +82,7 @@ echo "Sending..."
 
 WEBHOOK_RESPONSE=$(curl -s -X POST "$N8N_WEBHOOK_URL" \
   -H "Content-Type: application/json" \
+  ${N8N_WEBHOOK_HOST_HEADER:+-H "Host: $N8N_WEBHOOK_HOST_HEADER"} \
   ${WEBHOOK_TOKEN:+-H "Authorization: Bearer $WEBHOOK_TOKEN"} \
   -d "{
     \"containerId\": \"$TEST_CONTAINER_ID\",
