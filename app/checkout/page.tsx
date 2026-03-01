@@ -18,9 +18,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Navbar } from '@/components/navbar';
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
-);
+// Only initialise Stripe when a real publishable key is present (pk_test_ / pk_live_).
+// Calling loadStripe('') or loadStripe('placeholder') throws "Failed to load Stripe.js".
+const _pk = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+const stripePromise = _pk.startsWith('pk_') ? loadStripe(_pk) : null;
 
 // ── Brand color map (used for visual card display) ───────────────────────────
 const BRAND_COLOR: Record<string, string> = {
