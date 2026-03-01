@@ -16,6 +16,7 @@ import {
   Bot,
   ScrollText,
   Wrench,
+  Users2,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useOrderStore } from '@/src/stores/orderStore';
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: '/admin/orders',      label: 'Orders',       icon: ShoppingCart,   badge: true    },
   { href: '/admin/products',    label: 'Products',     icon: Package                        },
   { href: '/admin/users',       label: 'Clients',      icon: Users                          },
+  { href: '/admin/team',        label: 'Team',         icon: Users2                         },
   { href: '/admin/newsletter',  label: 'Newsletter',   icon: Mail                           },
   { href: '/admin/performance', label: 'Performance',  icon: TrendingUp                     },
   { href: '/admin/agents',      label: 'Agent Cycles', icon: Bot                            },
