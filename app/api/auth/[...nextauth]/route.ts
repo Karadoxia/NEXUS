@@ -57,7 +57,7 @@ export const authOptions: AuthOptions = {
       if (user?.email) {
         // Stamp isAdmin once at sign-in time.  Set ADMIN_EMAIL (server-only)
         // in your environment.  An absent value means no one is admin.
-        token.isAdmin = user.email === (process.env.ADMIN_EMAIL ?? '');
+        token.isAdmin = (process.env.ADMIN_EMAIL ?? '').split(',').map(e => e.trim()).includes(user.email ?? '');
       }
       return token;
     },
