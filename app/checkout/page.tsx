@@ -369,22 +369,28 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, [session?.user?.email]);
 
+  // Derived flag — true when the selected saved card has a real Stripe token.
+  // Computed here (not inside the effect) so it can be a stable dep instead of
+  // the full paymentMethods array, preventing a redundant PI request whenever
+  // paymentMethods loads after mount.
+  const useDirectCharge = !!paymentMethods.find((p) => p.id === selectedPm)?.stripeId;
+
   // Create a PaymentIntent for the new-card / PayPal flow.
   // Skip when a real Stripe-backed saved method is selected (charged server-side).
   useEffect(() => {
-    const pm = paymentMethods.find((p) => p.id === selectedPm);
-    if (pm?.stripeId) return; // direct charge — no clientSecret needed
-
+    if (useDirectCharge) return; // direct charge — no PI needed
     if (total() <= 0) return;
 
     setIsMockMode(false);
     setClientSecret('');
 
+    const controller = new AbortController();
     const timeout = setTimeout(() => setIsMockMode(true), 5000);
 
     fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         amount: total(),
         items,
@@ -407,13 +413,17 @@ export default function CheckoutPage() {
           setIsMockMode(true);
         }
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         clearTimeout(timeout);
         setIsMockMode(true);
       });
 
-    return () => clearTimeout(timeout);
-  }, [total, selectedAddress, selectedPm, paymentMethods]);
+    // Cleanup: cancel in-flight request (prevents StrictMode double-invoke from
+    // creating two PaymentIntents / two orders)
+    return () => { clearTimeout(timeout); controller.abort(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useDirectCharge, selectedAddress, selectedPm]);
 
   const handleMock = async () => {
     setMockError(null);
@@ -430,7 +440,6 @@ export default function CheckoutPage() {
   };
 
   const selectedPmRecord = paymentMethods.find((p) => p.id === selectedPm);
-  const useDirectCharge = !!selectedPmRecord?.stripeId;
 
   const appearance = {
     theme: 'night' as const,
@@ -520,6 +529,7 @@ export default function CheckoutPage() {
                   Shipping Address
                 </label>
                 <select
+                  aria-label="Shipping Address"
                   value={selectedAddress?.id || ''}
                   onChange={(e) =>
                     setSelectedAddress(
