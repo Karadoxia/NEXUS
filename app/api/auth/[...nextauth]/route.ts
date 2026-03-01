@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import type { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import bcrypt from 'bcryptjs';
 import { prisma } from '@/src/lib/prisma';
 import { checkRateLimit } from '@/lib/rate-limit';
 
@@ -16,12 +17,13 @@ export const authOptions: AuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Email',
+      name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'text' },
+        email:    { label: 'Email',    type: 'text' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email) return null;
+        if (!credentials?.email || !credentials?.password) return null;
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) return null;
 
         // 5 login attempts per email per minute to slow brute-force / enumeration
@@ -29,11 +31,23 @@ export const authOptions: AuthOptions = {
           throw new Error('Too many login attempts. Please wait a minute and try again.');
         }
 
-        // Passwordless login: find or create the user
-        let user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+
+        // User not found
         if (!user) {
-          user = await prisma.user.create({ data: { email: credentials.email } });
+          throw new Error('No account found with this email. Please register first.');
         }
+
+        // Legacy passwordless account — block until user sets a password via /forgot-password
+        if (!user.hashedPassword) {
+          throw new Error('Please create a new account with a password. Passwordless accounts are no longer supported.');
+        }
+
+        const isValid = await bcrypt.compare(credentials.password, user.hashedPassword);
+        if (!isValid) {
+          throw new Error('Incorrect password. Please try again.');
+        }
+
         return { id: user.id, email: user.email, name: user.name ?? undefined };
       },
     }),

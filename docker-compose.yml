@@ -454,6 +454,82 @@ services:
       - "traefik.http.routers.npm-local.entrypoints=web"
       - "traefik.http.services.npm.loadbalancer.server.port=81"
 
+  # === MONITORING EXPORTERS =====================================================
+
+  # Host machine metrics (CPU, RAM, disk, network) — scraped by Prometheus
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    restart: unless-stopped
+    pid: host
+    networks:
+      - internal
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+
+  # PostgreSQL metrics exporter
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      DATA_SOURCE_NAME: "postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2?sslmode=disable"
+
+  # Redis metrics exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: redis_exporter
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      REDIS_ADDR: "redis:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+
+  # cAdvisor — per-container CPU/RAM/network/disk metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    networks:
+      - internal
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+
+  # === SECURITY — CrowdSec =====================================================
+  # Community-powered intrusion detection.  Reads Traefik logs and bans known
+  # malicious IPs.  The Traefik bouncer blocks them at the edge.
+  # Docs: https://docs.crowdsec.net/docs/getting_started/install_crowdsec
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: crowdsec
+    restart: unless-stopped
+    networks:
+      - proxy
+      - internal
+    environment:
+      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/linux"
+      GID: "${GID:-1000}"
+    volumes:
+      - crowdsec-db:/var/lib/crowdsec/data
+      - crowdsec-config:/etc/crowdsec
+      - /var/log/traefik:/var/log/traefik:ro
+
 volumes:
   nexus_v2_postgres_data:
   letsencrypt:
@@ -467,6 +543,8 @@ volumes:
   n8n-data:
   npm-data:
   npm-letsencrypt:
+  crowdsec-db:
+  crowdsec-config:
 
 secrets:
   db_password:

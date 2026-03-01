@@ -36,3 +36,30 @@ scrape_configs:
     static_configs:
       - targets: ['uptime_kuma:3001']
     metrics_path: '/metrics'
+
+  # Host machine metrics (CPU, RAM, disk, network) — prom/node-exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']
+
+  # PostgreSQL metrics — prometheuscommunity/postgres-exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+
+  # Redis metrics — oliver006/redis_exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+
+  # Per-container Docker metrics — cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+
+  # n8n workflow engine
+  - job_name: 'n8n'
+    static_configs:
+      - targets: ['n8n:5678']
+    metrics_path: '/metrics'

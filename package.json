@@ -28,6 +28,7 @@
     "@langchain/groq": "^0.1.0",
     "@langchain/langgraph": "^0.2.0",
     "@next-auth/prisma-adapter": "^1.0.7",
+    "@paypal/react-paypal-js": "^9.0.0",
     "@prisma/adapter-better-sqlite3": "^7.4.1",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",
@@ -36,8 +37,10 @@
     "@react-three/fiber": "^9.5.0",
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.7.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/three": "^0.182.0",
     "autoprefixer": "10.4.24",
+    "bcryptjs": "^3.0.3",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -61,6 +64,7 @@
     "tailwind-merge": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.183.0",
+    "zod": "^3.25.76",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
