@@ -160,6 +160,23 @@ else
   fi
 fi
 
+# ── 3a. Create HR Postgres database ──────────────────────────────────────
+# HR database for employee/staff management (separate from store database)
+echo ""
+echo "▶  HR database…"
+if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+    -tAc "SELECT 1 FROM pg_database WHERE datname='nexus_hr'" 2>/dev/null | grep -q 1; then
+  ok "HR database already exists"
+else
+  if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+      -c "CREATE DATABASE nexus_hr;" 2>&1; then
+    ok "HR database created"
+  else
+    fail "Could not create HR database"
+    info "Debug: docker exec nexus_postgres psql -U nexus -d postgres -c '\\l'"
+  fi
+fi
+
 # ── 4. Wait for Grafana ───────────────────────────────────────────────────
 echo ""
 echo "▶  Grafana…"
