@@ -48,16 +48,17 @@ export const authOptions: AuthOptions = {
           throw new Error('Incorrect password. Please try again.');
         }
 
-        return { id: user.id, email: user.email, name: user.name ?? undefined };
+        return { id: user.id, email: user.email, name: user.name ?? undefined, role: user.role };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user?.email) {
-        // Stamp isAdmin once at sign-in time.  Set ADMIN_EMAIL (server-only)
-        // in your environment.  An absent value means no one is admin.
-        token.isAdmin = (process.env.ADMIN_EMAIL ?? '').split(',').map(e => e.trim()).includes(user.email ?? '');
+        // Stamp isAdmin and role from user object returned by authorize
+        const userWithRole = user as { role?: string };
+        token.isAdmin = userWithRole.role === 'admin';
+        token.role = userWithRole.role || 'user';
       }
       return token;
     },
@@ -65,6 +66,7 @@ export const authOptions: AuthOptions = {
       if (session?.user) {
         session.user.id = token.sub ?? '';
         session.user.isAdmin = (token.isAdmin as boolean) ?? false;
+        session.user.role = (token.role as string) ?? 'user';
       }
       return session;
     },
