@@ -25,6 +25,7 @@ services:
       NEXTAUTH_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://app.nexus-io.duckdns.org}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://app.nexus-io.duckdns.org}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech92@gmail.com}
       EMAIL_FROM: ${EMAIL_FROM:-NEXUS Store <onboarding@resend.dev>}
       RESEND_API_KEY: ${RESEND_KEY}
       GEMINI_API_KEY: ${GEMINI_KEY}
