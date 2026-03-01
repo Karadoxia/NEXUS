@@ -34,15 +34,14 @@ services:
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.nexus.rule=Host(`nexus-io.duckdns.org`)"
+      - "traefik.http.routers.nexus.rule=Host(`app.nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus.entrypoints=web"
       - "traefik.http.routers.nexus.middlewares=https-redirect"
-      # Public: HTTPS (TLS) — request wildcard cert covering all *.nexus-io.duckdns.org
-      - "traefik.http.routers.nexus-tls.rule=Host(`nexus-io.duckdns.org`)"
+      # Public: HTTPS (TLS) — wildcard-only cert (DuckDNS supports only 1 TXT record)
+      - "traefik.http.routers.nexus-tls.rule=Host(`app.nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus-tls.entrypoints=websecure"
       - "traefik.http.routers.nexus-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.nexus-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.nexus-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.nexus-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       # Local: http://nexus-app.local
       - "traefik.http.routers.nexus-local.rule=Host(`nexus-app.local`)"
       - "traefik.http.routers.nexus-local.entrypoints=web"
@@ -192,8 +191,7 @@ services:
       - "traefik.http.routers.vault-tls.rule=Host(`vault.nexus-io.duckdns.org`)"
       - "traefik.http.routers.vault-tls.entrypoints=websecure"
       - "traefik.http.routers.vault-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.vault-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.vault-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.vault-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       - "traefik.http.services.vault.loadbalancer.server.port=80"
 
   # === MONITORING (Grafana + Prometheus + Loki) ===
@@ -274,8 +272,7 @@ services:
       - "traefik.http.routers.grafana-tls.rule=Host(`grafana.nexus-io.duckdns.org`)"
       - "traefik.http.routers.grafana-tls.entrypoints=websecure"
       - "traefik.http.routers.grafana-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.grafana-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.grafana-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.grafana-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       # Local: http://nexus-grafana.local
       - "traefik.http.routers.grafana-local.rule=Host(`nexus-grafana.local`)"
       - "traefik.http.routers.grafana-local.entrypoints=web"
@@ -329,8 +326,7 @@ services:
       - "traefik.http.routers.wireguard-tls.rule=Host(`vpn.nexus-io.duckdns.org`)"
       - "traefik.http.routers.wireguard-tls.entrypoints=websecure"
       - "traefik.http.routers.wireguard-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.wireguard-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.wireguard-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.wireguard-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       # Local: http://nexus-vpn.local
       - "traefik.http.routers.wireguard-local.rule=Host(`nexus-vpn.local`)"
       - "traefik.http.routers.wireguard-local.entrypoints=web"
@@ -369,8 +365,7 @@ services:
       - "traefik.http.routers.uptime-tls.rule=Host(`status.nexus-io.duckdns.org`)"
       - "traefik.http.routers.uptime-tls.entrypoints=websecure"
       - "traefik.http.routers.uptime-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.uptime-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.uptime-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.uptime-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       # Local: http://nexus-uptime.local
       - "traefik.http.routers.uptime-local.rule=Host(`nexus-uptime.local`)"
       - "traefik.http.routers.uptime-local.entrypoints=web"
@@ -422,8 +417,7 @@ services:
       - "traefik.http.routers.n8n-tls.rule=Host(`n8n.nexus-io.duckdns.org`)"
       - "traefik.http.routers.n8n-tls.entrypoints=websecure"
       - "traefik.http.routers.n8n-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.n8n-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.n8n-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.n8n-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       # Local: http://nexus-n8n.local
       - "traefik.http.routers.n8n-local.rule=Host(`nexus-n8n.local`)"
       - "traefik.http.routers.n8n-local.entrypoints=web"
@@ -465,8 +459,7 @@ services:
       - "traefik.http.routers.npm-tls.rule=Host(`npm.nexus-io.duckdns.org`)"
       - "traefik.http.routers.npm-tls.entrypoints=websecure"
       - "traefik.http.routers.npm-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.npm-tls.tls.domains[0].main=nexus-io.duckdns.org"
-      - "traefik.http.routers.npm-tls.tls.domains[0].sans=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.npm-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
       # Local: http://nexus-npm.local
       - "traefik.http.routers.npm-local.rule=Host(`nexus-npm.local`)"
       - "traefik.http.routers.npm-local.entrypoints=web"
