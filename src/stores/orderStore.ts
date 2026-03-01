@@ -112,10 +112,12 @@ export const useOrderStore = create<OrderState>()(
         },
 
         getOrdersByEmail: async (email) => {
+            // Note: email param is ignored by backend (scopes to session.user.email for security)
             // Clear immediately so stale in-memory data is never shown while fetching
             set({ orders: [] });
             try {
-                const res = await fetch(`/api/orders?email=${encodeURIComponent(email)}`);
+                // Don't send email to backend — server-side session is the source of truth
+                const res = await fetch(`/api/orders`);
                 if (res.ok) {
                     const data = await res.json();
                     // API returns { orders: [...], total, page, limit }
