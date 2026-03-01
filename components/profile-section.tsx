@@ -64,6 +64,11 @@ export default function ProfileSection() {
   const [pwStatus, setPwStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [pwMessage, setPwMessage] = useState('');
 
+  // Delete account
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -179,6 +184,23 @@ export default function ProfileSection() {
     } catch (err: unknown) {
       setPwStatus('error'); setPwMessage(err instanceof Error ? err.message : 'Change failed');
       setTimeout(() => setPwStatus('idle'), 3000);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') {
+      alert('Please type "DELETE" to confirm account deletion');
+      return;
+    }
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/user', { method: 'DELETE' });
+      if (!res.ok) throw new Error('Delete failed');
+      // Redirect to home (logout happens server-side)
+      window.location.href = '/';
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to delete account');
+      setDeleting(false);
     }
   };
 
@@ -471,6 +493,58 @@ export default function ProfileSection() {
           </div>
         )}
       </div>
+
+      {/* ── Delete Account Card ── */}
+      <div className="bg-red-950/40 border border-red-900/50 rounded-2xl p-6">
+        <h2 className="text-lg font-bold text-red-400 mb-4">Danger Zone</h2>
+        <p className="text-sm text-slate-400 mb-4">
+          Deleting your account is permanent and cannot be undone. All your data, orders, and addresses will be removed.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="bg-red-600 hover:bg-red-500 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+        >
+          Delete My Account
+        </button>
+      </div>
+
+      {/* ── Delete Account Modal ── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold text-white mb-3">Delete Account?</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              This action cannot be undone. Type <span className="font-mono bg-slate-800 px-2 py-1 rounded text-cyan-400">DELETE</span> to confirm.
+            </p>
+            <input
+              type="text"
+              placeholder="Type DELETE to confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-red-500 transition-colors mb-4"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={deleteAccount}
+                disabled={deleting || deleteConfirmText !== 'DELETE'}
+                className="flex-1 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                {deleting ? 'Deleting…' : 'Yes, Delete'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowDeleteModal(false); setDeleteConfirmText(''); }}
+                disabled={deleting}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Payment Methods Card ── */}
       <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">

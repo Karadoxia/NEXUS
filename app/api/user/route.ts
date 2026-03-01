@@ -35,3 +35,27 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const userEmail = session.user.email;
+
+    // Delete user and all related data (cascades via Prisma relations)
+    await prisma.user.delete({
+      where: { email: userEmail },
+    });
+
+    console.log('[user DELETE] Deleted user:', userEmail);
+
+    // Return success — client will redirect to home
+    return NextResponse.json({ success: true });
+  } catch (e: unknown) {
+    console.error('[user DELETE]', e);
+    return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 });
+  }
+}
