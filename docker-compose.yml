@@ -127,6 +127,8 @@ services:
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=duckdns"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=30"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.disablepropagationcheck=true"
       - "--api=true"
       - "--api.dashboard=true"
       # api.insecure exposes the API (and /metrics) on port 8080 inside the container.
