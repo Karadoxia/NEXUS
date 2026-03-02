@@ -48,7 +48,7 @@ services:
       # Local: http://nexus-app.local
       - "traefik.http.routers.nexus-local.rule=Host(`nexus-app.local`)"
       - "traefik.http.routers.nexus-local.entrypoints=web"
-      - "traefik.http.services.nexus.loadbalancer.server.port=3000"
+      - "traefik.http.services.nexus.loadbalancer.server.port=3030"
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3030"]
       interval: 30s

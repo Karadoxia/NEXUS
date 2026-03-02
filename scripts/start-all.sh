@@ -63,10 +63,14 @@ if ! $include_app; then
 fi
 set +x
 
-# 2. optional dev server
-if [ "$1" != "--no-dev" ]; then
-  echo "Launching Next.js development server on port ${PORT:-3030}..."
-  exec sh ./scripts/dev.sh
+# 2. optional dev server (skip if running container with --build-app)
+if ! $include_app; then
+  if [ "$1" != "--no-dev" ]; then
+    echo "Launching Next.js development server on port ${PORT:-3030}..."
+    exec sh ./scripts/dev.sh
+  else
+    echo "--no-dev specified, skipping Next.js dev server"
+  fi
 else
-  echo "--no-dev specified, skipping Next.js dev server"
+  echo "(nexus-app container running — skipping local dev server)"
 fi

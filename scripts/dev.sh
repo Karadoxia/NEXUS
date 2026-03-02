@@ -42,6 +42,15 @@ export DATABASE_URL="postgresql://nexus:${DB_PASSWORD}@${IP}:5432/nexus_v2"
 
 printf "Using DATABASE_URL=%s\n" "$DATABASE_URL"
 
+# Load NEXTAUTH_SECRET from jwt_secret.txt for local dev
+if [ -f jwt_secret.txt ]; then
+  export NEXTAUTH_SECRET=$(cat jwt_secret.txt)
+fi
+: "${NEXTAUTH_SECRET:=${JWT_SECRET:-}}"
+
+# Override NEXTAUTH_URL for local dev (not production domain)
+export NEXTAUTH_URL="http://localhost:${PORT:-3030}"
+
 # allow optional GROK_API_KEY from environment
 : "${GROK_API_KEY:=}"
 
