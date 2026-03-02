@@ -6,7 +6,7 @@
   "nodes": [
     {
       "parameters": {
-        "cronExpression": "0 3 * * 0"
+        "cronExpression": "* * * * *"
       },
       "id": "cron_weekly",
       "name": "Every Sunday 3am UTC",
