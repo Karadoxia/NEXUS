@@ -37,7 +37,9 @@ export async function POST(request: Request) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors[0].message }, { status: 400 });
     }
-    console.error('[register] error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('[register] error:', errorMessage);
+    console.error('[register] stack:', error instanceof Error ? error.stack : 'no stack');
+    return NextResponse.json({ error: `Internal server error: ${errorMessage}` }, { status: 500 });
   }
 }
