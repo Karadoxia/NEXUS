@@ -27,7 +27,7 @@
         "jsonBody": true,
         "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Create engaging social media post copy for Twitter/X. Keep it under 280 chars, include relevant emojis and hashtags.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Price: ${{ $json.price }}, Features: {{ $json.features }}\"}]}"
       },
-      "id": "gemini_social_copy",
+      "id": "groq_social_copy",
       "name": "Gemini: Generate Copy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -91,14 +91,14 @@
       "main": [
         [
           {
-            "node": "Gemini: Generate Copy",
+            "node": "Groq: Generate Copy",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini: Generate Copy": {
+    "Groq: Generate Copy": {
       "main": [
         [
           {

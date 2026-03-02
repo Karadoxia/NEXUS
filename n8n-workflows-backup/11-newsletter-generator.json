@@ -1,0 +1,173 @@
+{
+  "name": "📧 NEXUS - Newsletter Generator",
+  "description": "Weekly automated newsletter with AI-personalized content",
+  "version": 1,
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 9 * * 1"
+      },
+      "id": "cron_monday",
+      "name": "Every Monday 9am UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DISTINCT u.id, u.email, u.name, u.preferences->>'interests' as interests FROM \"User\" u WHERE u.\"isActive\" = true AND u.\"unsubscribedNewsletter\" = false LIMIT 1000"
+      },
+      "id": "query_subscribers",
+      "name": "Get Active Subscribers",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ],
+      "credentials": {
+        "postgres": "NEXUS Postgres"
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 50
+      },
+      "id": "split_batches",
+      "name": "Batch Process",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "method": "POST",
+        "authentication": "queryAuth",
+        "sendQuery": true,
+        "jsonBody": true,
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate a personalized newsletter for a customer. Include: trending products, exclusive offers, and content related to their interests. Format as HTML email.\"}, {\"role\": \"user\", \"content\": \"Customer: {{ $json.name }}, Interests: {{ $json.interests }}\"}]}"
+      },
+      "id": "generate_newsletter",
+      "name": "Generate Newsletter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "newsletter@nexus.store",
+        "toEmail": "={{ $json.email }}",
+        "subject": "Weekly NEXUS Newsletter - Handpicked for You 📬",
+        "html": "={{ $response.body.candidates[0].content.parts[0].text }}"
+      },
+      "id": "send_newsletter",
+      "name": "Send Newsletter",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ],
+      "credentials": {
+        "smtp": "Resend SMTP"
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO \"NewsletterLog\" (\"userId\", \"sentAt\", \"opens\") VALUES ('{{ $json.id }}', NOW(), 0)"
+      },
+      "id": "log_send",
+      "name": "Log Newsletter Send",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ],
+      "credentials": {
+        "postgres": "NEXUS Postgres"
+      }
+    }
+  ],
+  "connections": {
+    "Every Monday 9am UTC": {
+      "main": [
+        [
+          {
+            "node": "Get Active Subscribers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Subscribers": {
+      "main": [
+        [
+          {
+            "node": "Batch Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Process": {
+      "main": [
+        [
+          {
+            "node": "Generate Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Send Newsletter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Newsletter": {
+      "main": [
+        [
+          {
+            "node": "Log Newsletter Send",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": [
+    "marketing",
+    "email",
+    "newsletter",
+    "ai",
+    "personalization"
+  ]
+}

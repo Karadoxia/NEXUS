@@ -86,7 +86,7 @@
         "jsonBody": true,
         "body": "{\"contents\": [{\"role\": \"user\", \"content\": \"You are a site audit expert. Analyze the following audit results and generate a comprehensive report.\\n\\nDatabase Audit: {{ $json.status || 'pending' }}\\nSecurity Audit: {{ $json.status || 'pending' }}\\nLink Check: {{ $json.status || 'pending' }}\\n\\nProvide: 1) Issues found 2) Severity levels 3) Recommended actions\"}]}"
       },
-      "id": "gemini_audit_summary",
+      "id": "groq_audit_summary",
       "name": "Gemini: Generate Report",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -158,7 +158,7 @@
       "main": [
         [
           {
-            "node": "Gemini: Generate Report",
+            "node": "Groq: Generate Report",
             "type": "main",
             "index": 0
           }
@@ -169,7 +169,7 @@
       "main": [
         [
           {
-            "node": "Gemini: Generate Report",
+            "node": "Groq: Generate Report",
             "type": "main",
             "index": 0
           }
@@ -180,14 +180,14 @@
       "main": [
         [
           {
-            "node": "Gemini: Generate Report",
+            "node": "Groq: Generate Report",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini: Generate Report": {
+    "Groq: Generate Report": {
       "main": [
         [
           {

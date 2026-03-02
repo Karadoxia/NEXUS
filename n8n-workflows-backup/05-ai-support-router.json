@@ -41,7 +41,7 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json[\"Gemini Intent Classifier\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'other' }}",
+              "value1": "={{ $json[\"Groq Intent Classifier\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'other' }}",
               "operation": "equals",
               "value2": "refund"
             }
@@ -147,7 +147,7 @@
         "url": "={{ $json.callbackUrl }}",
         "method": "POST",
         "jsonParameters": true,
-        "bodyParametersJson": "{{ {\"response\": $json.output, \"intent\": \"{{ $json[\\\"Gemini Intent Classifier\\\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'unknown' }}\", \"status\": \"completed\"} }}"
+        "bodyParametersJson": "{{ {\"response\": $json.output, \"intent\": \"{{ $json[\\\"Groq Intent Classifier\\\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'unknown' }}\", \"status\": \"completed\"} }}"
       },
       "id": "reply",
       "name": "Reply to Frontend",
@@ -164,7 +164,7 @@
         "url": "http://loki:3100/loki/api/v1/push",
         "method": "POST",
         "jsonParameters": true,
-        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"support\",\"intent\":\"{{ $json[\\\"Gemini Intent Classifier\\\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'unknown' }}\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Ticket: {{ $json.userId }} | Intent: {{ $json[\\\"Gemini Intent Classifier\\\"].choices[0].message.content }} | Status: ROUTED\"]]}]} }}"
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"support\",\"intent\":\"{{ $json[\\\"Groq Intent Classifier\\\"].choices[0].message.content.split('\\\"intent\\\"')[1]?.split(':')[1]?.split('\\\"')[1] || 'unknown' }}\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Ticket: {{ $json.userId }} | Intent: {{ $json[\\\"Groq Intent Classifier\\\"].choices[0].message.content }} | Status: ROUTED\"]]}]} }}"
       },
       "id": "loki",
       "name": "Log to Loki",
@@ -182,12 +182,12 @@
       "main": [
         [
           {
-            "node": "Gemini Intent Classifier"
+            "node": "Groq Intent Classifier"
           }
         ]
       ]
     },
-    "Gemini Intent Classifier": {
+    "Groq Intent Classifier": {
       "main": [
         [
           {

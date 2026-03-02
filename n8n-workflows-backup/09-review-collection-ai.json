@@ -76,7 +76,7 @@
         "jsonBody": true,
         "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Analyze customer review sentiment. Respond in JSON format: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}, {\"role\": \"user\", \"content\": \"{{ $json.reviewText }}\"}]}"
       },
-      "id": "gemini_sentiment_analysis",
+      "id": "groq_sentiment_analysis",
       "name": "Gemini: Analyze Sentiment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -185,14 +185,14 @@
       "main": [
         [
           {
-            "node": "Gemini: Analyze Sentiment",
+            "node": "Groq: Analyze Sentiment",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini: Analyze Sentiment": {
+    "Groq: Analyze Sentiment": {
       "main": [
         [
           {

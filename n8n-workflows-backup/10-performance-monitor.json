@@ -123,14 +123,14 @@
       "main": [
         [
           {
-            "node": "Gemini: Analyze Performance",
+            "node": "Groq: Analyze Performance",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini: Analyze Performance": {
+    "Groq: Analyze Performance": {
       "main": [
         [
           {

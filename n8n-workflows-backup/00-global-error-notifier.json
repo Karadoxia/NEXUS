@@ -1,0 +1,121 @@
+{
+  "name": "🔥 NEXUS - Global Error Notifier",
+  "description": "Centralized error handler for all NEXUS workflows - routes to Rust analyzer, Telegram, Loki, and admin email",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "error-notifier",
+        "responseMode": "onReceived"
+      },
+      "id": "1",
+      "name": "Error Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://nexus-rust-service:8080/analyze-error",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"error\":$json.error,\"workflow\":$json.workflowName,\"timestamp\":new Date().toISOString()} }}"
+      },
+      "id": "2",
+      "name": "Rust Error Analyzer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "text": "🚨 NEXUS ERROR ALERT\n\nWorkflow: {{$json.workflowName}}\nError: {{$json.error.message}}\nSeverity: {{$json[\"Rust Error Analyzer\"].severity || \"UNKNOWN\"}}\nTime: {{new Date().toISOString()}}"
+      },
+      "id": "3",
+      "name": "Telegram Critical Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [680, 200],
+      "credentials": {
+        "telegram": {
+          "id": "1",
+          "name": "NEXUS Telegram"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"n8n-errors\",\"workflow\":\"{{$json.workflowName}}\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Error: {{$json.error.message}} | Stack: {{$json.error.stack}}\"]]}]} }}"
+      },
+      "id": "4",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [680, 400],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "fromEmail": "alerts@nexus.store",
+        "toEmail": "admin@nexus.store",
+        "subject": "🚨 NEXUS CRITICAL ERROR - {{$json.workflowName}}",
+        "text": "Workflow: {{$json.workflowName}}\n\nError Message:\n{{$json.error.message}}\n\nStack Trace:\n{{$json.error.stack}}\n\nTimestamp: {{new Date().toISOString()}}"
+      },
+      "id": "5",
+      "name": "Admin Email Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [900, 300],
+      "credentials": {
+        "smtp": {
+          "id": "1",
+          "name": "Resend SMTP"
+        }
+      },
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Error Webhook": {
+      "main": [
+        [
+          {
+            "node": "Rust Error Analyzer"
+          }
+        ]
+      ]
+    },
+    "Rust Error Analyzer": {
+      "main": [
+        [
+          {
+            "node": "Telegram Critical Alert"
+          },
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    },
+    "Log to Loki": {
+      "main": [
+        [
+          {
+            "node": "Admin Email Alert"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["error", "critical", "infrastructure"]
+}

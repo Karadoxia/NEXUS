@@ -65,7 +65,7 @@
         "jsonBody": true,
         "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"user\",\"content\":\"You are Neuromancer. Write a 4-line personalized upsell email for {{ $json[0].name }}. Include 15% UPSELL15 code. Make it irresistible but brief.\"},{\"role\":\"user\",\"content\":\"Customer just bought. Upsell now.\"}]}"
       },
-      "id": "gemini-upsell",
+      "id": "groq-upsell",
       "name": "Gemini Upsell Copy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,

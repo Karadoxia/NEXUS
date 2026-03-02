@@ -1,0 +1,148 @@
+{
+  "name": "📊 NEXUS - Daily Sales Report + AI + Backup v3 FULL",
+  "description": "Cron daily 23:00 - aggregates paid orders, generates Gemini executive summary, emails admin, backs up to CSV via Postgres",
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 23 * * *"
+      },
+      "id": "cron",
+      "name": "Daily 23:00",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DATE(\"date\") as day, SUM(total) as revenue, COUNT(*) as orders, COUNT(DISTINCT userId) as customers FROM \"Order\" WHERE status = 'paid' AND DATE(\"date\") = CURRENT_DATE GROUP BY DATE(\"date\")"
+      },
+      "id": "pg",
+      "name": "Daily Aggregate",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [460, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "method": "POST",
+        "jsonBody": true,
+        "body": "{\"contents\":[{\"parts\":[{\"text\":\"Create a beautiful, professional markdown executive summary for NEXUS daily sales report. Data: Revenue={{ $json[0].revenue || 0 }}€, Orders={{ $json[0].orders || 0 }}, Customers={{ $json[0].customers || 0 }}. Include: 1) Key metrics highlight, 2) Three actionable insights, 3) One prediction for tomorrow, 4) One recommendation. Format as email-ready HTML table + paragraphs. Keep to 200 words.\"}]}]}"
+      },
+      "id": "gemini",
+      "name": "Gemini Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [680, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "https://api.resend.com/emails",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.RESEND_API_KEY }}",
+        "jsonBody": true,
+        "body": "{\"from\":\"reports@nexus.store\",\"to\":\"admin@nexus.store\",\"subject\":\"📊 NEXUS Daily Sales Report - {{ new Date().toISOString().split('T')[0] }}\",\"html\":\"<div style='font-family:sans-serif;padding:20px;'><h2>NEXUS Daily Sales Report</h2><p><strong>Date:</strong> {{ new Date().toISOString().split('T')[0] }}</p><p><strong>Revenue:</strong> {{ $json[0].revenue || 0 }}€</p><p><strong>Orders:</strong> {{ $json[0].orders || 0 }}</p><p><strong>Customers:</strong> {{ $json[0].customers || 0 }}</p><hr/><h3>Executive Summary</h3>{{ $json[\\\"Gemini Summary\\\"].candidates[0].content.parts[0].text }}</div>\"}"
+      },
+      "id": "email",
+      "name": "Email Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "COPY (SELECT id, userId, status, total, date FROM \"Order\" WHERE status = 'paid' AND DATE(\"date\") = CURRENT_DATE ORDER BY date DESC) TO STDOUT WITH CSV HEADER"
+      },
+      "id": "backup",
+      "name": "Generate Backup CSV",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1120, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "NEXUS Postgres"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/push",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"reports\",\"type\":\"daily_sales\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Daily Report | Revenue: {{ $json[0].revenue || 0 }}€ | Orders: {{ $json[0].orders || 0 }} | Customers: {{ $json[0].customers || 0 }}\"]]}]} }}"
+      },
+      "id": "loki",
+      "name": "Log to Loki",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "continueOnFail": true
+    }
+  ],
+  "connections": {
+    "Daily 23:00": {
+      "main": [
+        [
+          {
+            "node": "Daily Aggregate"
+          }
+        ]
+      ]
+    },
+    "Daily Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Gemini Summary"
+          }
+        ]
+      ]
+    },
+    "Gemini Summary": {
+      "main": [
+        [
+          {
+            "node": "Email Report"
+          }
+        ]
+      ]
+    },
+    "Email Report": {
+      "main": [
+        [
+          {
+            "node": "Generate Backup CSV"
+          }
+        ]
+      ]
+    },
+    "Generate Backup CSV": {
+      "main": [
+        [
+          {
+            "node": "Log to Loki"
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": ["reporting", "ai", "backup"]
+}

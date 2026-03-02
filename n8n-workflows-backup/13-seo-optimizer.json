@@ -27,7 +27,7 @@
         "jsonBody": true,
         "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate SEO-optimized metadata. Return JSON with: metaTitle (60 chars), metaDescription (160 chars), keywords (5-7), and schema markup.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Category: {{ $json.category }}, Description: {{ $json.description }}\"}]}"
       },
-      "id": "gemini_seo_meta",
+      "id": "groq_seo_meta",
       "name": "Gemini: Generate SEO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -90,14 +90,14 @@
       "main": [
         [
           {
-            "node": "Gemini: Generate SEO",
+            "node": "Groq: Generate SEO",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini: Generate SEO": {
+    "Groq: Generate SEO": {
       "main": [
         [
           {

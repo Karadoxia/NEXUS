@@ -40,12 +40,12 @@
     },
     {
       "parameters": {
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "url": "https://api.gemini.google.com/v1/models/gemini-1.5-pro:generateContent",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{ $env.GEMINI_API_KEY }}",
         "jsonBody": true,
-        "body": "{\"contents\": [{\"role\": \"user\", \"content\": \"You are a customer churn analyst. Analyze this customer activity and predict churn risk (0-100 scale).\\n\\nCustomer: {{ $json.name }}\\nTotal Orders: {{ $json.orderCount }}\\nLast Order: {{ $json.lastOrder }}\\nAccount Age: 6 months\\n\\nRespond with ONLY valid JSON (no markdown): {\\\"churnRisk\\\": <number 0-100>, \\\"reason\\\": \\\"<brief reason>\\\", \\\"recommendation\\\": \\\"<action to retain>\\\"}\"}]}"
+        "body": "{\"contents\": {\"parts\": [{\"text\": \"Analyze customer activity and predict churn risk (0-100). User: {{ $json.name }}, Orders: {{ $json.orderCount }}, Last Order: {{ $json.lastOrder }}, Account Age: 6 months. Return JSON: {\\\"churnRisk\\\": number, \\\"reason\\\": string}\"}]}}"
       },
       "id": "gemini_churn_analysis",
       "name": "Gemini: Predict Churn",

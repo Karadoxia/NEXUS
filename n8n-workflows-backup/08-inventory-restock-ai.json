@@ -57,7 +57,7 @@
         "jsonBody": true,
         "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate a professional and concise supplier restock order email. Be direct and business-like. Include the product name, SKU, requested quantity, and delivery timeline request.\"}, {\"role\": \"user\", \"content\": \"Generate an email to restock product '{{ $json.name }}' (SKU: {{ $json.sku }}, Current Stock: {{ $json.stock }}, Min Required: {{ $json.minStock }}, Quantity Needed: {{ $json.minStock * 2 - $json.stock }}).\"}]}"
       },
-      "id": "gemini_email_generator",
+      "id": "groq_email_generator",
       "name": "Gemini: Generate Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -148,14 +148,14 @@
       "main": [
         [
           {
-            "node": "Gemini: Generate Email",
+            "node": "Groq: Generate Email",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Gemini: Generate Email": {
+    "Groq: Generate Email": {
       "main": [
         [
           {

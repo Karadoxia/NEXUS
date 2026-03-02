@@ -116,7 +116,7 @@
         "jsonBody": true,
         "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"system\",\"content\":\"You are Neuromancer, NEXUS's AI agent. Write a 2-sentence ultra-personal thank-you message for order #{{ $json.body.data.object.client_reference_id }} by {{ $json.body.data.object.customer_details.name }}. Include subtle upsell hint for next purchase. Keep it to 100 chars max.\"},{\"role\":\"user\",\"content\":\"Customer email: {{ $json.body.data.object.customer_details.email }}\"}]}"
       },
-      "id": "gemini",
+      "id": "groq",
       "name": "Gemini Personal Thank You",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -200,12 +200,12 @@
       "main": [
         [
           {
-            "node": "Gemini Personal Thank You"
+            "node": "Groq Personal Thank You"
           }
         ]
       ]
     },
-    "Gemini Personal Thank You": {
+    "Groq Personal Thank You": {
       "main": [
         [
           {

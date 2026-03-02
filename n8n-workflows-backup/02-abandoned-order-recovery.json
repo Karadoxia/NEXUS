@@ -57,7 +57,7 @@
         "jsonBody": true,
         "body": "{\"model\":\"mixtral-8x7b-32768\",\"contents\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Generate a 3-line recovery email for abandoned order #{{ $json.id }} with items: {{ $json.items }} (total {{ $json.total }}€). Include RECOVER20 discount code. Keep subject line catchy. Output JSON: {\\\"subject\\\": \\\"...\\\", \\\"body\\\": \\\"...\\\"} ONLY NO MARKDOWN\"},{\"role\":\"user\",\"content\":\"Customer: {{ $json.name }} ({{ $json.email }})\"}]}"
       },
-      "id": "gemini",
+      "id": "groq",
       "name": "Gemini Recovery Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
@@ -72,7 +72,7 @@
         "fromEmail": "recovery@nexus.store",
         "toEmail": "={{ $json.email }}",
         "subject": "😱 Your NEXUS order is waiting… (use code RECOVER20)",
-        "html": "<div style='font-family:sans-serif;'><h3>{{$json[\"Gemini Recovery Email\"].choices[0].message.content.split('subject')[1]?.split('body')[0] || 'Your order is waiting'}}</h3><p>{{$json[\"Gemini Recovery Email\"].choices[0].message.content}}</p><p style='margin-top:2rem;'><strong>Discount Code: RECOVER20</strong> (20% off recovery)</p></div>"
+        "html": "<div style='font-family:sans-serif;'><h3>{{$json[\"Groq Recovery Email\"].choices[0].message.content.split('subject')[1]?.split('body')[0] || 'Your order is waiting'}}</h3><p>{{$json[\"Groq Recovery Email\"].choices[0].message.content}}</p><p style='margin-top:2rem;'><strong>Discount Code: RECOVER20</strong> (20% off recovery)</p></div>"
       },
       "id": "email",
       "name": "Send Recovery",
@@ -156,12 +156,12 @@
       "main": [
         [
           {
-            "node": "Gemini Recovery Email"
+            "node": "Groq Recovery Email"
           }
         ]
       ]
     },
-    "Gemini Recovery Email": {
+    "Groq Recovery Email": {
       "main": [
         [
           {
