@@ -1,5 +1,5 @@
 {
-  "name": "🐳 NEXUS - Container Auto-Registration FIXED",
+  "name": "\ud83d\udc33 NEXUS - Container Auto-Registration FIXED",
   "description": "Auto-detects and registers Docker containers across infrastructure systems",
   "nodes": [
     {
@@ -12,7 +12,10 @@
       "name": "Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -29,7 +32,10 @@
       "name": "IF Container Data Valid",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -44,7 +50,10 @@
       "name": "Register to API",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [680, 300],
+      "position": [
+        680,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -64,7 +73,10 @@
       "name": "Set Variables",
       "type": "n8n-nodes-base.set",
       "typeVersion": 1,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -74,7 +86,10 @@
       "name": "Traefik Adapter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 100]
+      "position": [
+        1100,
+        100
+      ]
     },
     {
       "parameters": {
@@ -84,7 +99,10 @@
       "name": "Prometheus Adapter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 200]
+      "position": [
+        1100,
+        200
+      ]
     },
     {
       "parameters": {
@@ -94,7 +112,10 @@
       "name": "Grafana Adapter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 300]
+      "position": [
+        1100,
+        300
+      ]
     },
     {
       "parameters": {
@@ -104,7 +125,10 @@
       "name": "Kuma Adapter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 400]
+      "position": [
+        1100,
+        400
+      ]
     },
     {
       "parameters": {
@@ -114,7 +138,10 @@
       "name": "WireGuard Adapter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 500]
+      "position": [
+        1100,
+        500
+      ]
     },
     {
       "parameters": {
@@ -124,7 +151,10 @@
       "name": "Loki Adapter",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 600]
+      "position": [
+        1100,
+        600
+      ]
     },
     {
       "parameters": {
@@ -137,7 +167,10 @@
       "name": "Merge Results",
       "type": "n8n-nodes-base.merge",
       "typeVersion": 3,
-      "position": [1320, 350]
+      "position": [
+        1320,
+        350
+      ]
     },
     {
       "parameters": {
@@ -148,18 +181,24 @@
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [1520, 350]
+      "position": [
+        1520,
+        350
+      ]
     },
     {
       "parameters": {
         "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "🐳 Container detected:\n{{ $json.body?.containerName ?? $json.containerName }}\nID: {{ $json.body?.containerId ?? $json.containerId }}\nImage: {{ $json.body?.image ?? $json.image }}\nStatus: Registering across systems..."
+        "text": "\ud83d\udc33 Container detected:\n{{ $json.body?.containerName ?? $json.containerName }}\nID: {{ $json.body?.containerId ?? $json.containerId }}\nImage: {{ $json.body?.image ?? $json.image }}\nStatus: Registering across systems..."
       },
       "id": "telegram",
       "name": "Telegram Notification",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1520, 500],
+      "position": [
+        1520,
+        500
+      ],
       "credentials": {
         "telegram": {
           "id": "1",
@@ -332,5 +371,10 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "tags": ["container", "docker", "registration", "infrastructure"]
+  "tags": [
+    "container",
+    "docker",
+    "registration",
+    "infrastructure"
+  ]
 }

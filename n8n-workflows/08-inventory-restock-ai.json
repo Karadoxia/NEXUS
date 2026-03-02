@@ -1,5 +1,5 @@
 {
-  "name": "📦 NEXUS - AI Inventory Restock",
+  "name": "\ud83d\udce6 NEXUS - AI Inventory Restock",
   "description": "Automated inventory restock with AI-generated supplier emails and price negotiation",
   "version": 1,
   "active": true,
@@ -12,7 +12,10 @@
       "name": "Every 6 Hours",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -23,7 +26,10 @@
       "name": "Query Low Stock Products",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "credentials": {
         "postgres": "NEXUS Postgres"
       }
@@ -37,7 +43,10 @@
       "name": "Split in Batches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -52,7 +61,10 @@
       "name": "Groq: Generate Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -66,7 +78,10 @@
       "name": "Send Email to Supplier",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "credentials": {
         "smtp": "Resend SMTP"
       },
@@ -74,28 +89,32 @@
     },
     {
       "parameters": {
-        "url": "http://nexus-rust-service:8080/products/{{ $json.id }}/update-stock",
-        "method": "PATCH",
-        "jsonBody": true,
-        "body": "{\"restockStatus\": \"pending\", \"restockRequestedAt\": \"{{ now.toISOString() }}\", \"restockQuantity\": {{ $json.minStock * 2 - $json.stock }}}"
+        "operation": "executeQuery",
+        "query": "SELECT * FROM inventory WHERE quantity < min_threshold LIMIT 10"
       },
       "id": "rust_mark_restock",
       "name": "Mark as Restocking",
-      "type": "n8n-nodes-base.httpRequest",
+      "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "📦 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
+        "text": "\ud83d\udce6 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
       },
       "id": "telegram_notification",
       "name": "Telegram: Alert Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1560, 300],
+      "position": [
+        1560,
+        300
+      ],
       "credentials": {
         "telegram": "NEXUS Telegram"
       },
@@ -104,27 +123,80 @@
   ],
   "connections": {
     "Every 6 Hours": {
-      "main": [[{ "node": "Query Low Stock Products", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Query Low Stock Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Query Low Stock Products": {
-      "main": [[{ "node": "Split in Batches", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Split in Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split in Batches": {
-      "main": [[{ "node": "Groq: Generate Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Groq: Generate Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Groq: Generate Email": {
-      "main": [[{ "node": "Send Email to Supplier", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Send Email to Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Send Email to Supplier": {
-      "main": [[{ "node": "Mark as Restocking", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Mark as Restocking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Mark as Restocking": {
-      "main": [[{ "node": "Telegram: Alert Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Telegram: Alert Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["inventory", "ai", "automation", "critical"]
+  "tags": [
+    "inventory",
+    "ai",
+    "automation",
+    "critical"
+  ]
 }
