@@ -20,11 +20,14 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-ai:
+        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2
       HR_DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_hr
+      AI_DATABASE_URL: postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai
       NEXTAUTH_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://app.nexus-io.duckdns.org}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://app.nexus-io.duckdns.org}
@@ -75,6 +78,27 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nexus"]
       interval: 10s
+
+  # === AI/ML DEDICATED DATABASE ===
+  postgres-ai:
+    image: postgres:16-alpine
+    container_name: nexus_postgres_ai
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      POSTGRES_USER: nexus_ai
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: nexus_ai
+    secrets:
+      - db_password
+    volumes:
+      - nexus_ai_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
@@ -629,6 +653,7 @@ services:
 
 volumes:
   nexus_v2_postgres_data:
+  nexus_ai_postgres_data:
   letsencrypt:
   vw-data:
   prometheus-data:

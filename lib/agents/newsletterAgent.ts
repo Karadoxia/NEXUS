@@ -31,7 +31,14 @@ function esc(s: string): string {
 function unsubUrl(appUrl: string, email: string): string {
   // Import inline to avoid circular dependency
   const { createHmac } = require('crypto') as typeof import('crypto');
-  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-secret';
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      'NEXTAUTH_SECRET environment variable is not set. ' +
+      'Newsletter unsubscribe tokens cannot be generated. ' +
+      'Set NEXTAUTH_SECRET in your .env or docker-compose.yml'
+    );
+  }
   const token = createHmac('sha256', secret).update(email).digest('hex');
   return `${appUrl}/unsubscribe?email=${encodeURIComponent(email)}&token=${token}`;
 }

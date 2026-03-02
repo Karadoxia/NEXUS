@@ -4,6 +4,13 @@ import { Client as PgClient } from 'pg';
 let prismaHRInstance: PgClient | null = null;
 
 export const getPrismaHR = () => {
+  if (!process.env.HR_DATABASE_URL) {
+    throw new Error(
+      'HR_DATABASE_URL environment variable is not set. ' +
+      'This is required for employee authentication. ' +
+      'Please set it in your .env or docker-compose.yml'
+    );
+  }
   if (!prismaHRInstance) {
     prismaHRInstance = new PgClient({
       connectionString: process.env.HR_DATABASE_URL,

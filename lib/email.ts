@@ -38,7 +38,14 @@ function esc(s: string): string {
  * This prevents anyone from unsubscribing arbitrary addresses by guessing URLs.
  */
 function unsubToken(email: string): string {
-  const secret = process.env.NEXTAUTH_SECRET ?? 'fallback-secret'
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    throw new Error(
+      'NEXTAUTH_SECRET environment variable is not set. ' +
+      'Email token signing cannot proceed. ' +
+      'Set NEXTAUTH_SECRET in your .env or docker-compose.yml'
+    )
+  }
   return createHmac('sha256', secret).update(email).digest('hex')
 }
 
