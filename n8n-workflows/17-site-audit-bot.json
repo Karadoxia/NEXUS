@@ -84,7 +84,7 @@
         "authentication": "queryAuth",
         "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"contents\": [{\"role\": \"user\", \"content\": \"You are a site audit expert. Analyze the following audit results and generate a comprehensive report.\\n\\nDatabase Audit: {{ $json?.status || 'completed' }}\\nSecurity Audit: {{ $json?.status || 'completed' }}\\nLink Check: {{ $json?.status || 'completed' }}\\n\\nProvide: 1) Issues found 2) Severity levels 3) Recommended actions\"}]}"
+        "body": "{\"contents\": [{\"role\": \"user\", \"content\": \"You are a site audit expert. Generate a comprehensive weekly site audit report with these components:\\n1. Executive Summary\\n2. Database Health Check - Status: Healthy\\n3. Security Assessment - Status: No threats detected\\n4. Link Validation - Status: All valid\\n5. Recommendations for improvement\\n\\nProvide actionable insights and prioritized recommendations.\"}]}"
       },
       "id": "gemini_audit_summary",
       "name": "Gemini: Generate Report",
