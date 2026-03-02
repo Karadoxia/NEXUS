@@ -1,6 +1,6 @@
 {
   "name": "💰 NEXUS - Abandoned Order Recovery AI v3 FULL",
-  "description": "Cron-triggered (every 20 min) recovery for orders in pending state >20min - Groq AI generates personalized recovery emails with RECOVER20 code",
+  "description": "Cron-triggered (every 20 min) recovery for orders in pending state >20min - Gemini AI generates personalized recovery emails with RECOVER20 code",
   "nodes": [
     {
       "parameters": {
@@ -10,7 +10,10 @@
       "name": "Every 20min",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -21,7 +24,10 @@
       "name": "Find Abandoned Orders",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "credentials": {
         "postgres": {
           "id": "1",
@@ -37,22 +43,28 @@
       "name": "SplitInBatches",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\":\"mixtral-8x7b-32768\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Generate a 3-line recovery email for abandoned order #{{ $json.id }} with items: {{ $json.items }} (total {{ $json.total }}€). Include RECOVER20 discount code. Keep subject line catchy. Output JSON: {\\\"subject\\\": \\\"...\\\", \\\"body\\\": \\\"...\\\"} ONLY NO MARKDOWN\"},{\"role\":\"user\",\"content\":\"Customer: {{ $json.name }} ({{ $json.email }})\"}]}"
+        "body": "{\"model\":\"mixtral-8x7b-32768\",\"contents\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Generate a 3-line recovery email for abandoned order #{{ $json.id }} with items: {{ $json.items }} (total {{ $json.total }}€). Include RECOVER20 discount code. Keep subject line catchy. Output JSON: {\\\"subject\\\": \\\"...\\\", \\\"body\\\": \\\"...\\\"} ONLY NO MARKDOWN\"},{\"role\":\"user\",\"content\":\"Customer: {{ $json.name }} ({{ $json.email }})\"}]}"
       },
       "id": "groq",
-      "name": "Groq Recovery Email",
+      "name": "Gemini Recovery Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -66,7 +78,10 @@
       "name": "Send Recovery",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "credentials": {
         "smtp": {
           "id": "1",
@@ -88,7 +103,10 @@
       "name": "Mark Notified",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "credentials": {
         "postgres": {
           "id": "1",
@@ -108,7 +126,10 @@
       "name": "Log to Loki",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1560, 300],
+      "position": [
+        1560,
+        300
+      ],
       "continueOnFail": true
     }
   ],
@@ -173,5 +194,9 @@
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["marketing", "ai", "revenue"]
+  "tags": [
+    "marketing",
+    "ai",
+    "revenue"
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "💬 NEXUS - AI Support Ticket Router FULL",
-  "description": "Webhook from frontend chat - Groq classifies intent (refund/fraud/shipping/product/other) - routes to appropriate Rust agent - replies via callback",
+  "description": "Webhook from frontend chat - Gemini classifies intent (refund/fraud/shipping/product/other) - routes to appropriate Rust agent - replies via callback",
   "nodes": [
     {
       "parameters": {
@@ -12,22 +12,28 @@
       "name": "Support Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\":\"llama3-70b-8192\",\"messages\":[{\"role\":\"system\",\"content\":\"Classify customer support intent into ONE: refund, fraud, shipping, product, or other. Return JSON ONLY: {\\\"intent\\\": \\\"<intent>\\\", \\\"confidence\\\": <0-1>}\"},{\"role\":\"user\",\"content\":\"{{ $json.message }}\"}]}"
+        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"system\",\"content\":\"Classify customer support intent into ONE: refund, fraud, shipping, product, or other. Return JSON ONLY: {\\\"intent\\\": \\\"<intent>\\\", \\\"confidence\\\": <0-1>}\"},{\"role\":\"user\",\"content\":\"{{ $json.message }}\"}]}"
       },
       "id": "classify",
-      "name": "Groq Intent Classifier",
+      "name": "Gemini Intent Classifier",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -46,7 +52,10 @@
       "name": "Route by Intent",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -59,7 +68,10 @@
       "name": "Refund Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 50],
+      "position": [
+        900,
+        50
+      ],
       "continueOnFail": true
     },
     {
@@ -73,7 +85,10 @@
       "name": "Fraud Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 200],
+      "position": [
+        900,
+        200
+      ],
       "continueOnFail": true
     },
     {
@@ -87,7 +102,10 @@
       "name": "Shipping Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 350],
+      "position": [
+        900,
+        350
+      ],
       "continueOnFail": true
     },
     {
@@ -101,7 +119,10 @@
       "name": "Product Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 500],
+      "position": [
+        900,
+        500
+      ],
       "continueOnFail": true
     },
     {
@@ -115,7 +136,10 @@
       "name": "Default Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 650],
+      "position": [
+        900,
+        650
+      ],
       "continueOnFail": true
     },
     {
@@ -129,7 +153,10 @@
       "name": "Reply to Frontend",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -143,7 +170,10 @@
       "name": "Log to Loki",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "continueOnFail": true
     }
   ],
@@ -255,5 +285,9 @@
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["support", "ai", "routing"]
+  "tags": [
+    "support",
+    "ai",
+    "routing"
+  ]
 }

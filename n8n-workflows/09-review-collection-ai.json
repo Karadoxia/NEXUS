@@ -8,13 +8,16 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "review-request-trigger",
-        "authentication": "headerAuth"
+        "authentication": "queryAuth"
       },
       "id": "webhook_review_trigger",
       "name": "Review Trigger Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -25,7 +28,10 @@
       "name": "Wait 7 Days",
       "type": "n8n-nodes-base.delay",
       "typeVersion": 1,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -38,7 +44,10 @@
       "name": "Send Review Request",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [680, 300],
+      "position": [
+        680,
+        300
+      ],
       "credentials": {
         "smtp": "Resend SMTP"
       }
@@ -47,28 +56,34 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "review-submitted",
-        "authentication": "headerAuth"
+        "authentication": "queryAuth"
       },
       "id": "webhook_review_submitted",
       "name": "Review Submission Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Analyze customer review sentiment. Respond in JSON format: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}, {\"role\": \"user\", \"content\": \"{{ $json.reviewText }}\"}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Analyze customer review sentiment. Respond in JSON format: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}, {\"role\": \"user\", \"content\": \"{{ $json.reviewText }}\"}]}"
       },
       "id": "groq_sentiment_analysis",
-      "name": "Groq: Analyze Sentiment",
+      "name": "Gemini: Analyze Sentiment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
       "parameters": {
@@ -79,7 +94,10 @@
       "name": "Save to Database",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "credentials": {
         "postgres": "NEXUS Postgres"
       }
@@ -100,7 +118,10 @@
       "name": "IF Negative Review",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1560, 200]
+      "position": [
+        1560,
+        200
+      ]
     },
     {
       "parameters": {
@@ -111,7 +132,10 @@
       "name": "Alert Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1780, 200],
+      "position": [
+        1780,
+        200
+      ],
       "credentials": {
         "telegram": "NEXUS Telegram"
       }
@@ -125,7 +149,10 @@
       "name": "Log Review Collected",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1560, 400],
+      "position": [
+        1560,
+        400
+      ],
       "credentials": {
         "telegram": "NEXUS Telegram"
       }
@@ -133,27 +160,85 @@
   ],
   "connections": {
     "Review Trigger Webhook": {
-      "main": [[{ "node": "Wait 7 Days", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Wait 7 Days",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Wait 7 Days": {
-      "main": [[{ "node": "Send Review Request", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Send Review Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Review Submission Webhook": {
-      "main": [[{ "node": "Groq: Analyze Sentiment", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Groq: Analyze Sentiment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Groq: Analyze Sentiment": {
-      "main": [[{ "node": "Save to Database", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Save to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Save to Database": {
-      "main": [[{ "node": "IF Negative Review", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "IF Negative Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Negative Review": {
-      "main": [[{ "node": "Alert Admin", "type": "main", "index": 0 }, { "node": "Log Review Collected", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Alert Admin",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Review Collected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["reviews", "ai", "sentiment", "engagement"]
+  "tags": [
+    "reviews",
+    "ai",
+    "sentiment",
+    "engagement"
+  ]
 }

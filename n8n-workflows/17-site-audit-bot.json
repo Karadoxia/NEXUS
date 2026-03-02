@@ -1,5 +1,5 @@
 {
-  "name": "\ud83e\udd16 NEXUS - Full Site Audit Bot",
+  "name": "🤖 NEXUS - Full Site Audit Bot",
   "description": "Weekly comprehensive site audit with auto-fixes",
   "version": 1,
   "active": true,
@@ -79,15 +79,15 @@
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Analyze site audit results and generate a comprehensive report. Include: issues found, severity, and recommended actions.\"}, {\"role\": \"user\", \"content\": \"Database: {{ $json.database }}, Security: {{ $json.security }}, Links: {{ $json.links }}\"}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Analyze site audit results and generate a comprehensive report. Include: issues found, severity, and recommended actions.\"}, {\"role\": \"user\", \"content\": \"Database: {{ $json.database }}, Security: {{ $json.security }}, Links: {{ $json.links }}\"}]}"
       },
       "id": "groq_audit_summary",
-      "name": "Groq: Generate Report",
+      "name": "Gemini: Generate Report",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
@@ -99,8 +99,8 @@
       "parameters": {
         "fromEmail": "audit@nexus.store",
         "toEmail": "{{ $env.ADMIN_EMAIL }}",
-        "subject": "\ud83e\udd16 Weekly Site Audit Report",
-        "html": "={{ $response.body.choices[0].message.content }}"
+        "subject": "🤖 Weekly Site Audit Report",
+        "html": "={{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "send_audit_report",
       "name": "Send Report",
@@ -117,7 +117,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "\u2705 Weekly site audit completed\\nCheck email for full report"
+        "text": "✅ Weekly site audit completed\\nCheck email for full report"
       },
       "id": "notify_audit",
       "name": "Notify Completion",

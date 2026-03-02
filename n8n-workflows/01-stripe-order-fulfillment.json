@@ -15,7 +15,10 @@
       "name": "Stripe Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -33,7 +36,10 @@
       "name": "IF Payment Success",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -49,7 +55,10 @@
       "name": "Update Order → Paid",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [680, 200],
+      "position": [
+        680,
+        200
+      ],
       "credentials": {
         "postgres": {
           "id": "1",
@@ -69,7 +78,10 @@
       "name": "Resend Confirmation",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
-      "position": [680, 400],
+      "position": [
+        680,
+        400
+      ],
       "credentials": {
         "smtp": {
           "id": "1",
@@ -89,23 +101,29 @@
       "name": "Rust Fraud Agent",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 200],
+      "position": [
+        900,
+        200
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\":\"llama3-70b-8192\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Neuromancer, NEXUS's AI agent. Write a 2-sentence ultra-personal thank-you message for order #{{ $json.body.data.object.client_reference_id }} by {{ $json.body.data.object.customer_details.name }}. Include subtle upsell hint for next purchase. Keep it to 100 chars max.\"},{\"role\":\"user\",\"content\":\"Customer email: {{ $json.body.data.object.customer_details.email }}\"}]}"
+        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"system\",\"content\":\"You are Neuromancer, NEXUS's AI agent. Write a 2-sentence ultra-personal thank-you message for order #{{ $json.body.data.object.client_reference_id }} by {{ $json.body.data.object.customer_details.name }}. Include subtle upsell hint for next purchase. Keep it to 100 chars max.\"},{\"role\":\"user\",\"content\":\"Customer email: {{ $json.body.data.object.customer_details.email }}\"}]}"
       },
       "id": "groq",
-      "name": "Groq Personal Thank You",
+      "name": "Gemini Personal Thank You",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -117,7 +135,10 @@
       "name": "Telegram Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1120, 500],
+      "position": [
+        1120,
+        500
+      ],
       "credentials": {
         "telegram": {
           "id": "1",
@@ -137,7 +158,10 @@
       "name": "Log to Loki",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "continueOnFail": true
     }
   ],
@@ -205,5 +229,10 @@
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["payment", "critical", "stripe", "fulfillment"]
+  "tags": [
+    "payment",
+    "critical",
+    "stripe",
+    "fulfillment"
+  ]
 }

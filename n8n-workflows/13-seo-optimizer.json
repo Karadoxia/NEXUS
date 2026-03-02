@@ -13,22 +13,28 @@
       "name": "New Product Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Generate SEO-optimized metadata. Return JSON with: metaTitle (60 chars), metaDescription (160 chars), keywords (5-7), and schema markup.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Category: {{ $json.category }}, Description: {{ $json.description }}\"}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate SEO-optimized metadata. Return JSON with: metaTitle (60 chars), metaDescription (160 chars), keywords (5-7), and schema markup.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Category: {{ $json.category }}, Description: {{ $json.description }}\"}]}"
       },
       "id": "groq_seo_meta",
-      "name": "Groq: Generate SEO",
+      "name": "Gemini: Generate SEO",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -39,7 +45,10 @@
       "name": "Update Product Meta",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [680, 300],
+      "position": [
+        680,
+        300
+      ],
       "credentials": {
         "postgres": "NEXUS Postgres"
       }
@@ -53,7 +62,10 @@
       "name": "Submit to Google",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -64,7 +76,10 @@
       "name": "Notify SEO Update",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "credentials": {
         "telegram": "NEXUS Telegram"
       }
@@ -72,21 +87,58 @@
   ],
   "connections": {
     "New Product Webhook": {
-      "main": [[{ "node": "Groq: Generate SEO", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Groq: Generate SEO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Groq: Generate SEO": {
-      "main": [[{ "node": "Update Product Meta", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Update Product Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Update Product Meta": {
-      "main": [[{ "node": "Submit to Google", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Submit to Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Submit to Google": {
-      "main": [[{ "node": "Notify SEO Update", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify SEO Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["seo", "marketing", "ai", "content"]
+  "tags": [
+    "seo",
+    "marketing",
+    "ai",
+    "content"
+  ]
 }

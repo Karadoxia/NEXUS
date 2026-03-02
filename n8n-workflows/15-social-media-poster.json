@@ -13,22 +13,28 @@
       "name": "Feature Product Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Create engaging social media post copy for Twitter/X. Keep it under 280 chars, include relevant emojis and hashtags.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Price: ${{ $json.price }}, Features: {{ $json.features }}\"}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Create engaging social media post copy for Twitter/X. Keep it under 280 chars, include relevant emojis and hashtags.\"}, {\"role\": \"user\", \"content\": \"Product: {{ $json.name }}, Price: ${{ $json.price }}, Features: {{ $json.features }}\"}]}"
       },
       "id": "groq_social_copy",
-      "name": "Groq: Generate Copy",
+      "name": "Gemini: Generate Copy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -38,34 +44,43 @@
       "name": "For Each Platform",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
         "url": "https://api.twitter.com/2/tweets",
         "method": "POST",
-        "authentication": "headerAuth",
+        "authentication": "queryAuth",
         "headerAuth": "Bearer {{ $env.TWITTER_BEARER_TOKEN }}",
         "jsonBody": true,
-        "body": "{\"text\": \"{{ $response.body.choices[0].message.content }}\"}"
+        "body": "{\"text\": \"{{ $response.body.candidates[0].content.parts[0].text }}\"}"
       },
       "id": "post_twitter",
       "name": "Post to Twitter",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "📱 Social post published for {{ $json.name }}\\n{{ $response.body.choices[0].message.content }}"
+        "text": "📱 Social post published for {{ $json.name }}\\n{{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_posted",
       "name": "Notify Posted",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "credentials": {
         "telegram": "NEXUS Telegram"
       }
@@ -73,21 +88,58 @@
   ],
   "connections": {
     "Feature Product Webhook": {
-      "main": [[{ "node": "Groq: Generate Copy", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Groq: Generate Copy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Groq: Generate Copy": {
-      "main": [[{ "node": "For Each Platform", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "For Each Platform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "For Each Platform": {
-      "main": [[{ "node": "Post to Twitter", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Post to Twitter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Post to Twitter": {
-      "main": [[{ "node": "Notify Posted", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Posted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["marketing", "social", "ai", "automation"]
+  "tags": [
+    "marketing",
+    "social",
+    "ai",
+    "automation"
+  ]
 }

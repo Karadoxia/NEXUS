@@ -12,7 +12,10 @@
       "name": "Every Hour",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -26,29 +29,35 @@
       "name": "Fetch Prometheus Metrics",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Analyze performance metrics. Identify slow endpoints and suggest optimizations.\"}, {\"role\": \"user\", \"content\": \"{{ JSON.stringify($json) }}\"}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Analyze performance metrics. Identify slow endpoints and suggest optimizations.\"}, {\"role\": \"user\", \"content\": \"{{ JSON.stringify($json) }}\"}]}"
       },
       "id": "analyze_performance",
-      "name": "Groq: Analyze Performance",
+      "name": "Gemini: Analyze Performance",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
         "conditions": {
           "string": [
             {
-              "value1": "={{ $response.body.choices[0].message.content }}",
+              "value1": "={{ $response.body.candidates[0].content.parts[0].text }}",
               "operation": "contains",
               "value2": "slow"
             }
@@ -59,7 +68,10 @@
       "name": "IF Performance Issues",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -72,18 +84,24 @@
       "name": "Trigger Optimization",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "⚡ Auto-optimization triggered\\nIssues: {{ $response.body.choices[0].message.content }}"
+        "text": "⚡ Auto-optimization triggered\\nIssues: {{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_optimization",
       "name": "Notify Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "credentials": {
         "telegram": "NEXUS Telegram"
       }
@@ -91,24 +109,69 @@
   ],
   "connections": {
     "Every Hour": {
-      "main": [[{ "node": "Fetch Prometheus Metrics", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Prometheus Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Prometheus Metrics": {
-      "main": [[{ "node": "Groq: Analyze Performance", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Groq: Analyze Performance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Groq: Analyze Performance": {
-      "main": [[{ "node": "IF Performance Issues", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "IF Performance Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Performance Issues": {
-      "main": [[{ "node": "Trigger Optimization", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Trigger Optimization",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Trigger Optimization": {
-      "main": [[{ "node": "Notify Admin", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Admin",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["monitoring", "performance", "optimization", "ai"]
+  "tags": [
+    "monitoring",
+    "performance",
+    "optimization",
+    "ai"
+  ]
 }

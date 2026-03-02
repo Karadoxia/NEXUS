@@ -1,5 +1,5 @@
 {
-  "name": "\ud83d\udce6 NEXUS - AI Inventory Restock",
+  "name": "📦 NEXUS - AI Inventory Restock",
   "description": "Automated inventory restock with AI-generated supplier emails and price negotiation",
   "version": 1,
   "active": true,
@@ -50,15 +50,15 @@
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"llama3-70b-8192\", \"messages\": [{\"role\": \"system\", \"content\": \"Generate a professional and concise supplier restock order email. Be direct and business-like. Include the product name, SKU, requested quantity, and delivery timeline request.\"}, {\"role\": \"user\", \"content\": \"Generate an email to restock product '{{ $json.name }}' (SKU: {{ $json.sku }}, Current Stock: {{ $json.stock }}, Min Required: {{ $json.minStock }}, Quantity Needed: {{ $json.minStock * 2 - $json.stock }}).\"}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate a professional and concise supplier restock order email. Be direct and business-like. Include the product name, SKU, requested quantity, and delivery timeline request.\"}, {\"role\": \"user\", \"content\": \"Generate an email to restock product '{{ $json.name }}' (SKU: {{ $json.sku }}, Current Stock: {{ $json.stock }}, Min Required: {{ $json.minStock }}, Quantity Needed: {{ $json.minStock * 2 - $json.stock }}).\"}]}"
       },
       "id": "groq_email_generator",
-      "name": "Groq: Generate Email",
+      "name": "Gemini: Generate Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
@@ -72,7 +72,7 @@
         "fromEmail": "orders@nexus.store",
         "toEmail": "={{ $json.supplierEmail }}",
         "subject": "URGENT Restock Request: {{ $json.name }} (SKU: {{ $json.sku }})",
-        "html": "={{ $response.body.choices[0].message.content }}"
+        "html": "={{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "send_supplier_email",
       "name": "Send Email to Supplier",
@@ -105,7 +105,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "\ud83d\udce6 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
+        "text": "📦 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
       },
       "id": "telegram_notification",
       "name": "Telegram: Alert Admin",

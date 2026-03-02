@@ -1,6 +1,6 @@
 {
-  "name": "\ud83c\udfaf NEXUS - AI Product Upsell on New Order FULL",
-  "description": "Triggered on paid order - Rust recommender suggests complementary products - Groq writes personalized upsell - email with 15% UPSELL15 code",
+  "name": "🎯 NEXUS - AI Product Upsell on New Order FULL",
+  "description": "Triggered on paid order - Gemini writes personalized upsell email with 15% UPSELL15 code",
   "nodes": [
     {
       "parameters": {
@@ -58,15 +58,15 @@
     },
     {
       "parameters": {
-        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.GROQ_API_KEY }}",
+        "authentication": "queryAuth",
+        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\":\"mixtral-8x7b-32768\",\"messages\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Write a 4-line personalized upsell email for {{ $json[0].name }}. Suggested products: {{ $json[\\\"Rust Product Recommender\\\"].products }}. Include 15% UPSELL15 code. Make it irresistible but brief.\"},{\"role\":\"user\",\"content\":\"Customer just bought. Upsell now.\"}]}"
+        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"user\",\"content\":\"You are Neuromancer. Write a 4-line personalized upsell email for {{ $json[0].name }}. Include 15% UPSELL15 code. Make it irresistible but brief.\"},{\"role\":\"user\",\"content\":\"Customer just bought. Upsell now.\"}]}"
       },
       "id": "groq-upsell",
-      "name": "Groq Upsell Copy",
+      "name": "Gemini Upsell Copy",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
       "position": [
@@ -79,8 +79,8 @@
       "parameters": {
         "fromEmail": "offers@nexus.store",
         "toEmail": "={{ $json[0].email }}",
-        "subject": "\ud83c\udf81 Wait, we have something YOU'LL love\u2026 (15% off)",
-        "html": "<div style='font-family:sans-serif;padding:20px;'><h3>Hey {{ $json[0].name }},</h3><p>{{ $json[\"Groq Upsell Copy\"].choices[0].message.content }}</p><p style='margin-top:2rem;'><strong>Code: UPSELL15</strong> (15% discount)</p><p style='font-size:0.9em;color:#666;'>Limited to 24h offer</p></div>"
+        "subject": "🎁 Wait, we have something YOU'LL love… (15% off)",
+        "html": "<div style='font-family:sans-serif;padding:20px;'><h3>Hey {{ $json[0].name }},</h3><p>{{ $response.body.candidates[0].content.parts[0].text }}</p><p style='margin-top:2rem;'><strong>Code: UPSELL15</strong> (15% discount)</p><p style='font-size:0.9em;color:#666;'>Limited to 24h offer</p></div>"
       },
       "id": "email-upsell",
       "name": "Send Upsell Email",
@@ -164,21 +164,12 @@
       "main": [
         [
           {
-            "node": "Rust Product Recommender"
+            "node": "Gemini Upsell Copy"
           }
         ]
       ]
     },
-    "Rust Product Recommender": {
-      "main": [
-        [
-          {
-            "node": "Groq Upsell Copy"
-          }
-        ]
-      ]
-    },
-    "Groq Upsell Copy": {
+    "Gemini Upsell Copy": {
       "main": [
         [
           {
