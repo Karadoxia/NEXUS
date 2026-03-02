@@ -453,6 +453,8 @@ services:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
+    ports:
+      - "5678:5678"
     networks:
       - internal
       - proxy
