@@ -29,13 +29,11 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech92@gmail.com}
       EMAIL_FROM: ${EMAIL_FROM:-NEXUS Store <onboarding@resend.dev>}
       RESEND_API_KEY: ${RESEND_KEY}
-      GEMINI_API_KEY: ${GEMINI_KEY}
-      GROQ_API_KEY: ${GROQ_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     secrets:
       - db_password
       - jwt_secret
       - resend_key
-      - gemini_key
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
