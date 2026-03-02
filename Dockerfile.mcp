@@ -1,0 +1,20 @@
+# MCP Server for n8n - Enables AI model integration
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy MCP server
+COPY mcp-server.js .
+
+# Install dependencies (minimal)
+RUN npm init -y && npm install --production
+
+# Expose MCP port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/mcp/health || exit 1
+
+# Start MCP server
+CMD ["node", "mcp-server.js"]

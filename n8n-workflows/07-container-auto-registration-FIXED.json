@@ -201,8 +201,7 @@
       ],
       "credentials": {
         "telegram": {
-          "id": "1",
-          "name": "NEXUS Telegram"
+          "id": "telegram-nexus-1"
         }
       },
       "continueOnFail": true

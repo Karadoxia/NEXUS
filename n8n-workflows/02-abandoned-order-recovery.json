@@ -30,8 +30,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "1",
-          "name": "NEXUS Postgres"
+          "id": "postgres-nexus-1"
         }
       }
     },
@@ -52,15 +51,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
+        "responseFormat": "json",
         "jsonBody": true,
-        "body": "{\"model\":\"mixtral-8x7b-32768\",\"contents\":[{\"role\":\"system\",\"content\":\"You are Neuromancer. Generate a 3-line recovery email for abandoned order #{{ $json.id }} with items: {{ $json.items }} (total {{ $json.total }}€). Include RECOVER20 discount code. Keep subject line catchy. Output JSON: {\\\"subject\\\": \\\"...\\\", \\\"body\\\": \\\"...\\\"} ONLY NO MARKDOWN\"},{\"role\":\"user\",\"content\":\"Customer: {{ $json.name }} ({{ $json.email }})\"}]}"
+        "body": "{\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Generate a recovery email for abandoned order #{{ $json.id }} with items: {{ $json.items }} (total {{ $json.total }}€). Include RECOVER20 discount code. Keep it concise. Customer: {{ $json.name }} ({{ $json.email }})\"\n        }\n      ]\n    }\n  ]\n}"
       },
       "id": "gemini",
       "name": "Gemini Recovery Email",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         900,
         300
@@ -84,8 +82,7 @@
       ],
       "credentials": {
         "smtp": {
-          "id": "1",
-          "name": "Resend SMTP"
+          "id": "email-resend-1"
         }
       },
       "continueOnFail": true
@@ -109,8 +106,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "1",
-          "name": "NEXUS Postgres"
+          "id": "postgres-nexus-1"
         }
       },
       "continueOnFail": true

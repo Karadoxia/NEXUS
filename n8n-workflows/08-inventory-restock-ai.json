@@ -54,15 +54,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate a professional and concise supplier restock order email. Be direct and business-like. Include the product name, SKU, requested quantity, and delivery timeline request.\"}, {\"role\": \"user\", \"content\": \"Generate an email to restock product '{{ $json.name }}' (SKU: {{ $json.sku }}, Current Stock: {{ $json.stock }}, Min Required: {{ $json.minStock }}, Quantity Needed: {{ $json.minStock * 2 - $json.stock }}).\"}]}"
+        "responseFormat": "json",
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Generate a professional and concise supplier restock order email. Be direct and business-like. Include the product name, SKU, requested quantity, and delivery timeline request.\"}]}, {\"role\": \"user\", \"parts\": [{\"text\": \"Generate an email to restock product '{{ $json.name }}' (SKU: {{ $json.sku }}, Current Stock: {{ $json.stock }}, Min Required: {{ $json.minStock }}, Quantity Needed: {{ $json.minStock * 2 - $json.stock }}).\"}]}]}"
       },
       "id": "gemini_email_generator",
       "name": "Gemini: Generate Email",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         900,
         300

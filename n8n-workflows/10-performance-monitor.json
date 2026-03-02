@@ -38,15 +38,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Analyze performance metrics. Identify slow endpoints and suggest optimizations.\"}, {\"role\": \"user\", \"content\": \"{{ JSON.stringify($json) }}\"}]}"
+        "responseFormat": "json",
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Analyze performance metrics. Identify slow endpoints and suggest optimizations.\"}]}, {\"role\": \"user\", \"parts\": [{\"text\": \"{{ JSON.stringify($json) }}\"}]}]}"
       },
       "id": "analyze_performance",
       "name": "Gemini: Analyze Performance",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         680,
         300

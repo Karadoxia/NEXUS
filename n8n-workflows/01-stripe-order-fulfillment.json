@@ -61,8 +61,7 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "1",
-          "name": "NEXUS Postgres"
+          "id": "postgres-nexus-1"
         }
       },
       "continueOnFail": true
@@ -84,8 +83,7 @@
       ],
       "credentials": {
         "smtp": {
-          "id": "1",
-          "name": "Resend SMTP"
+          "id": "email-resend-1"
         }
       },
       "continueOnFail": true
@@ -111,15 +109,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
+        "responseFormat": "json",
         "jsonBody": true,
-        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"system\",\"content\":\"You are Neuromancer, NEXUS's AI agent. Write a 2-sentence ultra-personal thank-you message for order #{{ $json.body.data.object.client_reference_id }} by {{ $json.body.data.object.customer_details.name }}. Include subtle upsell hint for next purchase. Keep it to 100 chars max.\"},{\"role\":\"user\",\"content\":\"Customer email: {{ $json.body.data.object.customer_details.email }}\"}]}"
+        "body": "{\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"You are Neuromancer, NEXUS's AI agent. Write a 2-sentence ultra-personal thank-you message for order #{{ $json.body.data.object.client_reference_id }} by {{ $json.body.data.object.customer_details.name }}. Include subtle upsell hint for next purchase. Keep it to 100 chars max.\"\n        }\n      ]\n    }\n  ]\n}"
       },
       "id": "gemini",
       "name": "Gemini Personal Thank You",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         1120,
         300
@@ -141,8 +138,7 @@
       ],
       "credentials": {
         "telegram": {
-          "id": "1",
-          "name": "NEXUS Telegram"
+          "id": "telegram-nexus-1"
         }
       },
       "continueOnFail": true

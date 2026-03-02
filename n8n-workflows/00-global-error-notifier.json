@@ -40,8 +40,7 @@
       "position": [680, 200],
       "credentials": {
         "telegram": {
-          "id": "1",
-          "name": "NEXUS Telegram"
+          "id": "telegram-nexus-1"
         }
       },
       "continueOnFail": true
@@ -74,8 +73,7 @@
       "position": [900, 300],
       "credentials": {
         "smtp": {
-          "id": "1",
-          "name": "Resend SMTP"
+          "id": "email-resend-1"
         }
       },
       "continueOnFail": true

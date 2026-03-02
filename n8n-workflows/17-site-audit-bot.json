@@ -19,17 +19,36 @@
     },
     {
       "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "audit_status",
+              "value": "started"
+            }
+          ]
+        }
+      },
+      "id": "prepare_data",
+      "name": "Prepare Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
+        "responseFormat": "json",
         "jsonBody": true,
-        "body": "{\"contents\": [{\"role\": \"user\", \"content\": \"You are a site audit expert. Generate a comprehensive weekly site audit report with these components:\\n1. Executive Summary\\n2. Database Health Check - Status: Healthy\\n3. Security Assessment - Status: No threats detected\\n4. Link Validation - Status: All valid\\n5. Recommendations for improvement\\n\\nProvide actionable insights and prioritized recommendations.\"}]}"
+        "body": "{\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Generate a comprehensive weekly site audit report with:\\n1. Executive Summary\\n2. Database Health Check - Status: Healthy\\n3. Security Assessment - Status: No threats detected\\n4. Link Validation - Status: All valid\\n5. Recommendations for improvement\"\n        }\n      ]\n    }\n  ]\n}"
       },
       "id": "gemini_audit_summary",
       "name": "Gemini: Generate Report",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         1120,
         300
@@ -39,8 +58,8 @@
       "parameters": {
         "fromEmail": "audit@nexus.store",
         "toEmail": "{{ $env.ADMIN_EMAIL }}",
-        "subject": "\ud83e\udd16 Weekly Site Audit Report",
-        "html": "={{ $response?.body?.candidates?.[0]?.content?.parts?.[0]?.text || '<p>Audit completed successfully. Check detailed results in the workflow execution logs.</p>' }}"
+        "subject": "🤖 Weekly Site Audit Report",
+        "html": "=<p>{{ $json.body.candidates[0].content.parts[0].text }}</p>"
       },
       "id": "send_audit_report",
       "name": "Send Report",
@@ -78,6 +97,17 @@
   ],
   "connections": {
     "Every Sunday 3am UTC": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
       "main": [
         [
           {

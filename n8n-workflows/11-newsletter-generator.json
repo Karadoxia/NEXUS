@@ -53,15 +53,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Generate a personalized newsletter for a customer. Include: trending products, exclusive offers, and content related to their interests. Format as HTML email.\"}, {\"role\": \"user\", \"content\": \"Customer: {{ $json.name }}, Interests: {{ $json.interests }}\"}]}"
+        "responseFormat": "json",
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Generate a personalized newsletter for a customer. Include: trending products, exclusive offers, and content related to their interests. Format as HTML email.\"}]}, {\"role\": \"user\", \"parts\": [{\"text\": \"Customer: {{ $json.name }}, Interests: {{ $json.interests }}\"}]}]}"
       },
       "id": "generate_newsletter",
       "name": "Generate Newsletter",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         900,
         300

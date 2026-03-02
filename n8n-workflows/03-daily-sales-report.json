@@ -24,8 +24,7 @@
       "position": [460, 300],
       "credentials": {
         "postgres": {
-          "id": "1",
-          "name": "NEXUS Postgres"
+          "id": "postgres-nexus-1"
         }
       }
     },
@@ -71,8 +70,7 @@
       "position": [1120, 300],
       "credentials": {
         "postgres": {
-          "id": "1",
-          "name": "NEXUS Postgres"
+          "id": "postgres-nexus-1"
         }
       },
       "continueOnFail": true

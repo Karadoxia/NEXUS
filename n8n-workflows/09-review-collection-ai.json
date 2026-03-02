@@ -73,15 +73,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"content\": \"Analyze customer review sentiment. Respond in JSON format: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}, {\"role\": \"user\", \"content\": \"{{ $json.reviewText }}\"}]}"
+        "responseFormat": "json",
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Analyze customer review sentiment. Respond in JSON format: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}]}, {\"role\": \"user\", \"parts\": [{\"text\": \"{{ $json.reviewText }}\"}]}]}"
       },
       "id": "gemini_sentiment_analysis",
       "name": "Gemini: Analyze Sentiment",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         1120,
         300

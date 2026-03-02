@@ -21,15 +21,14 @@
       "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "authentication": "queryAuth",
-        "sendQuery": true,
         "jsonBody": true,
-        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"system\",\"content\":\"Classify customer support intent into ONE: refund, fraud, shipping, product, or other. Return JSON ONLY: {\\\"intent\\\": \\\"<intent>\\\", \\\"confidence\\\": <0-1>}\"},{\"role\":\"user\",\"content\":\"{{ $json.message }}\"}]}"
+        "responseFormat": "json",
+        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"system\",\"parts\":[{\"text\":\"Classify customer support intent into ONE: refund, fraud, shipping, product, or other. Return JSON ONLY: {\\\"intent\\\": \\\"<intent>\\\", \\\"confidence\\\": <0-1>}\"}]},{\"role\":\"user\",\"parts\":[{\"text\":\"{{ $json.message }}\"}]}]}"
       },
       "id": "classify",
       "name": "Gemini Intent Classifier",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 2,
+      "typeVersion": 4,
       "position": [
         460,
         300

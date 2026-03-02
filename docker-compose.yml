@@ -473,6 +473,40 @@ services:
       - "traefik.http.routers.n8n-local.entrypoints=web"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
 
+  # === n8n MCP SERVER (Model Context Protocol) =====================================
+  # Enables Claude and other AI models to interact with n8n workflows via REST API
+  n8n-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    container_name: n8n_mcp
+    restart: unless-stopped
+    networks:
+      - internal
+      - proxy
+    depends_on:
+      - n8n
+    environment:
+      N8N_API_BASE: http://n8n:5678/api/v1
+      N8N_API_KEY: ${N8N_API_KEY}
+      MCP_PORT: "3000"
+      NODE_ENV: production
+    labels:
+      - "traefik.enable=true"
+      # Public: HTTP → HTTPS redirect
+      - "traefik.http.routers.mcp.rule=Host(`mcp.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.mcp.entrypoints=web"
+      - "traefik.http.routers.mcp.middlewares=https-redirect"
+      # Public: HTTPS (TLS)
+      - "traefik.http.routers.mcp-tls.rule=Host(`mcp.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.mcp-tls.entrypoints=websecure"
+      - "traefik.http.routers.mcp-tls.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.mcp-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
+      # Local: http://nexus-mcp.local
+      - "traefik.http.routers.mcp-local.rule=Host(`nexus-mcp.local`)"
+      - "traefik.http.routers.mcp-local.entrypoints=web"
+      - "traefik.http.services.mcp.loadbalancer.server.port=3000"
+
   # === NGINX PROXY MANAGER — SSL Certificate Management UI ===
   # Free/open-source cert manager with web dashboard and Let's Encrypt auto-renewal.
   # Complements Traefik: Traefik handles all service routing/certs automatically,
