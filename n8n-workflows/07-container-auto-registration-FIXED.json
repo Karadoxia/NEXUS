@@ -119,7 +119,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const cd = $variables.containerData || {containerName: 'unknown'};\nconst domain = cd.containerName + '.nexus-io.duckdns.org';\nreturn {system: 'kuma', status: 'pending', monitorName: cd.containerName + ' Uptime', url: 'https://' + domain, message: 'Uptime Kuma queued'};"
+        "jsCode": "const cd = $variables.containerData || {containerName: 'unknown'};\nconst domain = cd.containerName + '.local';\nreturn {system: 'kuma', status: 'pending', monitorName: cd.containerName + ' Uptime', url: 'https://' + domain, message: 'Uptime Kuma queued'};"
       },
       "id": "kuma",
       "name": "Kuma Adapter",
