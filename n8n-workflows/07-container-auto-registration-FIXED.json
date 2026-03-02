@@ -188,7 +188,7 @@
     },
     {
       "parameters": {
-        "chatId": "={{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\ud83d\udc33 Container detected:\n{{ $json.body?.containerName ?? $json.containerName }}\nID: {{ $json.body?.containerId ?? $json.containerId }}\nImage: {{ $json.body?.image ?? $json.image }}\nStatus: Registering across systems..."
       },
       "id": "telegram",

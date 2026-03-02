@@ -1,5 +1,5 @@
 {
-  "name": "🛡️ NEXUS - Security Incident Aggregator FULL",
+  "name": "\ud83d\udee1\ufe0f NEXUS - Security Incident Aggregator FULL",
   "description": "Webhook handler for Fail2Ban/Uptime Kuma/Grafana alerts - routes to Rust severity analyzer, auto-blocks IPs, logs to Loki, alerts Telegram",
   "nodes": [
     {
@@ -12,7 +12,10 @@
       "name": "Security Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -25,7 +28,10 @@
       "name": "Rust Severity Analyzer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "continueOnFail": true
     },
     {
@@ -44,7 +50,10 @@
       "name": "IF Critical (>70)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -57,19 +66,25 @@
       "name": "Auto Block IP (Traefik)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 150],
+      "position": [
+        900,
+        150
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "🚨 NEXUS SECURITY ALERT\n\nSource: {{ $json.source }}\nType: {{ $json.type }}\nIP: {{ $json.ip }}\nSeverity: {{ $json[\"Rust Severity Analyzer\"].score || \"UNKNOWN\" }}/100\nMessage: {{ $json.message }}\n\nAction: {{ $json[\"Rust Severity Analyzer\"].score > 70 ? '🔒 AUTO-BLOCKED' : '⚠️ MONITORED' }}"
+        "chatId": "6899339578",
+        "text": "\ud83d\udea8 NEXUS SECURITY ALERT\n\nSource: {{ $json.source }}\nType: {{ $json.type }}\nIP: {{ $json.ip }}\nSeverity: {{ $json[\"Rust Severity Analyzer\"].score || \"UNKNOWN\" }}/100\nMessage: {{ $json.message }}\n\nAction: {{ $json[\"Rust Severity Analyzer\"].score > 70 ? '\ud83d\udd12 AUTO-BLOCKED' : '\u26a0\ufe0f MONITORED' }}"
       },
       "id": "tg",
       "name": "Telegram Alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [900, 350],
+      "position": [
+        900,
+        350
+      ],
       "credentials": {
         "telegram": {
           "id": "telegram-nexus-1"
@@ -88,21 +103,27 @@
       "name": "Log to Loki",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [1120, 300],
+      "position": [
+        1120,
+        300
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
         "fromEmail": "security@nexus.store",
         "toEmail": "admin@nexus.store",
-        "subject": "🚨 NEXUS Security Incident - {{ $json.source }}",
+        "subject": "\ud83d\udea8 NEXUS Security Incident - {{ $json.source }}",
         "text": "Security Incident Report\n\nSource: {{ $json.source }}\nType: {{ $json.type }}\nIP: {{ $json.ip }}\nTimestamp: {{ new Date().toISOString() }}\nSeverity Score: {{ $json[\"Rust Severity Analyzer\"].score || 'ANALYZING' }}/100\n\nMessage:\n{{ $json.message }}\n\nAction Taken: {{ $json[\"Rust Severity Analyzer\"].score > 70 ? 'IP BLOCKED (24h)' : 'MONITORED' }}"
       },
       "id": "email",
       "name": "Admin Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
-      "position": [1340, 300],
+      "position": [
+        1340,
+        300
+      ],
       "credentials": {
         "smtp": {
           "id": "email-resend-1"
@@ -175,5 +196,9 @@
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["security", "incident", "auto-remediation"]
+  "tags": [
+    "security",
+    "incident",
+    "auto-remediation"
+  ]
 }

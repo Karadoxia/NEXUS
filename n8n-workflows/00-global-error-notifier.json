@@ -1,5 +1,5 @@
 {
-  "name": "🔥 NEXUS - Global Error Notifier",
+  "name": "\ud83d\udd25 NEXUS - Global Error Notifier",
   "description": "Centralized error handler for all NEXUS workflows - routes to Rust analyzer, Telegram, Loki, and admin email",
   "nodes": [
     {
@@ -12,7 +12,10 @@
       "name": "Error Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -25,19 +28,25 @@
       "name": "Rust Error Analyzer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "🚨 NEXUS ERROR ALERT\n\nWorkflow: {{$json.workflowName}}\nError: {{$json.error.message}}\nSeverity: {{$json[\"Rust Error Analyzer\"].severity || \"UNKNOWN\"}}\nTime: {{new Date().toISOString()}}"
+        "chatId": "6899339578",
+        "text": "\ud83d\udea8 NEXUS ERROR ALERT\n\nWorkflow: {{$json.workflowName}}\nError: {{$json.error.message}}\nSeverity: {{$json[\"Rust Error Analyzer\"].severity || \"UNKNOWN\"}}\nTime: {{new Date().toISOString()}}"
       },
       "id": "3",
       "name": "Telegram Critical Alert",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [680, 200],
+      "position": [
+        680,
+        200
+      ],
       "credentials": {
         "telegram": {
           "id": "telegram-nexus-1"
@@ -56,21 +65,27 @@
       "name": "Log to Loki",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [680, 400],
+      "position": [
+        680,
+        400
+      ],
       "continueOnFail": true
     },
     {
       "parameters": {
         "fromEmail": "alerts@nexus.store",
         "toEmail": "admin@nexus.store",
-        "subject": "🚨 NEXUS CRITICAL ERROR - {{$json.workflowName}}",
+        "subject": "\ud83d\udea8 NEXUS CRITICAL ERROR - {{$json.workflowName}}",
         "text": "Workflow: {{$json.workflowName}}\n\nError Message:\n{{$json.error.message}}\n\nStack Trace:\n{{$json.error.stack}}\n\nTimestamp: {{new Date().toISOString()}}"
       },
       "id": "5",
       "name": "Admin Email Alert",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 1,
-      "position": [900, 300],
+      "position": [
+        900,
+        300
+      ],
       "credentials": {
         "smtp": {
           "id": "email-resend-1"
@@ -115,5 +130,9 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "tags": ["error", "critical", "infrastructure"]
+  "tags": [
+    "error",
+    "critical",
+    "infrastructure"
+  ]
 }

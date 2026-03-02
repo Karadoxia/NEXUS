@@ -128,7 +128,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\u26a0\ufe0f Negative review on order {{ $json.orderId }}:\\n{{ $json.reviewText }}\\nSentiment: {{ $json.sentiment }}"
       },
       "id": "alert_negative_review",
@@ -147,7 +147,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\u2705 {{ $json.sentiment | upper }} review collected ({{ $json.rating }} stars)"
       },
       "id": "notify_review_collected",

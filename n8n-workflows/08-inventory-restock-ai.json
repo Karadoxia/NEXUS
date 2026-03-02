@@ -112,7 +112,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\ud83d\udce6 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
       },
       "id": "telegram_notification",

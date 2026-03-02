@@ -20,7 +20,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT u.id, u.email, u.name, COUNT(o.id) as orderCount, MAX(o.\"createdAt\") as lastOrder FROM \"User\" u LEFT JOIN \"Order\" o ON u.id = o.\"userId\" WHERE u.\"createdAt\" > NOW() - INTERVAL '180 days' GROUP BY u.id HAVING COUNT(o.id) > 0"
+        "query": "SELECT u.id, u.email, u.name, COUNT(o.id) as orderCount, MAX(o.date) as lastOrder FROM \"User\" u LEFT JOIN \"Order\" o ON u.id = o.\"userId\" WHERE u.\"createdAt\" > NOW() - INTERVAL '180 days' GROUP BY u.id HAVING COUNT(o.id) > 0"
       },
       "id": "query_users",
       "name": "Get Active Users",

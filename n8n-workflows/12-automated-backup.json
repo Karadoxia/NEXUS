@@ -88,7 +88,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\u2705 Daily backup completed and verified\\nDB + Files uploaded to S3 & Backblaze"
       },
       "id": "notify_success",
@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\u274c Backup failed! Check logs immediately."
       },
       "id": "notify_failure",

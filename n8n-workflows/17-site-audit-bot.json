@@ -58,7 +58,7 @@
       "parameters": {
         "fromEmail": "audit@nexus.store",
         "toEmail": "{{ $env.ADMIN_EMAIL }}",
-        "subject": "🤖 Weekly Site Audit Report",
+        "subject": "\ud83e\udd16 Weekly Site Audit Report",
         "html": "=<p>{{ $json.body.candidates[0].content.parts[0].text }}</p>"
       },
       "id": "send_audit_report",
@@ -77,7 +77,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\u2705 Weekly site audit completed\\nCheck email for full report"
       },
       "id": "notify_audit",

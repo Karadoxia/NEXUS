@@ -1,5 +1,5 @@
 {
-  "name": "🚀 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
+  "name": "\ud83d\ude80 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
   "description": "Real-time Stripe webhook handler - updates orders to paid, sends AI personalized confirmations, fraud checks, admin alerts",
   "nodes": [
     {
@@ -52,7 +52,7 @@
         "where": "id={{ $json.body.data.object.client_reference_id }}"
       },
       "id": "pg",
-      "name": "Update Order → Paid",
+      "name": "Update Order \u2192 Paid",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
       "position": [
@@ -70,8 +70,8 @@
       "parameters": {
         "fromEmail": "no-reply@nexus.store",
         "toEmail": "={{ $json.body.data.object.customer_details.email }}",
-        "subject": "✅ Order #{{ $json.body.data.object.client_reference_id }} Confirmed - Neuromancer Activated",
-        "html": "<div style='font-family:sans-serif;'><h2>🎉 Order Confirmed!</h2><p>Your NEXUS order #{{ $json.body.data.object.client_reference_id }} is confirmed.</p><p><strong>Amount:</strong> {{ $json.body.data.object.amount_total / 100 }}€</p><p>Neuromancer is now packing your order for immediate delivery.</p><p style='margin-top:2rem;color:#666;'>Tracking info coming soon →</p></div>"
+        "subject": "\u2705 Order #{{ $json.body.data.object.client_reference_id }} Confirmed - Neuromancer Activated",
+        "html": "<div style='font-family:sans-serif;'><h2>\ud83c\udf89 Order Confirmed!</h2><p>Your NEXUS order #{{ $json.body.data.object.client_reference_id }} is confirmed.</p><p><strong>Amount:</strong> {{ $json.body.data.object.amount_total / 100 }}\u20ac</p><p>Neuromancer is now packing your order for immediate delivery.</p><p style='margin-top:2rem;color:#666;'>Tracking info coming soon \u2192</p></div>"
       },
       "id": "email",
       "name": "Resend Confirmation",
@@ -125,8 +125,8 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "🛍️ NEXUS ORDER PAID\n\n#{{ $json.body.data.object.client_reference_id }}\nCustomer: {{ $json.body.data.object.customer_details.name }}\nAmount: {{ $json.body.data.object.amount_total / 100 }}€\n\nFraud Risk: {{ $json[\"Rust Fraud Agent\"].riskLevel || \"ANALYZING\" }}\nStatus: ✅ FULFILLMENT ACTIVE"
+        "chatId": "6899339578",
+        "text": "\ud83d\udecd\ufe0f NEXUS ORDER PAID\n\n#{{ $json.body.data.object.client_reference_id }}\nCustomer: {{ $json.body.data.object.customer_details.name }}\nAmount: {{ $json.body.data.object.amount_total / 100 }}\u20ac\n\nFraud Risk: {{ $json[\"Rust Fraud Agent\"].riskLevel || \"ANALYZING\" }}\nStatus: \u2705 FULFILLMENT ACTIVE"
       },
       "id": "tg",
       "name": "Telegram Admin",
@@ -148,7 +148,7 @@
         "url": "http://loki:3100/loki/api/v1/push",
         "method": "POST",
         "jsonParameters": true,
-        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"orders\",\"type\":\"payment\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"OrderID: {{ $json.body.data.object.client_reference_id }} | Status: PAID | Amount: {{ $json.body.data.object.amount_total / 100 }}€\"]]}]} }}"
+        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"orders\",\"type\":\"payment\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"OrderID: {{ $json.body.data.object.client_reference_id }} | Status: PAID | Amount: {{ $json.body.data.object.amount_total / 100 }}\u20ac\"]]}]} }}"
       },
       "id": "loki",
       "name": "Log to Loki",
@@ -175,7 +175,7 @@
       "main": [
         [
           {
-            "node": "Update Order → Paid"
+            "node": "Update Order \u2192 Paid"
           },
           {
             "node": "Resend Confirmation"
@@ -183,7 +183,7 @@
         ]
       ]
     },
-    "Update Order → Paid": {
+    "Update Order \u2192 Paid": {
       "main": [
         [
           {

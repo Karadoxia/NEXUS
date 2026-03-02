@@ -1,0 +1,49 @@
+{
+  "name": "🧪 Test Telegram",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "test",
+        "responseMode": "onReceived"
+      },
+      "id": "web",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "6899339578",
+        "text": "Hello from Telegram test workflow!"
+      },
+      "id": "tel",
+      "name": "Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [450, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "010d3ec7-0acd-4d56-9435-cd2c95cbfe80",
+          "name": "NEXUS Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "web": {
+      "main": [
+        [
+          {
+            "node": "tel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder":"v1"}
+}

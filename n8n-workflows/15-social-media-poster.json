@@ -69,7 +69,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\ud83d\udcf1 Social post published for {{ $json.name }}\\n{{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_posted",

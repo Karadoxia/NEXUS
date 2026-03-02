@@ -90,7 +90,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\u26a1 Auto-optimization triggered\\nIssues: {{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_optimization",

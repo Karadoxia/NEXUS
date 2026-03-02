@@ -70,7 +70,7 @@
     },
     {
       "parameters": {
-        "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
+        "chatId": "6899339578",
         "text": "\ud83d\udd0d SEO optimized for product: {{ $json.name }}\\nKeywords: {{ $json.keywords | join(\", \") }}"
       },
       "id": "notify_seo",
