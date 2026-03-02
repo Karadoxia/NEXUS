@@ -19,66 +19,6 @@
     },
     {
       "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "status",
-              "value": "completed"
-            }
-          ]
-        }
-      },
-      "id": "audit_database",
-      "name": "Audit Database",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
-      "position": [
-        460,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "status",
-              "value": "completed"
-            }
-          ]
-        }
-      },
-      "id": "audit_security",
-      "name": "Audit Security",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
-      "position": [
-        680,
-        300
-      ]
-    },
-    {
-      "parameters": {
-        "values": {
-          "string": [
-            {
-              "name": "status",
-              "value": "completed"
-            }
-          ]
-        }
-      },
-      "id": "audit_links",
-      "name": "Check Broken Links",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 2,
-      "position": [
-        900,
-        300
-      ]
-    },
-    {
-      "parameters": {
         "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
         "authentication": "queryAuth",
@@ -138,49 +78,6 @@
   ],
   "connections": {
     "Every Sunday 3am UTC": {
-      "main": [
-        [
-          {
-            "node": "Audit Database",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Audit Security",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Check Broken Links",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Audit Database": {
-      "main": [
-        [
-          {
-            "node": "Gemini: Generate Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Audit Security": {
-      "main": [
-        [
-          {
-            "node": "Gemini: Generate Report",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Broken Links": {
       "main": [
         [
           {
