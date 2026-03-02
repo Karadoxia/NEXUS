@@ -48,7 +48,7 @@
         200
       ],
       "credentials": {
-        "telegram": {
+        "telegramApi": {
           "id": "telegram-nexus-1"
         }
       },
