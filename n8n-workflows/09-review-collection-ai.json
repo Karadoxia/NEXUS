@@ -1,5 +1,5 @@
 {
-  "name": "⭐ NEXUS - AI Review Collector",
+  "name": "\u2b50 NEXUS - AI Review Collector",
   "description": "Collects customer reviews post-purchase and analyzes sentiment",
   "version": 1,
   "active": true,
@@ -37,7 +37,7 @@
       "parameters": {
         "fromEmail": "reviews@nexus.store",
         "toEmail": "={{ $json.customerEmail }}",
-        "subject": "How was your experience with NEXUS? ⭐",
+        "subject": "How was your experience with NEXUS? \u2b50",
         "html": "<h2>We'd love your feedback!</h2><p>Your review helps us serve you better.</p><a href='https://{{ $env.DOMAIN }}/review/{{ $json.orderId }}' style='padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; display: inline-block;'>Write Review</a>"
       },
       "id": "send_review_request",
@@ -49,7 +49,7 @@
         300
       ],
       "credentials": {
-        "smtp": "Resend SMTP"
+        "smtp": "email-resend-1"
       }
     },
     {
@@ -99,7 +99,7 @@
         300
       ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     },
     {
@@ -126,7 +126,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "⚠️ Negative review on order {{ $json.orderId }}:\\n{{ $json.reviewText }}\\nSentiment: {{ $json.sentiment }}"
+        "text": "\u26a0\ufe0f Negative review on order {{ $json.orderId }}:\\n{{ $json.reviewText }}\\nSentiment: {{ $json.sentiment }}"
       },
       "id": "alert_negative_review",
       "name": "Alert Admin",
@@ -137,13 +137,13 @@
         200
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "✅ {{ $json.sentiment | upper }} review collected ({{ $json.rating }} stars)"
+        "text": "\u2705 {{ $json.sentiment | upper }} review collected ({{ $json.rating }} stars)"
       },
       "id": "notify_review_collected",
       "name": "Log Review Collected",
@@ -154,7 +154,7 @@
         400
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],

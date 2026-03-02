@@ -1,5 +1,5 @@
 {
-  "name": "📉 NEXUS - Churn Predictor + Retention",
+  "name": "\ud83d\udcc9 NEXUS - Churn Predictor + Retention",
   "description": "Predicts customer churn and sends retention campaigns",
   "version": 1,
   "active": true,
@@ -12,7 +12,10 @@
       "name": "First Day of Month",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -23,9 +26,12 @@
       "name": "Get Active Users",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [460, 300],
+      "position": [
+        460,
+        300
+      ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     },
     {
@@ -36,7 +42,10 @@
       "name": "Batch Users",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -51,7 +60,10 @@
       "name": "Gemini: Predict Churn",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -69,22 +81,28 @@
       "name": "IF High Churn Risk",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
       "parameters": {
         "fromEmail": "retention@nexus.store",
         "toEmail": "={{ $json.email }}",
-        "subject": "We miss you! Here's 25% off your next purchase 💝",
+        "subject": "We miss you! Here's 25% off your next purchase \ud83d\udc9d",
         "html": "<h2>Hi {{ $json.name }},</h2><p>We noticed you haven't visited in a while. Here's {{ $json.couponCode }} for 25% off!</p>"
       },
       "id": "send_retention",
       "name": "Send Retention Email",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
-      "position": [1340, 200],
+      "position": [
+        1340,
+        200
+      ],
       "credentials": {
-        "smtp": "Resend SMTP"
+        "smtp": "email-resend-1"
       }
     },
     {
@@ -96,35 +114,91 @@
       "name": "Log Campaign",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [1560, 200],
+      "position": [
+        1560,
+        200
+      ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     }
   ],
   "connections": {
     "First Day of Month": {
-      "main": [[{ "node": "Get Active Users", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Get Active Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Get Active Users": {
-      "main": [[{ "node": "Batch Users", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Batch Users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Batch Users": {
-      "main": [[{ "node": "Gemini: Predict Churn", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Gemini: Predict Churn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Gemini: Predict Churn": {
-      "main": [[{ "node": "IF High Churn Risk", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "IF High Churn Risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF High Churn Risk": {
-      "main": [[{ "node": "Send Retention Email", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Send Retention Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Send Retention Email": {
-      "main": [[{ "node": "Log Campaign", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Log Campaign",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["retention", "churn", "ai", "customer-lifetime-value"]
+  "tags": [
+    "retention",
+    "churn",
+    "ai",
+    "customer-lifetime-value"
+  ]
 }

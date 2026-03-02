@@ -1,5 +1,5 @@
 {
-  "name": "🤖 NEXUS - Full Site Audit Bot",
+  "name": "\ud83e\udd16 NEXUS - Full Site Audit Bot",
   "description": "Weekly comprehensive site audit with auto-fixes",
   "version": 1,
   "active": true,
@@ -99,7 +99,7 @@
       "parameters": {
         "fromEmail": "audit@nexus.store",
         "toEmail": "{{ $env.ADMIN_EMAIL }}",
-        "subject": "🤖 Weekly Site Audit Report",
+        "subject": "\ud83e\udd16 Weekly Site Audit Report",
         "html": "={{ $response?.body?.candidates?.[0]?.content?.parts?.[0]?.text || '<p>Audit completed successfully. Check detailed results in the workflow execution logs.</p>' }}"
       },
       "id": "send_audit_report",
@@ -111,13 +111,13 @@
         300
       ],
       "credentials": {
-        "smtp": "Resend SMTP"
+        "smtp": "email-resend-1"
       }
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "✅ Weekly site audit completed\\nCheck email for full report"
+        "text": "\u2705 Weekly site audit completed\\nCheck email for full report"
       },
       "id": "notify_audit",
       "name": "Notify Completion",
@@ -128,7 +128,7 @@
         300
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],

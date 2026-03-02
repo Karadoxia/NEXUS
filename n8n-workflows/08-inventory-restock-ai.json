@@ -1,5 +1,5 @@
 {
-  "name": "📦 NEXUS - AI Inventory Restock",
+  "name": "\ud83d\udce6 NEXUS - AI Inventory Restock",
   "description": "Automated inventory restock with AI-generated supplier emails and price negotiation",
   "version": 1,
   "active": true,
@@ -31,7 +31,7 @@
         300
       ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     },
     {
@@ -83,7 +83,7 @@
         300
       ],
       "credentials": {
-        "smtp": "Resend SMTP"
+        "smtp": "email-resend-1"
       },
       "continueOnFail": true
     },
@@ -105,7 +105,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "📦 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
+        "text": "\ud83d\udce6 Restock email sent for {{ $json.name }} ({{ $json.minStock * 2 - $json.stock }} units needed)"
       },
       "id": "telegram_notification",
       "name": "Telegram: Alert Admin",
@@ -116,7 +116,7 @@
         300
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       },
       "continueOnFail": true
     }

@@ -1,5 +1,5 @@
 {
-  "name": "🔍 NEXUS - SEO Content Optimizer",
+  "name": "\ud83d\udd0d NEXUS - SEO Content Optimizer",
   "description": "Auto-generates SEO-optimized meta tags and submits to search engines",
   "version": 1,
   "active": true,
@@ -50,7 +50,7 @@
         300
       ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     },
     {
@@ -70,7 +70,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "🔍 SEO optimized for product: {{ $json.name }}\\nKeywords: {{ $json.keywords | join(\", \") }}"
+        "text": "\ud83d\udd0d SEO optimized for product: {{ $json.name }}\\nKeywords: {{ $json.keywords | join(\", \") }}"
       },
       "id": "notify_seo",
       "name": "Notify SEO Update",
@@ -81,7 +81,7 @@
         300
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],

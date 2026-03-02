@@ -1,5 +1,5 @@
 {
-  "name": "📧 NEXUS - Newsletter Generator",
+  "name": "\ud83d\udce7 NEXUS - Newsletter Generator",
   "description": "Weekly automated newsletter with AI-personalized content",
   "version": 1,
   "active": true,
@@ -31,7 +31,7 @@
         300
       ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     },
     {
@@ -69,7 +69,7 @@
       "parameters": {
         "fromEmail": "newsletter@nexus.store",
         "toEmail": "={{ $json.email }}",
-        "subject": "Weekly NEXUS Newsletter - Handpicked for You 📬",
+        "subject": "Weekly NEXUS Newsletter - Handpicked for You \ud83d\udcec",
         "html": "={{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "send_newsletter",
@@ -81,7 +81,7 @@
         300
       ],
       "credentials": {
-        "smtp": "Resend SMTP"
+        "smtp": "email-resend-1"
       }
     },
     {
@@ -98,7 +98,7 @@
         300
       ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     }
   ],

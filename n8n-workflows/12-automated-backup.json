@@ -1,5 +1,5 @@
 {
-  "name": "💾 NEXUS - Automated Backup + Offsite Upload",
+  "name": "\ud83d\udcbe NEXUS - Automated Backup + Offsite Upload",
   "description": "Daily automated backup with integrity verification",
   "version": 1,
   "active": true,
@@ -12,7 +12,10 @@
       "name": "Every Day 2am UTC",
       "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -25,7 +28,10 @@
       "name": "Trigger DB Backup",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -38,7 +44,10 @@
       "name": "Trigger Files Backup",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -51,7 +60,10 @@
       "name": "Upload to Offsite",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
@@ -69,57 +81,120 @@
       "name": "IF Upload Successful",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "✅ Daily backup completed and verified\\nDB + Files uploaded to S3 & Backblaze"
+        "text": "\u2705 Daily backup completed and verified\\nDB + Files uploaded to S3 & Backblaze"
       },
       "id": "notify_success",
       "name": "Notify Success",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1340, 200],
+      "position": [
+        1340,
+        200
+      ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "❌ Backup failed! Check logs immediately."
+        "text": "\u274c Backup failed! Check logs immediately."
       },
       "id": "notify_failure",
       "name": "Alert Failure",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1340, 400],
+      "position": [
+        1340,
+        400
+      ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],
   "connections": {
     "Every Day 2am UTC": {
-      "main": [[{ "node": "Trigger DB Backup", "type": "main", "index": 0 }, { "node": "Trigger Files Backup", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Trigger DB Backup",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Trigger Files Backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Trigger DB Backup": {
-      "main": [[{ "node": "Upload to Offsite", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upload to Offsite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Trigger Files Backup": {
-      "main": [[{ "node": "Upload to Offsite", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Upload to Offsite",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Upload to Offsite": {
-      "main": [[{ "node": "IF Upload Successful", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "IF Upload Successful",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF Upload Successful": {
-      "main": [[{ "node": "Notify Success", "type": "main", "index": 0 }, { "node": "Alert Failure", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Notify Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Alert Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["backup", "disaster-recovery", "data-safety"]
+  "tags": [
+    "backup",
+    "disaster-recovery",
+    "data-safety"
+  ]
 }

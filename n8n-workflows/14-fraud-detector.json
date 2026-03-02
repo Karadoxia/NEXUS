@@ -1,5 +1,5 @@
 {
-  "name": "🛡️ NEXUS - Fraud Pattern Detector",
+  "name": "\ud83d\udee1\ufe0f NEXUS - Fraud Pattern Detector",
   "description": "Real-time fraud detection with auto-blocking capability",
   "version": 1,
   "active": true,
@@ -13,7 +13,10 @@
       "name": "Order Created Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300]
+      "position": [
+        240,
+        300
+      ]
     },
     {
       "parameters": {
@@ -26,7 +29,10 @@
       "name": "Rust: Fraud Analysis",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
@@ -44,7 +50,10 @@
       "name": "IF High Risk",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -57,7 +66,10 @@
       "name": "Block IP in Traefik",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 2,
-      "position": [900, 200]
+      "position": [
+        900,
+        200
+      ]
     },
     {
       "parameters": {
@@ -68,60 +80,119 @@
       "name": "Ban User",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
-      "position": [1120, 200],
+      "position": [
+        1120,
+        200
+      ],
       "credentials": {
-        "postgres": "NEXUS Postgres"
+        "postgres": "postgres-nexus-1"
       }
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "🚨 HIGH FRAUD ALERT\\nOrder: {{ $json.id }}\\nIP Blocked: {{ $json.ip }}\\nRisk Score: {{ $response.body.riskScore }}\\nReason: {{ $response.body.reason }}"
+        "text": "\ud83d\udea8 HIGH FRAUD ALERT\\nOrder: {{ $json.id }}\\nIP Blocked: {{ $json.ip }}\\nRisk Score: {{ $response.body.riskScore }}\\nReason: {{ $response.body.reason }}"
       },
       "id": "alert_fraud",
       "name": "Alert Fraud Team",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [1340, 200],
+      "position": [
+        1340,
+        200
+      ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     },
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "✅ Order {{ $json.id }} passed fraud check (Score: {{ $response.body.riskScore }})"
+        "text": "\u2705 Order {{ $json.id }} passed fraud check (Score: {{ $response.body.riskScore }})"
       },
       "id": "log_clean",
       "name": "Log Clean Order",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
-      "position": [900, 400],
+      "position": [
+        900,
+        400
+      ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],
   "connections": {
     "Order Created Webhook": {
-      "main": [[{ "node": "Rust: Fraud Analysis", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Rust: Fraud Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Rust: Fraud Analysis": {
-      "main": [[{ "node": "IF High Risk", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "IF High Risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "IF High Risk": {
-      "main": [[{ "node": "Block IP in Traefik", "type": "main", "index": 0 }, { "node": "Log Clean Order", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Block IP in Traefik",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Clean Order",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Block IP in Traefik": {
-      "main": [[{ "node": "Ban User", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Ban User",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ban User": {
-      "main": [[{ "node": "Alert Fraud Team", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Alert Fraud Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "errorWorkflow": "Global Error Notifier"
   },
-  "tags": ["fraud", "security", "ai", "real-time"]
+  "tags": [
+    "fraud",
+    "security",
+    "ai",
+    "real-time"
+  ]
 }

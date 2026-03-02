@@ -1,5 +1,5 @@
 {
-  "name": "📊 NEXUS - Performance Monitor + Auto-Optimize",
+  "name": "\ud83d\udcca NEXUS - Performance Monitor + Auto-Optimize",
   "description": "Monitors site performance and triggers auto-optimization",
   "version": 1,
   "active": true,
@@ -92,7 +92,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "⚡ Auto-optimization triggered\\nIssues: {{ $response.body.candidates[0].content.parts[0].text }}"
+        "text": "\u26a1 Auto-optimization triggered\\nIssues: {{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_optimization",
       "name": "Notify Admin",
@@ -103,7 +103,7 @@
         300
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],

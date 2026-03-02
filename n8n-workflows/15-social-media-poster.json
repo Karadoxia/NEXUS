@@ -1,5 +1,5 @@
 {
-  "name": "📱 NEXUS - Social Media Auto-Poster",
+  "name": "\ud83d\udcf1 NEXUS - Social Media Auto-Poster",
   "description": "Auto-generates and posts content to social media",
   "version": 1,
   "active": true,
@@ -71,7 +71,7 @@
     {
       "parameters": {
         "chatId": "{{ $env.TELEGRAM_CHAT_ID }}",
-        "text": "📱 Social post published for {{ $json.name }}\\n{{ $response.body.candidates[0].content.parts[0].text }}"
+        "text": "\ud83d\udcf1 Social post published for {{ $json.name }}\\n{{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_posted",
       "name": "Notify Posted",
@@ -82,7 +82,7 @@
         300
       ],
       "credentials": {
-        "telegram": "NEXUS Telegram"
+        "telegram": "telegram-nexus-1"
       }
     }
   ],
