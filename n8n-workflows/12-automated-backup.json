@@ -100,7 +100,9 @@
         200
       ],
       "credentials": {
-        "telegram": "telegram-nexus-1"
+        "telegram": {
+          "id": "telegram-nexus-1"
+        }
       }
     },
     {
@@ -117,7 +119,9 @@
         400
       ],
       "credentials": {
-        "telegram": "telegram-nexus-1"
+        "telegram": {
+          "id": "telegram-nexus-1"
+        }
       }
     }
   ],

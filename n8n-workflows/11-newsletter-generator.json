@@ -31,7 +31,9 @@
         300
       ],
       "credentials": {
-        "postgres": "postgres-nexus-1"
+        "postgres": {
+          "id": "postgres-nexus-1"
+        }
       }
     },
     {
@@ -81,7 +83,9 @@
         300
       ],
       "credentials": {
-        "smtp": "email-resend-1"
+        "smtp": {
+          "id": "email-resend-1"
+        }
       }
     },
     {
@@ -98,7 +102,9 @@
         300
       ],
       "credentials": {
-        "postgres": "postgres-nexus-1"
+        "postgres": {
+          "id": "postgres-nexus-1"
+        }
       }
     }
   ],

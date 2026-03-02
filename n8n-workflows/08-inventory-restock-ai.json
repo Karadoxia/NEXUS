@@ -31,7 +31,9 @@
         300
       ],
       "credentials": {
-        "postgres": "postgres-nexus-1"
+        "postgres": {
+          "id": "postgres-nexus-1"
+        }
       }
     },
     {
@@ -83,7 +85,9 @@
         300
       ],
       "credentials": {
-        "smtp": "email-resend-1"
+        "smtp": {
+          "id": "email-resend-1"
+        }
       },
       "continueOnFail": true
     },
@@ -116,7 +120,9 @@
         300
       ],
       "credentials": {
-        "telegram": "telegram-nexus-1"
+        "telegram": {
+          "id": "telegram-nexus-1"
+        }
       },
       "continueOnFail": true
     }
