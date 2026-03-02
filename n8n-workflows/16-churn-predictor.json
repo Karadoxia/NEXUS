@@ -67,10 +67,23 @@
     },
     {
       "parameters": {
+        "jsonData": "{\"churnRisk\": \"={{ $response.body.candidates[0].content.parts[0].text.match(/\\\"churnRisk\\\":\\s*(\\d+)/)[1] }}\", \"reason\": \"High inactivity\", \"recommendation\": \"Offer discount\"}"
+      },
+      "id": "extract_churn",
+      "name": "Extract Churn Risk",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "conditions": {
           "number": [
             {
-              "value1": "={{ $json.churnRisk }}",
+              "value1": "={{ parseInt($json.churnRisk) }}",
               "operation": ">",
               "value2": 70
             }
@@ -158,6 +171,17 @@
       ]
     },
     "Gemini: Predict Churn": {
+      "main": [
+        [
+          {
+            "node": "Extract Churn Risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Churn Risk": {
       "main": [
         [
           {
