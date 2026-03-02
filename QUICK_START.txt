@@ -1,0 +1,101 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║             🚀 GROQ→GEMINI MIGRATION - QUICK START GUIDE                  ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+YOUR SITUATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+n8n is showing: "Groq: Generate Report" with 404 errors
+JSON files have: "Gemini: Generate Report" with correct API
+
+Why? Old workflow definitions are cached in n8n's database.
+
+FIX: Delete old workflows → Re-import new JSON files
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CHOOSE YOUR PATH:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EASY (5 min) - Use the UI
+→ Read: FIX_SUMMARY.md
+→ Read: MANUAL_WORKFLOW_UPDATE.md
+→ Follow the steps in your browser
+
+
+FAST (2 min) - Use the API script
+→ Read: FIX_SUMMARY.md
+→ Get n8n API key from: Settings → API Keys
+→ Run: export N8N_API_KEY="your_key"
+→ Run: bash delete-and-reimport-workflows.sh
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WORKFLOWS TO FIX (11 total):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+01. Stripe Order Fulfillment
+02. Abandoned Order Recovery
+05. AI Support Router
+06. AI Product Upsell
+08. Inventory Restock AI
+09. Review Collection AI
+10. Performance Monitor
+13. SEO Optimizer
+15. Social Media Poster
+16. Churn Predictor (⚠️)
+17. Site Audit Bot (🔴)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WHAT WILL HAPPEN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BEFORE:  Groq: Generate Report → Error 404
+AFTER:   Gemini: Generate Report → Success 200 ✓
+
+    Email sends ✓
+    Telegram notifications work ✓
+    No more Groq errors ✓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+KEY FILES:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FIX_SUMMARY.md ⭐ READ THIS FIRST
+├─ Explains the problem and solution
+├─ 2 deployment options
+└─ Prerequisites checklist
+
+MANUAL_WORKFLOW_UPDATE.md
+├─ Step-by-step UI guide
+├─ Testing procedures
+└─ Troubleshooting
+
+delete-and-reimport-workflows.sh
+├─ Automated deletion & re-import
+├─ Progress reporting
+└─ Batch operations
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+START HERE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Open: FIX_SUMMARY.md
+2. Choose your deployment method
+3. Follow the instructions
+4. Test the workflows
+5. Done! ✅
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+QUESTIONS?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+See "Troubleshooting" sections in:
+- FIX_SUMMARY.md
+- MANUAL_WORKFLOW_UPDATE.md
+- DEPLOYMENT_STEPS.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
