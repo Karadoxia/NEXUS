@@ -454,6 +454,9 @@ services:
       # QUEUE_BULL_REDIS_PORT: "6379"
       # QUEUE_BULL_REDIS_PASSWORD: ${REDIS_PASSWORD}
       N8N_LOG_LEVEL: info
+      # Telegram Integration - Required for 12 workflows
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
     volumes:
       - n8n-data:/home/node/.n8n
       - /var/run/docker.sock:/var/run/docker.sock:ro
