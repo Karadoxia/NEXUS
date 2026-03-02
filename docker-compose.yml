@@ -12,6 +12,8 @@ services:
     build: .
     container_name: nexus_app
     restart: unless-stopped
+    ports:
+      - "3030:3030"
     networks:
       - internal
       - proxy
