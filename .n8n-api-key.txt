@@ -1,0 +1,34 @@
+N8N_API_KEY_SECURE_STORAGE
+===========================
+
+⚠️ CONFIDENTIAL - STORE SECURELY
+Generated: March 2, 2026
+
+API Key (JWT):
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNjc1YTM2Ny03NjJkLTRkMjctYmQ2MC01NTZiNzczMjMwNmIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZWVjZjg4YWMtZWY2Zi00NzA1LTliNzktODk3ZWRjYmRmMzBlIiwiaWF0IjoxNzcyNDE3MTQ4LCJleHAiOjE3NzQ5Mjk2MDB9.fr1q9WPSN5ZR7JfmYq7g-ZFmH75JLhV8CewPp1c3rNY
+
+User ID: c675a367-762d-4d27-bd60-556b7732306b
+Expiration: 1774929600 (Unix timestamp)
+Created: 1772417148
+
+Usage:
+------
+export N8N_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNjc1YTM2Ny03NjJkLTRkMjctYmQ2MC01NTZiNzczMjMwNmIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZWVjZjg4YWMtZWY2Zi00NzA1LTliNzktODk3ZWRjYmRmMzBlIiwiaWF0IjoxNzcyNDE3MTQ4LCJleHAiOjE3NzQ5Mjk2MDB9.fr1q9WPSN5ZR7JfmYq7g-ZFmH75JLhV8CewPp1c3rNY"
+
+API Endpoints:
+--------------
+Base: https://n8n.nexus-io.duckdns.org/api/v1
+Workflows: https://n8n.nexus-io.duckdns.org/api/v1/workflows
+Credentials: https://n8n.nexus-io.duckdns.org/api/v1/credentials
+
+Header:
+-------
+X-N8N-API-KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjNjc1YTM2Ny03NjJkLTRkMjctYmQ2MC01NTZiNzczMjMwNmIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZWVjZjg4YWMtZWY2Zi00NzA1LTliNzktODk3ZWRjYmRmMzBlIiwiaWF0IjoxNzcyNDE3MTQ4LCJleHAiOjE3NzQ5Mjk2MDB9.fr1q9WPSN5ZR7JfmYq7g-ZFmH75JLhV8CewPp1c3rNY
+
+SECURITY NOTES:
+---------------
+✅ This key should NOT be committed to git
+✅ Keep in Docker secrets or environment variables
+✅ Rotate before expiration (see "exp" claim in JWT)
+✅ Never share publicly or in logs
+✅ Store in vaultwarden or similar secret manager
