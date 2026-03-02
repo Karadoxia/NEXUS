@@ -93,7 +93,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT * FROM inventory WHERE quantity < min_threshold LIMIT 10"
+        "query": "UPDATE \"Product\" SET restocking_status = 'in_progress', \"updatedAt\" = NOW() WHERE id = '{{ $json.id }}'"
       },
       "id": "rust_mark_restock",
       "name": "Mark as Restocking",
@@ -103,6 +103,11 @@
         1340,
         300
       ],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-nexus-1"
+        }
+      },
       "continueOnFail": true
     },
     {
