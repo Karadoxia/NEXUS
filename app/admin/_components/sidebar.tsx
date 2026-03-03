@@ -24,19 +24,20 @@ import { signOut } from 'next-auth/react';
 import { useOrderStore } from '@/src/stores/orderStore';
 
 const NAV_ITEMS = [
-  { href: '/admin',             label: 'Dashboard',    icon: LayoutDashboard                },
-  { href: '/admin/orders',      label: 'Orders',       icon: ShoppingCart,   badge: true    },
-  { href: '/admin/products',    label: 'Products',     icon: Package                        },
-  { href: '/admin/users',       label: 'Clients',      icon: Users                          },
-  { href: '/admin/team',        label: 'Team',         icon: Users2                         },
-  { href: '/admin/containers',  label: 'Containers',   icon: Container                      },
-  { href: '/admin/newsletter',  label: 'Newsletter',   icon: Mail                           },
-  { href: '/admin/performance', label: 'Performance',  icon: TrendingUp                     },
-  { href: '/admin/workflows',   label: 'Workflows',    icon: Workflow                       },
-  { href: '/admin/agents',      label: 'Agent Cycles', icon: Bot                            },
-  { href: '/admin/config',      label: 'Agent Config', icon: Cpu                            },
-  { href: '/admin/logs',        label: 'Audit Log',    icon: ScrollText                     },
-  { href: '/admin/tools',       label: 'Tools',        icon: Wrench                         },
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, badge: true },
+  { href: '/admin/products', label: 'Products', icon: Package },
+  { href: '/admin/users', label: 'Clients', icon: Users },
+  { href: '/admin/team', label: 'Team', icon: Users2 },
+  { href: '/admin/employees', label: 'Employees', icon: Users2 },
+  { href: '/admin/containers', label: 'Containers', icon: Container },
+  { href: '/admin/newsletter', label: 'Newsletter', icon: Mail },
+  { href: '/admin/performance', label: 'Performance', icon: TrendingUp },
+  { href: '/admin/workflows', label: 'Workflows', icon: Workflow },
+  { href: '/admin/agents', label: 'Agent Cycles', icon: Bot },
+  { href: '/admin/config', label: 'Agent Config', icon: Cpu },
+  { href: '/admin/logs', label: 'Audit Log', icon: ScrollText },
+  { href: '/admin/tools', label: 'Tools', icon: Wrench },
 ] as const;
 
 function cn(...classes: (string | boolean | undefined)[]) {
@@ -64,7 +65,7 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
   }, []);
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-60 bg-[#060d1a] border-r border-slate-800/80 flex flex-col z-40">
+    <aside className="fixed left-0 top-16 h-[calc(100vh-64px)] w-60 bg-[#060d1a] border-r border-slate-800/80 flex flex-col z-40">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-slate-800/80">
         <div className="flex items-center gap-3">
@@ -84,8 +85,8 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
           Main Menu
         </p>
         {NAV_ITEMS.map(({ href, label, icon: Icon, ...rest }) => {
-          const active     = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
-          const showBadge  = 'badge' in rest && rest.badge && pendingOrders > 0;
+          const active = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+          const showBadge = 'badge' in rest && rest.badge && pendingOrders > 0;
           return (
             <Link
               key={href}

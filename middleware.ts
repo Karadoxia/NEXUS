@@ -5,13 +5,14 @@ import { checkRateLimit, getRequestIp } from '@/lib/rate-limit';
 
 // Role-based access control: which paths each role can access
 const ROLE_PERMISSIONS: Record<string, string[]> = {
-  admin:     ['*'],  // all paths
-  manager:   ['/admin', '/admin/orders', '/admin/users', '/admin/clients', '/admin/newsletter', '/admin/performance'],
+  superadmin: ['*'],
+  admin: ['*'],  // all paths
+  manager: ['/admin', '/admin/orders', '/admin/users', '/admin/clients', '/admin/newsletter', '/admin/performance'],
   marketing: ['/admin', '/admin/products', '/admin/newsletter', '/admin/performance'],
-  it:        ['/admin', '/admin/tools', '/admin/logs', '/admin/config', '/admin/monitoring'],
-  support:   ['/admin', '/admin/orders', '/admin/users', '/admin/clients'],
-  editor:    ['/admin', '/admin/products', '/admin/newsletter'],
-  trainee:   ['/admin'],
+  it: ['/admin', '/admin/tools', '/admin/logs', '/admin/config', '/admin/monitoring'],
+  support: ['/admin', '/admin/orders', '/admin/users', '/admin/clients'],
+  editor: ['/admin', '/admin/products', '/admin/newsletter'],
+  trainee: ['/admin'],
 };
 
 function hasPathAccess(role: string, pathname: string): boolean {

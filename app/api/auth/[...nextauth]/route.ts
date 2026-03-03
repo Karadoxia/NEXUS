@@ -20,36 +20,44 @@ export const authOptions: AuthOptions = {
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email:    { label: 'Email',    type: 'text' },
+        email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[AUTH] Checking credentials structure');
         if (!credentials?.email || !credentials?.password) return null;
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(credentials.email)) return null;
+        if (!/^[^\s@]+@[^\s@]+$/.test(credentials.email)) return null;
 
+        console.log('[AUTH] Checking rate limit');
         // 5 login attempts per email per minute to slow brute-force / enumeration
         if (!checkRateLimit(`auth:${credentials.email}`, 5, 60_000)) {
           throw new Error('Too many login attempts. Please wait a minute and try again.');
         }
 
+        console.log('[AUTH] Checking HR DB');
         // 1. Check HR database first (employees/admins)
         try {
           const client = getPrismaHR();
+          console.log('[AUTH] Running employee DB query');
           const result = await client.query(
             'SELECT * FROM "Employee" WHERE email = $1',
             [credentials.email]
           );
+          console.log('[AUTH] query finished');
           const employee = result.rows[0];
 
           if (employee) {
+            console.log('[AUTH] Employee found, comparing password');
             if (!employee.isActive) {
               throw new Error('Account is deactivated.');
             }
             const isValid = await bcrypt.compare(credentials.password, employee.hashedPassword);
+            console.log('[AUTH] Password compare finished');
             if (!isValid) {
               throw new Error('Incorrect password. Please try again.');
             }
             // Update lastLogin
+            console.log('[AUTH] Updating lastLogin');
             await client.query(
               'UPDATE "Employee" SET "lastLogin" = NOW() WHERE id = $1',
               [employee.id]
@@ -63,11 +71,13 @@ export const authOptions: AuthOptions = {
           }
         } catch (e: any) {
           // If HR DB is unavailable, fall through to customer table
-          console.warn('HR database check failed, falling back to customer users:', e.message);
+          console.log('[AUTH] HR db check failed', e);
         }
 
+        console.log('[AUTH] Falling through to Customer table Prisma check');
         // 2. Fall through: check customer User table
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
+        console.log('[AUTH] Customer findUnique resolved, user found:', !!user);
 
         // User not found
         if (!user) {
@@ -93,7 +103,7 @@ export const authOptions: AuthOptions = {
       if (user?.email) {
         // Stamp isAdmin and role from user object returned by authorize
         const userWithRole = user as { role?: string };
-        token.isAdmin = userWithRole.role === 'admin';
+        token.isAdmin = userWithRole.role === 'admin' || userWithRole.role === 'superadmin';
         token.role = userWithRole.role || 'user';
       }
       return token;

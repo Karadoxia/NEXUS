@@ -5,7 +5,7 @@ import AdminSidebar from './_components/sidebar';
 
 export const metadata = { title: 'NEXUS Admin' };
 
-const TEAM_ROLES = ['admin', 'manager', 'marketing', 'it', 'support', 'editor', 'trainee'];
+const TEAM_ROLES = ['superadmin', 'admin', 'manager', 'marketing', 'it', 'support', 'editor', 'trainee'];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="min-h-screen bg-[#080f1c] text-white flex">
+    <div className="min-h-screen bg-[#080f1c] text-white flex pt-16">
       <AdminSidebar userEmail={session.user.email} />
       {/* Main content offset by sidebar width */}
       <main className="flex-1 ml-60 min-h-screen">

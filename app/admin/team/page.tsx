@@ -19,7 +19,8 @@ interface Employee {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  ADMIN: 'bg-red-500/20 text-red-400 border-red-500/30',
+  SUPERADMIN: 'bg-red-600/20 text-red-500 border-red-600/30',
+  ADMIN: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   MANAGER: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   MARKETING: 'bg-green-500/20 text-green-400 border-green-500/30',
   IT: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
@@ -136,11 +137,10 @@ export default function TeamPage() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
-                        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          employee.isActive
+                        className={`px-3 py-1 rounded-full text-xs font-semibold ${employee.isActive
                             ? 'bg-green-500/20 text-green-400'
                             : 'bg-red-500/20 text-red-400'
-                        }`}
+                          }`}
                       >
                         {employee.isActive ? 'Active' : 'Inactive'}
                       </span>

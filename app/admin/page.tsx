@@ -15,17 +15,17 @@ import ProgressBar from './_components/progress-bar';
 import CategoryBarChart from './_components/category-chart';
 
 const STATUS_COLORS: Record<string, string> = {
-  pending:    'bg-amber-500/10  text-amber-400   border-amber-500/20',
+  pending: 'bg-amber-500/10  text-amber-400   border-amber-500/20',
   processing: 'bg-blue-500/10   text-blue-400    border-blue-500/20',
-  shipped:    'bg-purple-500/10 text-purple-400  border-purple-500/20',
-  delivered:  'bg-green-500/10  text-green-400   border-green-500/20',
-  cancelled:  'bg-red-500/10    text-red-400     border-red-500/20',
+  shipped: 'bg-purple-500/10 text-purple-400  border-purple-500/20',
+  delivered: 'bg-green-500/10  text-green-400   border-green-500/20',
+  cancelled: 'bg-red-500/10    text-red-400     border-red-500/20',
 };
 
 export default async function AdminDashboard() {
-  const now        = new Date();
+  const now = new Date();
   const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const start7     = new Date(startToday);
+  const start7 = new Date(startToday);
   start7.setDate(start7.getDate() - 6);
 
   const [
@@ -59,15 +59,20 @@ export default async function AdminDashboard() {
       select: { date: true, total: true },
       orderBy: { date: 'asc' },
     }),
-    // Category revenue: join CartItem → Product to group by category
-    prisma.cartItem.findMany({
-      include: { product: { select: { category: true } } },
-    }),
+    // Fast path: use raw query for category revenue
+    prisma.$queryRaw<{ category: string; revenue: number }[]>`
+      SELECT p.category, SUM(c.price * c.quantity) as revenue
+      FROM "CartItem" c
+      JOIN "Product" p ON c."productId" = p.id
+      GROUP BY p.category
+      ORDER BY revenue DESC
+      LIMIT 8;
+    `,
   ]);
 
   // Build daily buckets (oldest → newest)
   const salesByDay = Array.from({ length: 7 }, (_, i) => {
-    const d    = new Date(startToday);
+    const d = new Date(startToday);
     d.setDate(d.getDate() - (6 - i));
     const next = new Date(d);
     next.setDate(next.getDate() + 1);
@@ -79,18 +84,13 @@ export default async function AdminDashboard() {
     };
   });
 
-  // Build category revenue map
-  const catMap: Record<string, number> = {};
-  for (const item of categoryItems) {
-    const cat = item.product.category;
-    catMap[cat] = (catMap[cat] ?? 0) + item.price * item.quantity;
-  }
-  const categoryRevenue = Object.entries(catMap)
-    .map(([category, revenue]) => ({ category, revenue }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 8);
+  // Use raw query result directly
+  const categoryRevenue = (categoryItems as unknown as { category: string; revenue: number }[]).map(item => ({
+    category: item.category,
+    revenue: Number(item.revenue)
+  }));
 
-  const revenue      = revenueAgg._sum.total ?? 0;
+  const revenue = revenueAgg._sum.total ?? 0;
   const revenueToday = revenueTodayAgg._sum.total ?? 0;
 
   const kpis = [
@@ -177,10 +177,10 @@ export default async function AdminDashboard() {
 
           <div className="space-y-5">
             {[
-              { label: 'Active Orders',   value: ordersActive, total: Math.max(ordersActive + ordersToday, 1), color: 'bg-cyan-500'  },
-              { label: 'Low Stock %',     value: lowStock,     total: Math.max(productCount, 1),               color: 'bg-amber-500' },
-              { label: 'Newsletter Subs', value: subscribers,  total: Math.max(subscribers, 1),                color: 'bg-green-500' },
-              { label: 'Customers',       value: customers,    total: Math.max(customers, 1),                  color: 'bg-blue-500'  },
+              { label: 'Active Orders', value: ordersActive, total: Math.max(ordersActive + ordersToday, 1), color: 'bg-cyan-500' },
+              { label: 'Low Stock %', value: lowStock, total: Math.max(productCount, 1), color: 'bg-amber-500' },
+              { label: 'Newsletter Subs', value: subscribers, total: Math.max(subscribers, 1), color: 'bg-green-500' },
+              { label: 'Customers', value: customers, total: Math.max(customers, 1), color: 'bg-blue-500' },
             ].map(({ label, value, total, color }) => {
               const pct = Math.round((value / total) * 100);
               return (

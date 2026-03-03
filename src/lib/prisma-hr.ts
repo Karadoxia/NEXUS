@@ -1,7 +1,7 @@
 // Temporary workaround: use raw pg client until Prisma 7 supports dual schemas properly
-import { Client as PgClient } from 'pg';
+import { Pool as PgPool } from 'pg';
 
-let prismaHRInstance: PgClient | null = null;
+let prismaHRInstance: PgPool | null = null;
 
 export const getPrismaHR = () => {
   if (!process.env.HR_DATABASE_URL) {
@@ -12,7 +12,7 @@ export const getPrismaHR = () => {
     );
   }
   if (!prismaHRInstance) {
-    prismaHRInstance = new PgClient({
+    prismaHRInstance = new PgPool({
       connectionString: process.env.HR_DATABASE_URL,
     });
   }
@@ -23,19 +23,17 @@ export const getPrismaHR = () => {
 export const prismaHR = {
   employee: {
     findUnique: async (query: any) => {
-      const client = getPrismaHR();
-      if (!client.connection) await client.connect();
-      const result = await client.query(
+      const pool = getPrismaHR();
+      const result = await pool.query(
         'SELECT * FROM "Employee" WHERE email = $1',
         [query.where.email]
       );
       return result.rows[0] || null;
     },
     create: async (data: any) => {
-      const client = getPrismaHR();
-      if (!client.connection) await client.connect();
+      const pool = getPrismaHR();
       const { id, email, name, hashedPassword, role, department, phone, createdBy } = data.data;
-      const result = await client.query(
+      const result = await pool.query(
         `INSERT INTO "Employee" (id, email, name, "hashedPassword", role, department, phone, "createdBy", "isActive")
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
          RETURNING *`,
@@ -44,8 +42,7 @@ export const prismaHR = {
       return result.rows[0];
     },
     update: async (query: any, data: any) => {
-      const client = getPrismaHR();
-      if (!client.connection) await client.connect();
+      const pool = getPrismaHR();
       const { id } = query.where;
       const updates = [];
       const values: any[] = [];
@@ -55,22 +52,21 @@ export const prismaHR = {
         values.push(value);
       }
       values.push(id);
-      const result = await client.query(
+      const result = await pool.query(
         `UPDATE "Employee" SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
         values
       );
       return result.rows[0];
     },
     findMany: async (query: any = {}) => {
-      const client = getPrismaHR();
-      if (!client.connection) await client.connect();
-      const result = await client.query('SELECT * FROM "Employee" WHERE "isActive" = true ORDER BY "createdAt" DESC');
+      const pool = getPrismaHR();
+      const result = await pool.query('SELECT * FROM "Employee" WHERE "isActive" = true ORDER BY "createdAt" DESC');
       return result.rows;
     },
   },
   $connect: async () => {
-    const client = getPrismaHR();
-    await client.connect();
+    // With pg.Pool, explicit connect is mostly not needed, but can optionally acquire a client
+    // We implement it as no-op to satisfy the Prisma-like interface contract.
   },
   $disconnect: async () => {
     if (prismaHRInstance) {

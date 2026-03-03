@@ -66,3 +66,4 @@ gemini_key.txt
 
 # VPN / infra sub-stacks (separate repos or too large)
 vpn-stack/
+backups/

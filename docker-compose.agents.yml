@@ -1,0 +1,235 @@
+services:
+  agent--nexus-performance-monitor-auto-optimize:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=vYp17lAGc3UJ8woI
+      - WORKFLOW_NAME=📊 NEXUS - Performance Monitor + Auto-Optimize
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-ai-inventory-restock:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=LJ23eJcTkPHhMtME
+      - WORKFLOW_NAME=📦 NEXUS - AI Inventory Restock
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-global-error-notifier:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=D8q4qw0iKfrKX5wf
+      - WORKFLOW_NAME=🔥 NEXUS - Global Error Notifier
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-churn-predictor-retention:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=GnBK21tiq3W2c9u0
+      - WORKFLOW_NAME=📉 NEXUS - Churn Predictor + Retention
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-container-auto-registration-fixed:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=Lg4mLkZ8OG9NmKHC
+      - WORKFLOW_NAME=🐳 NEXUS - Container Auto-Registration FIXED
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-ai-product-upsell-on-new-order-full:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=bXiXkre6I1mjF7BI
+      - WORKFLOW_NAME=🎯 NEXUS - AI Product Upsell on New Order FULL
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-security-incident-aggregator-full:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=xxhB32EwktBoeiXe
+      - WORKFLOW_NAME=🛡️ NEXUS - Security Incident Aggregator FULL
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-ai-support-ticket-router-full:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=AkYbLGEsaIOaYncT
+      - WORKFLOW_NAME=💬 NEXUS - AI Support Ticket Router FULL
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-abandoned-order-recovery-ai-v3-full:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=TTNVP1Yasm8tl7Yx
+      - WORKFLOW_NAME=💰 NEXUS - Abandoned Order Recovery AI v3 FULL
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-full-site-audit-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=qg8HEJvEkD8KDmk2
+      - WORKFLOW_NAME=🤖 NEXUS - Full Site Audit Bot
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-stripe-order-fulfillment-v3-full-power:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=QCCLzH7IZ3PoK6Dx
+      - WORKFLOW_NAME=🚀 NEXUS - Stripe Order Fulfillment v3 FULL POWER
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-ai-review-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=ZyTqj5RhKVKRHitz
+      - WORKFLOW_NAME=⭐ NEXUS - AI Review Collector
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-automated-backup-offsite-upload:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=BrFRrxoFEpp1jAoU
+      - WORKFLOW_NAME=💾 NEXUS - Automated Backup + Offsite Upload
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-fraud-pattern-detector:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=gv2kdHwV62hyPjVG
+      - WORKFLOW_NAME=🛡️ NEXUS - Fraud Pattern Detector
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-daily-sales-report-ai-backup-v3-full:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=WMVXAiZclKy5dPyh
+      - WORKFLOW_NAME=📊 NEXUS - Daily Sales Report + AI + Backup v3 FULL
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-seo-content-optimizer:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=v6RCYgOLbMyf9CRI
+      - WORKFLOW_NAME=🔍 NEXUS - SEO Content Optimizer
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-social-media-auto-poster:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=aCv1vgaTxzLBsICY
+      - WORKFLOW_NAME=📱 NEXUS - Social Media Auto-Poster
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n
+  agent--nexus-newsletter-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    environment:
+      - WORKFLOW_ID=t6mojOUnbSryGpH6
+      - WORKFLOW_NAME=📧 NEXUS - Newsletter Generator
+      - N8N_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk
+      - N8N_HOST=http://n8n:5678
+      - ADMIN_EMAIL=
+      - TELEGRAM_CHAT_ID=
+    depends_on:
+      - n8n

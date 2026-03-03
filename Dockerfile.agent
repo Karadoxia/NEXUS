@@ -1,0 +1,11 @@
+# agent image for running individual workflow monitors
+FROM node:20-slim
+
+WORKDIR /usr/src/app
+
+# copy only the agent script and any necessary helpers
+COPY scripts/agent-template.js ./
+
+# ensure node has fetch available (node20 includes it)
+
+CMD ["node", "agent-template.js"]

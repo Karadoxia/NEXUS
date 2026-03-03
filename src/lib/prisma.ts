@@ -1,5 +1,6 @@
 import { PrismaClient } from '../generated/prisma/client.ts';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 
 const globalForPrisma = global as unknown as { prisma?: PrismaClient };
 
@@ -15,7 +16,7 @@ if (process.env.NODE_ENV !== 'production') {
 export const prisma =
   globalForPrisma.prisma ?? new PrismaClient({
     log: process.env.NODE_ENV !== 'production' ? ['query'] : [],
-    adapter: new PrismaPg({ connectionString: dbUrl }),
+    adapter: new PrismaPg(new Pool({ connectionString: dbUrl })),
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
