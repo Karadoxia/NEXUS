@@ -105,7 +105,7 @@
         "fromEmail": "retention@nexus.store",
         "toEmail": "={{ $json.email }}",
         "subject": "We miss you! Here's 25% off your next purchase \ud83d\udc9d",
-        "html": "<h2>Hi {{ $json.name }},</h2><p>We noticed you haven't visited in a while. Here's {{ $json.couponCode }} for 25% off!</p>"
+        "html": "=<h2>Hi {{ $json.name }},</h2><p>We noticed you haven't visited in a while. Here's <strong>COMEBACK25</strong> for 25% off your next order!</p><p style='margin-top:1rem;font-size:0.9em;color:#666;'>Offer valid for 7 days.</p>"
       },
       "id": "send_retention",
       "name": "Send Retention Email",

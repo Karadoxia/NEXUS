@@ -6,7 +6,7 @@
   "nodes": [
     {
       "parameters": {
-        "cronExpression": "* * * * *"
+        "cronExpression": "0 3 * * 0"
       },
       "id": "cron_weekly",
       "name": "Every Sunday 3am UTC",
@@ -77,7 +77,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\u2705 Weekly site audit completed\\nCheck email for full report"
       },
       "id": "notify_audit",

@@ -74,7 +74,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\ud83d\udea8 NEXUS SECURITY ALERT\n\nSource: {{ $json.source }}\nType: {{ $json.type }}\nIP: {{ $json.ip }}\nSeverity: {{ $json[\"Rust Severity Analyzer\"].score || \"UNKNOWN\" }}/100\nMessage: {{ $json.message }}\n\nAction: {{ $json[\"Rust Severity Analyzer\"].score > 70 ? '\ud83d\udd12 AUTO-BLOCKED' : '\u26a0\ufe0f MONITORED' }}"
       },
       "id": "tg",

@@ -1,6 +1,6 @@
 {
   "name": "\u2b50 NEXUS - AI Review Collector",
-  "description": "Collects customer reviews post-purchase and analyzes sentiment",
+  "description": "Two independent flows: 1) Webhook triggers 7-day wait then sends review request. 2) Webhook receives submission, analyzes sentiment, saves to DB, alerts if negative.",
   "version": 1,
   "active": true,
   "nodes": [
@@ -8,7 +8,7 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "review-request-trigger",
-        "authentication": "queryAuth"
+        "responseMode": "onReceived"
       },
       "id": "webhook_review_trigger",
       "name": "Review Trigger Webhook",
@@ -16,7 +16,7 @@
       "typeVersion": 1,
       "position": [
         240,
-        300
+        200
       ]
     },
     {
@@ -26,19 +26,19 @@
       },
       "id": "delay_7_days",
       "name": "Wait 7 Days",
-      "type": "n8n-nodes-base.delay",
+      "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [
         460,
-        300
+        200
       ]
     },
     {
       "parameters": {
         "fromEmail": "reviews@nexus.store",
-        "toEmail": "={{ $json.customerEmail }}",
+        "toEmail": "={{ $json.body.customerEmail || $json.customerEmail }}",
         "subject": "How was your experience with NEXUS? \u2b50",
-        "html": "<h2>We'd love your feedback!</h2><p>Your review helps us serve you better.</p><a href='https://{{ $env.DOMAIN }}/review/{{ $json.orderId }}' style='padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; display: inline-block;'>Write Review</a>"
+        "html": "=<h2>We'd love your feedback!</h2><p>Your review helps us serve you better.</p><a href='https://nexus.store/review/{{ $json.body.orderId || $json.orderId }}' style='padding:10px 20px;background:#0066cc;color:white;text-decoration:none;border-radius:5px;display:inline-block;'>Write Review</a>"
       },
       "id": "send_review_request",
       "name": "Send Review Request",
@@ -46,7 +46,7 @@
       "typeVersion": 2,
       "position": [
         680,
-        300
+        200
       ],
       "credentials": {
         "smtp": {
@@ -58,15 +58,15 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "review-submitted",
-        "authentication": "queryAuth"
+        "responseMode": "onReceived"
       },
       "id": "webhook_review_submitted",
       "name": "Review Submission Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        900,
-        300
+        240,
+        480
       ]
     },
     {
@@ -75,29 +75,29 @@
         "method": "POST",
         "jsonBody": true,
         "responseFormat": "json",
-        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Analyze customer review sentiment. Respond in JSON format: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}]}, {\"role\": \"user\", \"parts\": [{\"text\": \"{{ $json.reviewText }}\"}]}]}"
+        "body": "{\"model\": \"gemini-1.5-flash\", \"contents\": [{\"role\": \"user\", \"parts\": [{\"text\": \"Analyze customer review sentiment. Respond in JSON format only: {\\\"sentiment\\\": \\\"positive|neutral|negative\\\", \\\"score\\\": 0-100, \\\"key_points\\\": []}\"}]}, {\"role\": \"user\", \"parts\": [{\"text\": \"{{ $json.body.reviewText || $json.reviewText }}\"}]}]}"
       },
       "id": "gemini_sentiment_analysis",
       "name": "Gemini: Analyze Sentiment",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [
-        1120,
-        300
+        460,
+        480
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO \"Review\" (\"orderId\", \"userId\", \"rating\", \"sentiment\", \"feedback\", \"createdAt\") VALUES ('{{ $json.orderId }}', '{{ $json.userId }}', {{ $json.rating }}, '{{ $json.sentiment }}', '{{ $json.reviewText }}', NOW()) RETURNING *"
+        "query": "INSERT INTO \"Review\" (\"orderId\", \"userId\", \"rating\", \"sentiment\", \"feedback\", \"createdAt\") VALUES ('{{ $('Review Submission Webhook').item.json.body.orderId || '' }}', '{{ $('Review Submission Webhook').item.json.body.userId || '' }}', {{ $('Review Submission Webhook').item.json.body.rating || 0 }}, '{{ ($json.text || 'neutral').match(/\"sentiment\":\"(\\w+)\"/)?.[1] || 'neutral' }}', '{{ $('Review Submission Webhook').item.json.body.reviewText || '' }}', NOW()) RETURNING *"
       },
       "id": "save_review_db",
       "name": "Save to Database",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
       "position": [
-        1340,
-        300
+        680,
+        480
       ],
       "credentials": {
         "postgres": {
@@ -110,8 +110,8 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $json.sentiment }}",
-              "operation": "equals",
+              "value1": "={{ $('Gemini: Analyze Sentiment').item.json.text || '' }}",
+              "operation": "contains",
               "value2": "negative"
             }
           ]
@@ -122,22 +122,22 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
       "position": [
-        1560,
-        200
+        900,
+        480
       ]
     },
     {
       "parameters": {
-        "chatId": "6899339578",
-        "text": "\u26a0\ufe0f Negative review on order {{ $json.orderId }}:\\n{{ $json.reviewText }}\\nSentiment: {{ $json.sentiment }}"
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "\u26a0\ufe0f Negative review on order {{ $('Review Submission Webhook').item.json.body.orderId || 'unknown' }}:\n{{ $('Review Submission Webhook').item.json.body.reviewText || '' }}"
       },
       "id": "alert_negative_review",
       "name": "Alert Admin",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
       "position": [
-        1780,
-        200
+        1120,
+        400
       ],
       "credentials": {
         "telegram": {
@@ -147,16 +147,16 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
-        "text": "\u2705 {{ $json.sentiment | upper }} review collected ({{ $json.rating }} stars)"
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "\u2705 Review collected for order {{ $('Review Submission Webhook').item.json.body.orderId || 'unknown' }} ({{ $('Review Submission Webhook').item.json.body.rating || 0 }} stars)"
       },
       "id": "notify_review_collected",
       "name": "Log Review Collected",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1,
       "position": [
-        1560,
-        400
+        1120,
+        560
       ],
       "credentials": {
         "telegram": {
@@ -228,7 +228,9 @@
             "node": "Alert Admin",
             "type": "main",
             "index": 0
-          },
+          }
+        ],
+        [
           {
             "node": "Log Review Collected",
             "type": "main",

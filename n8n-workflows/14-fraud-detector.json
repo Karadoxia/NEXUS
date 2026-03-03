@@ -92,7 +92,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\ud83d\udea8 HIGH FRAUD ALERT\\nOrder: {{ $json.id }}\\nIP Blocked: {{ $json.ip }}\\nRisk Score: {{ $response.body.riskScore }}\\nReason: {{ $response.body.reason }}"
       },
       "id": "alert_fraud",
@@ -111,7 +111,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\u2705 Order {{ $json.id }} passed fraud check (Score: {{ $response.body.riskScore }})"
       },
       "id": "log_clean",

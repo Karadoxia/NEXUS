@@ -38,7 +38,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE \"Product\" SET \"metaTitle\" = '{{ $json.metaTitle }}', \"metaDescription\" = '{{ $json.metaDescription }}', \"keywords\" = '{{ $json.keywords | join(\",\") }}', \"schemaMarkup\" = '{{ $json.schema }}' WHERE id = '{{ $json.id }}'"
+        "query": "UPDATE \"Product\" SET \"metaTitle\" = '{{ $json.metaTitle }}', \"metaDescription\" = '{{ $json.metaDescription }}', \"keywords\" = '{{ Array.isArray($json.keywords) ? $json.keywords.join(\",\") : $json.keywords }}', \"schemaMarkup\" = '{{ $json.schemaMarkup || $json.schema || '' }}' WHERE id = '{{ $json.body?.id || $json.id }}'"
       },
       "id": "update_product_meta",
       "name": "Update Product Meta",
@@ -70,8 +70,8 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
-        "text": "\ud83d\udd0d SEO optimized for product: {{ $json.name }}\\nKeywords: {{ $json.keywords | join(\", \") }}"
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "=\ud83d\udd0d SEO optimized for product: {{ $json.name }}\\nKeywords: {{ Array.isArray($json.keywords) ? $json.keywords.join(', ') : ($json.keywords || 'N/A') }}"
       },
       "id": "notify_seo",
       "name": "Notify SEO Update",

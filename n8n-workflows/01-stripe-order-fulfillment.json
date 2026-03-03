@@ -8,7 +8,8 @@
         "path": "stripe-webhook",
         "responseMode": "onReceived",
         "options": {
-          "rawBody": true
+          "rawBody": true,
+          "responseData": "firstEntryJson"
         }
       },
       "id": "webhook",
@@ -125,7 +126,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\ud83d\udecd\ufe0f NEXUS ORDER PAID\n\n#{{ $json.body.data.object.client_reference_id }}\nCustomer: {{ $json.body.data.object.customer_details.name }}\nAmount: {{ $json.body.data.object.amount_total / 100 }}\u20ac\n\nFraud Risk: {{ $json[\"Rust Fraud Agent\"].riskLevel || \"ANALYZING\" }}\nStatus: \u2705 FULFILLMENT ACTIVE"
       },
       "id": "tg",

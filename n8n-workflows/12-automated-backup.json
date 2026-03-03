@@ -70,9 +70,9 @@
         "conditions": {
           "string": [
             {
-              "value1": "={{ $response.statusCode }}",
+              "value1": "={{ $json.status }}",
               "operation": "equals",
-              "value2": "200"
+              "value2": "ok"
             }
           ]
         }
@@ -88,7 +88,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\u2705 Daily backup completed and verified\\nDB + Files uploaded to S3 & Backblaze"
       },
       "id": "notify_success",
@@ -107,7 +107,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\u274c Backup failed! Check logs immediately."
       },
       "id": "notify_failure",

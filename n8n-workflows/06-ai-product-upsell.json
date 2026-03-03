@@ -1,7 +1,20 @@
 {
-  "name": "🎯 NEXUS - AI Product Upsell on New Order FULL",
-  "description": "Triggered on paid order - Gemini writes personalized upsell email with 15% UPSELL15 code",
+  "name": "\ud83c\udfaf NEXUS - AI Product Upsell on New Order FULL",
+  "description": "Every 5 min polls recent paid orders - Gemini writes personalized upsell email with 15% UPSELL15 code",
   "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "*/5 * * * *"
+      },
+      "id": "cron-upsell",
+      "name": "Every 5 Minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
     {
       "parameters": {
         "operation": "executeQuery",
@@ -12,7 +25,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
       "position": [
-        240,
+        460,
         300
       ],
       "credentials": {
@@ -20,7 +33,7 @@
           "id": "postgres-nexus-1"
         }
       },
-      "trigger": "manual"
+      "continueOnFail": true
     },
     {
       "parameters": {
@@ -31,7 +44,7 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 1,
       "position": [
-        460,
+        680,
         300
       ]
     },
@@ -45,7 +58,7 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2,
       "position": [
-        680,
+        900,
         300
       ],
       "credentials": {
@@ -60,7 +73,7 @@
         "method": "POST",
         "jsonBody": true,
         "responseFormat": "json",
-        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"You are Neuromancer. Write a 4-line personalized upsell email for {{ $json[0].name }}. Include 15% UPSELL15 code. Make it irresistible but brief.\"}]},{\"role\":\"user\",\"parts\":[{\"text\":\"Customer just bought. Upsell now.\"}]}]}"
+        "body": "{\"model\":\"gemini-1.5-flash\",\"contents\":[{\"role\":\"user\",\"parts\":[{\"text\":\"You are Neuromancer. Write a 4-line personalized upsell email for {{ $json[0].name }}. Include 15% UPSELL15 code. Make it irresistible but brief.\"}]}]}"
       },
       "id": "gemini-upsell",
       "name": "Gemini Upsell Copy",
@@ -76,13 +89,13 @@
       "parameters": {
         "fromEmail": "offers@nexus.store",
         "toEmail": "={{ $json[0].email }}",
-        "subject": "🎁 Wait, we have something YOU'LL love… (15% off)",
-        "html": "<div style='font-family:sans-serif;padding:20px;'><h3>Hey {{ $json[0].name }},</h3><p>{{ $response.body.candidates[0].content.parts[0].text }}</p><p style='margin-top:2rem;'><strong>Code: UPSELL15</strong> (15% discount)</p><p style='font-size:0.9em;color:#666;'>Limited to 24h offer</p></div>"
+        "subject": "\ud83c\udf81 Wait, we have something YOU'LL love\u2026 (15% off)",
+        "html": "=<div style='font-family:sans-serif;padding:20px;'><h3>Hey {{ $json[0].name }},</h3><p>{{ $json.text || 'Check out our latest products!' }}</p><p style='margin-top:2rem;'><strong>Code: UPSELL15</strong> (15% discount)</p><p style='font-size:0.9em;color:#666;'>Limited to 24h offer</p></div>"
       },
       "id": "email-upsell",
       "name": "Send Upsell Email",
       "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 1,
+      "typeVersion": 2,
       "position": [
         1340,
         300
@@ -96,12 +109,8 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "table": "Order",
-        "updateFields": {
-          "upsell_sent": true
-        },
-        "where": "id={{ $json.id }}"
+        "operation": "executeQuery",
+        "query": "UPDATE \"Order\" SET upsell_sent = true WHERE id = '{{ $('Poll Recent Paid Orders').item.json.id }}'"
       },
       "id": "mark-sent",
       "name": "Mark Upsell Sent",
@@ -123,7 +132,7 @@
         "url": "http://loki:3100/loki/api/v1/push",
         "method": "POST",
         "jsonParameters": true,
-        "bodyParametersJson": "{{ {\"streams\":[{\"stream\":{\"job\":\"upsell\",\"type\":\"post_purchase\"},\"values\":[[\"{{new Date().getTime()}}000000\",\"Upsell sent to: {{ $json[0].email }} | OrderID: {{ $json.id }} | Recommended: {{ $json[\\\"Rust Product Recommender\\\"].products?.length || 0 }} items\"]]}]} }}"
+        "bodyParametersJson": "={{ {\"streams\":[{\"stream\":{\"job\":\"upsell\",\"type\":\"post_purchase\"},\"values\":[[String(new Date().getTime()) + '000000',\"Upsell sent to: \" + ($json[0]?.email || 'unknown') + \" | OrderID: \" + ($('Poll Recent Paid Orders').item.json.id || 'unknown')]]}]} }}"
       },
       "id": "loki",
       "name": "Log to Loki",
@@ -134,9 +143,38 @@
         300
       ],
       "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "\ud83d\udcc8 Upsell email sent to {{ $json[0].email }} for order {{ $('Poll Recent Paid Orders').item.json.id }}"
+      },
+      "id": "tg-upsell",
+      "name": "Telegram Upsell Alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        300
+      ],
+      "credentials": {
+        "telegram": {
+          "id": "telegram-nexus-1"
+        }
+      },
+      "continueOnFail": true
     }
   ],
   "connections": {
+    "Every 5 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Poll Recent Paid Orders"
+          }
+        ]
+      ]
+    },
     "Poll Recent Paid Orders": {
       "main": [
         [
@@ -187,6 +225,15 @@
         [
           {
             "node": "Log to Loki"
+          }
+        ]
+      ]
+    },
+    "Log to Loki": {
+      "main": [
+        [
+          {
+            "node": "Telegram Upsell Alert"
           }
         ]
       ]

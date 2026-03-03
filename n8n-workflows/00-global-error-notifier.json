@@ -36,7 +36,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\ud83d\udea8 NEXUS ERROR ALERT\n\nWorkflow: {{$json.workflowName}}\nError: {{$json.error.message}}\nSeverity: {{$json[\"Rust Error Analyzer\"].severity || \"UNKNOWN\"}}\nTime: {{new Date().toISOString()}}"
       },
       "id": "3",

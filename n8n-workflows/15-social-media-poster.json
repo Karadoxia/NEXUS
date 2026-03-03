@@ -52,10 +52,12 @@
       "parameters": {
         "url": "https://api.twitter.com/2/tweets",
         "method": "POST",
-        "authentication": "queryAuth",
-        "headerAuth": "Bearer {{ $env.TWITTER_BEARER_TOKEN }}",
         "jsonBody": true,
-        "body": "{\"text\": \"{{ $response.body.candidates[0].content.parts[0].text }}\"}"
+        "body": "{\"text\": \"{{ $response.body.candidates[0].content.parts[0].text }}\"}",
+        "headers": {
+          "Authorization": "Bearer {{ $env.TWITTER_BEARER_TOKEN }}"
+        },
+        "continueOnFail": true
       },
       "id": "post_twitter",
       "name": "Post to Twitter",
@@ -69,7 +71,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "\ud83d\udcf1 Social post published for {{ $json.name }}\\n{{ $response.body.candidates[0].content.parts[0].text }}"
       },
       "id": "notify_posted",

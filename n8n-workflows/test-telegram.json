@@ -18,7 +18,7 @@
     },
     {
       "parameters": {
-        "chatId": "6899339578",
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
         "text": "Hello from Telegram test workflow!"
       },
       "id": "tel",
