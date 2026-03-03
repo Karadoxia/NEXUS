@@ -28,7 +28,6 @@ const NAV_ITEMS = [
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, badge: true },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/users', label: 'Clients', icon: Users },
-  { href: '/admin/team', label: 'Team', icon: Users2 },
   { href: '/admin/employees', label: 'Employees', icon: Users2 },
   { href: '/admin/containers', label: 'Containers', icon: Container },
   { href: '/admin/newsletter', label: 'Newsletter', icon: Mail },

@@ -223,7 +223,7 @@ docker compose ps
 ## Common Tasks
 
 ### Add a New Team Member
-1. Go to: https://app.nexus-io.duckdns.org/admin/team
+1. Go to: https://app.nexus-io.duckdns.org/admin/employees
 2. Click "Create Account"
 3. Fill in: Name, Email, Password, Role, Department, Phone
 4. Click "Create Account"

@@ -73,7 +73,7 @@ nexus_postgres container
 ### Login as HR Admin
 - **Email**: `caspertech92@gmail.com` OR `admin@example.com`
 - **Password**: `TestPassword@123`
-- **Access**: `/admin/team` endpoint
+- **Access**: `/admin/employees` endpoint
 
 ### Check HR Authentication
 The system checks both databases in order:

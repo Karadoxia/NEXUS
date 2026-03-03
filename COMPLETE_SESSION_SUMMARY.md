@@ -205,7 +205,7 @@ NextAuth Credentials Provider
 
 ### As HR Admin
 1. ✅ Login as caspertech92@gmail.com or admin@example.com
-2. ✅ Access /admin/team for staff management
+2. ✅ Access /admin/employees for staff management
 3. ✅ Create new employee accounts
 4. ✅ Assign roles and permissions
 5. ✅ View audit logs
