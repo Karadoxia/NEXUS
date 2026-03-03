@@ -6,9 +6,9 @@ export class BiAgent extends Agent {
     // Example: fetch sales data and return a summary
     try {
       const res = await fetch(`${this.ctx.workspace}/api/agents/performance`);
-      const entries: any[] = await res.json() as any[];
-      const totalOrders = entries.reduce((sum, e) => sum + (e.orders || 0), 0);
-      const totalReturns = entries.reduce((sum, e) => sum + (e.returns || 0), 0);
+      const entries: any = await res.json();
+      const totalOrders = (entries.data || entries).reduce((sum: number, e: any) => sum + (e.orders || 0), 0);
+      const totalReturns = (entries.data || entries).reduce((sum: number, e: any) => sum + (e.returns || 0), 0);
       const returnRate = totalOrders > 0 ? ((totalReturns / totalOrders) * 100).toFixed(1) : '0.0';
       const summary = {
         totalOrders,

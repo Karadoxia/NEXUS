@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
     // Create employee
     const id = `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const result = await client.query(
-      `INSERT INTO "Employee" (id, email, name, "hashedPassword", role, department, phone, "createdBy", "isActive")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true)
+      `INSERT INTO "Employee" (id, email, name, "hashedPassword", role, department, phone, "createdBy", "isActive", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW())
        RETURNING id, email, name, role, department, phone, "isActive", "createdAt"`,
       [id, validated.email, validated.name, hashedPassword, validated.role, validated.department || null, validated.phone || null, session.user.email]
     );

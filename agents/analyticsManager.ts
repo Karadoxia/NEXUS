@@ -8,7 +8,7 @@ export class AnalyticsManager extends Agent {
       const orders = await res.json();
       const now = Date.now();
       const day = 24*60*60*1000;
-      const recent = orders.filter((o:any)=> new Date(o.date).getTime() > now-day).length;
+      const recent = (orders.orders || orders).filter((o:any)=> new Date(o.date).getTime() > now-day).length;
       const previous = orders.length - recent;
       return { total: orders.length, recent, previous };
     } catch (e) {

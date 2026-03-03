@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 export async function POST(
   request: NextRequest,
@@ -20,7 +22,7 @@ export async function POST(
     const { id } = await params;
 
     // Find the container
-    const container = await prisma.containerRegistry.findUnique({
+    const container = await prismaInfra.containerRegistry.findUnique({
       where: { containerId: id },
     });
 
@@ -32,7 +34,7 @@ export async function POST(
     }
 
     // Reset all registration statuses to force re-registration
-    const updated = await prisma.containerRegistry.update({
+    const updated = await prismaInfra.containerRegistry.update({
       where: { containerId: id },
       data: {
         traefikRegistered: false,
@@ -47,7 +49,7 @@ export async function POST(
     });
 
     // Log resync event
-    await prisma.registrationEvent.create({
+    await prismaInfra.registrationEvent.create({
       data: {
         containerId: id,
         eventType: 'detected',

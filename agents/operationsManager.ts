@@ -7,7 +7,7 @@ export class OperationsManager extends Agent {
       const res = await fetch(`${this.ctx.workspace}/api/orders`);
       const orders = await res.json();
       // simple validation workflow: log order IDs
-      const valid = orders.filter((o:any)=>o.total>0);
+      const valid = (orders.orders || orders).filter((o:any)=>o.total>0);
       // could trigger fulfillment, fraud check etc.
       return { checked: orders.length, valid: valid.length };
     } catch (e) {

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 export async function GET(
   request: NextRequest,
@@ -20,7 +22,7 @@ export async function GET(
     const { id } = await params;
 
     // Find the container
-    const container = await prisma.containerRegistry.findUnique({
+    const container = await prismaInfra.containerRegistry.findUnique({
       where: { containerId: id },
       include: {
         events: {

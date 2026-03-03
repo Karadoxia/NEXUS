@@ -20,6 +20,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      postgres-infra:
+        condition: service_healthy
       postgres-ai:
         condition: service_healthy
       redis:
@@ -27,14 +29,15 @@ services:
     environment:
       DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2
       HR_DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_hr
+      INFRA_DATABASE_URL: postgresql://nexus_infra:${DB_PASSWORD}@postgres-infra:5432/nexus_infra
       AI_DATABASE_URL: postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai
       NEXTAUTH_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://app.nexus-io.duckdns.org}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://app.nexus-io.duckdns.org}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech78@gmail.com}
       EMAIL_FROM: ${EMAIL_FROM:-NEXUS Store <onboarding@resend.dev>}
-      RESEND_API_KEY: ${RESEND_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
+      N8N_API_KEY: ${N8N_API_KEY}
     secrets:
       - db_password
       - jwt_secret
@@ -96,6 +99,29 @@ services:
       - nexus_ai_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nexus_ai"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # === INFRASTRUCTURE DEDICATED DATABASE (n8n, Vault, Monitoring) ===
+  postgres-infra:
+    image: postgres:16-alpine
+    container_name: nexus_postgres_infra
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    networks:
+      - internal
+    environment:
+      POSTGRES_USER: nexus_infra
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: nexus_infra
+    secrets:
+      - db_password
+    volumes:
+      - nexus_infra_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_infra"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -459,16 +485,16 @@ services:
       - internal
       - proxy
     depends_on:
-      postgres:
+      postgres-infra:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
       DB_TYPE: postgresdb
-      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_HOST: postgres-infra
       DB_POSTGRESDB_PORT: "5432"
       DB_POSTGRESDB_DATABASE: n8n
-      DB_POSTGRESDB_USER: nexus
+      DB_POSTGRESDB_USER: nexus_infra
       DB_POSTGRESDB_PASSWORD: ${DB_PASSWORD}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme32charslongpleasechange}
       # Local vs production settings — override via .env for production
@@ -605,6 +631,32 @@ services:
     devices:
       - /dev/kmsg
 
+  # === PORTAINER (Container Management) =======================================
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    networks:
+      - proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    labels:
+      - "traefik.enable=true"
+      # Public: HTTP → HTTPS redirect
+      - "traefik.http.routers.portainer.rule=Host(`portainer.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.portainer.entrypoints=web"
+      - "traefik.http.routers.portainer.middlewares=https-redirect"
+      # Public: HTTPS (TLS)
+      - "traefik.http.routers.portainer-tls.rule=Host(`portainer.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.portainer-tls.entrypoints=websecure"
+      - "traefik.http.routers.portainer-tls.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.portainer-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
+      # Local: http://nexus-portainer.local
+      - "traefik.http.routers.portainer-local.rule=Host(`nexus-portainer.local`)"
+      - "traefik.http.routers.portainer-local.entrypoints=web"
+      - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+
   # === SECURITY — CrowdSec =====================================================
   # Community-powered intrusion detection.  Reads Traefik logs and bans known
   # malicious IPs.  The Traefik bouncer blocks them at the edge.
@@ -663,6 +715,7 @@ services:
 volumes:
   nexus_v2_postgres_data:
   nexus_ai_postgres_data:
+  nexus_infra_postgres_data:
   letsencrypt:
   vw-data:
   prometheus-data:
@@ -676,6 +729,7 @@ volumes:
   npm-letsencrypt:
   crowdsec-db:
   crowdsec-config:
+  portainer_data:
 
 secrets:
   db_password:

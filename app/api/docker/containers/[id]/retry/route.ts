@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { z } from 'zod';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 const RetryPayloadSchema = z.object({
   systems: z
@@ -39,7 +41,7 @@ export async function POST(
     }
 
     // Find the container
-    const container = await prisma.containerRegistry.findUnique({
+    const container = await prismaInfra.containerRegistry.findUnique({
       where: { containerId: id },
     });
 
@@ -96,14 +98,14 @@ export async function POST(
       updateData.registrationCompletedAt = null;
     }
 
-    const updated = await prisma.containerRegistry.update({
+    const updated = await prismaInfra.containerRegistry.update({
       where: { containerId: id },
       data: updateData,
     });
 
     // Log retry event for each system
     for (const system of systemsToRetry) {
-      await prisma.registrationEvent.create({
+      await prismaInfra.registrationEvent.create({
         data: {
           containerId: id,
           eventType: 'detected',

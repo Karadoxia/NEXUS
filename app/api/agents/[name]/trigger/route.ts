@@ -5,6 +5,8 @@ import { promises as fsp } from 'fs';
 import path from 'path';
 import { buildGraph } from '@/lib/agents/base';
 import { safeAgentRun } from '@/lib/agents/safe-executor';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 const AGENT_TIMEOUT_MS = 120_000; // 2 minutes max per agent run
 
@@ -27,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
   // Resolve prompt: DB config takes priority over file config
   let prompt: string | undefined;
   try {
-    const dbCfg = await prisma.agentConfig.findUnique({ where: { agentName: name } });
+    const dbCfg = await prismaInfra.agentConfig.findUnique({ where: { agentName: name } });
     if (dbCfg?.config) {
       const cfg = typeof dbCfg.config === 'string' ? JSON.parse(dbCfg.config) : dbCfg.config;
       prompt = (cfg as Record<string, string>).prompt ?? (cfg as Record<string, string>).systemPrompt;
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
   }
 
   // Create the job upfront so we can return the jobId immediately
-  const job = await prisma.agentJob.create({
+  const job = await prismaInfra.agentJob.create({
     data: { agentName: name, triggeredBy: 'admin', status: 'RUNNING' },
   });
 
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
           ? result.messages.at(-1).content
           : JSON.stringify(result);
 
-      await prisma.agentJob.update({
+      await prismaInfra.agentJob.update({
         where: { id: job.id },
         data: {
           status: 'COMPLETED',
@@ -85,7 +87,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ nam
       });
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      await prisma.agentJob.update({
+      await prismaInfra.agentJob.update({
         where: { id: job.id },
         data: { status: 'FAILED', error: msg },
       });

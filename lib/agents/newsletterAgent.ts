@@ -16,6 +16,8 @@ import { prisma } from "@/src/lib/prisma";
 import { sendNewsletterEmail, verifyUnsubToken } from "@/lib/email";
 import { buildGraph } from "./base";
 import { safeAgentRun } from "./safe-executor";
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 // Re-export so the /unsubscribe route can verify tokens without importing email directly
 export { verifyUnsubToken };
@@ -228,7 +230,7 @@ function buildNewsletterHtml({
 // ── Main run function ──────────────────────────────────────────
 
 export async function runNewsletterAgent(triggeredBy = "admin") {
-  const job = await prisma.agentJob.create({
+  const job = await prismaInfra.agentJob.create({
     data: { agentName: "newsletter-agent", triggeredBy, status: "RUNNING" },
   });
   const start = Date.now();
@@ -296,7 +298,7 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
     const [totalProducts, subscriberCount, weeklyOrders] = statsRaw;
 
     if (subscriberEmails.length === 0) {
-      await prisma.agentJob.update({
+      await prismaInfra.agentJob.update({
         where: { id: job.id },
         data: {
           status: "COMPLETED",
@@ -314,8 +316,8 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
       `${weeklyOrders} orders this week, and ${subscriberCount} community members. ` +
       `Below you'll find our featured picks and the top AI stories making waves right now.`;
 
-    const groqKey = process.env.GROQ_API_KEY ?? process.env.GROK_API_KEY;
-    if (groqKey) {
+    const geminiKey = process.env.GEMINI_API_KEY;
+    if (geminiKey) {
       try {
         const result = await safeAgentRun({
           name: "newsletter-intro-writer",
@@ -348,7 +350,7 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
     const sendResult = await sendNewsletterEmail({ subscribers: subscriberEmails, subject, html });
 
     const summary = `Sent to ${sendResult.sent}/${subscriberEmails.length} subscribers. Failed: ${sendResult.failed}.`;
-    await prisma.agentJob.update({
+    await prismaInfra.agentJob.update({
       where: { id: job.id },
       data: {
         status: "COMPLETED",
@@ -360,7 +362,7 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
 
     return { jobId: job.id, ...sendResult };
   } catch (err: any) {
-    await prisma.agentJob.update({
+    await prismaInfra.agentJob.update({
       where: { id: job.id },
       data: { status: "FAILED", error: err.message },
     });

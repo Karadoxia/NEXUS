@@ -53,10 +53,20 @@ const TOOLS: Tool[] = [
   },
   // Infrastructure
   {
+    name: 'Portainer',
+    description: 'Centralized container management and Docker introspection dashboard.',
+    localUrl: 'http://nexus-portainer.local',
+    publicUrl: 'https://portainer.nexus-io.duckdns.org',
+    icon: Container,
+    color: 'from-blue-500/20 to-blue-500/5 border-blue-500/20 text-blue-400',
+    category: 'Infrastructure',
+  },
+  {
     name: 'Traefik',
     description: 'Reverse-proxy dashboard — view routers, services, and TLS certificates.',
     localUrl: 'http://nexus-traefik.local',
     icon: Container,
+
     color: 'from-cyan-500/20 to-cyan-500/5 border-cyan-500/20 text-cyan-400',
     category: 'Infrastructure',
     badge: 'Internal only',
@@ -113,10 +123,10 @@ const TOOLS: Tool[] = [
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Monitoring:     'bg-green-500/10 text-green-400 border-green-500/20',
+  Monitoring: 'bg-green-500/10 text-green-400 border-green-500/20',
   Infrastructure: 'bg-blue-500/10  text-blue-400  border-blue-500/20',
-  Automation:     'bg-pink-500/10  text-pink-400  border-pink-500/20',
-  Security:       'bg-violet-500/10 text-violet-400 border-violet-500/20',
+  Automation: 'bg-pink-500/10  text-pink-400  border-pink-500/20',
+  Security: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
 };
 
 function ToolCard({ tool }: { tool: Tool }) {

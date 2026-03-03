@@ -12,22 +12,22 @@ export class PerformanceAnalyzer extends Agent {
     // fetch past performance entries
     try {
       const res = await fetch(`${this.ctx.workspace}/api/agents/performance`);
-      const entries: PerformanceEntry[] = await res.json();
-      const count = entries.length;
-      const recent = entries.slice(0, 10);
-      const avgReturns = entries.reduce((sum: number, e: PerformanceEntry) => sum + e.returns, 0) / (entries.length || 1);
+      const entries: any = await res.json();
+      const count = (entries.data || entries).length;
+      const recent = (entries.data || entries).slice(0, 10);
+      const avgReturns = (entries.data || entries).reduce((sum: number, e: PerformanceEntry) => sum + e.returns, 0) / (count || 1);
 
       // simple recommendation: if avgReturns > 10% of avg orders, raise return warning
       let recommendation = null;
-      if (entries.length) {
-        const avgOrders = entries.reduce((sum: number, e: PerformanceEntry) => sum + e.orders, 0) / entries.length;
+      if (count) {
+        const avgOrders = (entries.data || entries).reduce((sum: number, e: PerformanceEntry) => sum + e.orders, 0) / count;
         if (avgOrders > 0 && avgReturns / avgOrders > 0.1) {
           recommendation = 'Consider tightening quality controls or restocking fewer items.';
         }
       }
 
       // another recommendation: if many low-stock alerts in history increase threshold
-      const lowCount = entries.filter((e: PerformanceEntry) => e.notes && e.notes.includes('low-stock')).length;
+      const lowCount = (entries.data || entries).filter((e: PerformanceEntry) => e.notes && e.notes.includes('low-stock')).length;
       if (lowCount > 5) {
         // suggest raising low stock threshold
         this.ctx.config.lowStockThreshold = (this.ctx.config.lowStockThreshold || 5) + 2;

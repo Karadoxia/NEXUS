@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { z } from 'zod';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 const containerRegisterSchema = z.object({
   containerId: z.string().min(12, 'Invalid container ID'),
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     const validated = containerRegisterSchema.parse(body);
 
     // Check if already registered
-    const existing = await prisma.containerRegistry.findUnique({
+    const existing = await prismaInfra.containerRegistry.findUnique({
       where: { containerId: validated.containerId },
     });
 
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create registration record
-    const registry = await prisma.containerRegistry.create({
+    const registry = await prismaInfra.containerRegistry.create({
       data: {
         containerId: validated.containerId,
         containerName: validated.containerName,
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Log initial detection event
-    await prisma.registrationEvent.create({
+    await prismaInfra.registrationEvent.create({
       data: {
         containerId: validated.containerId,
         eventType: 'detected',
@@ -101,7 +103,7 @@ export async function GET(request: NextRequest) {
     // Optional: query parameter to filter by status
     const status = request.nextUrl.searchParams.get('status') || 'active';
 
-    const containers = await prisma.containerRegistry.findMany({
+    const containers = await prismaInfra.containerRegistry.findMany({
       where: { status: status as any },
       orderBy: { firstDetectedAt: 'desc' },
       take: 100,

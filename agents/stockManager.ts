@@ -6,7 +6,7 @@ export class StockManager extends Agent {
     const res = await fetch(`${this.ctx.workspace}/api/products`);
     const products = await res.json();
     const threshold = this.ctx.config?.lowStockThreshold ?? 5;
-    const low = products.filter((p:any)=>p.stock < threshold);
+    const low = (products.products || products).filter((p: any) => p.stock < threshold);
     return { lowStock: low, threshold, checked: new Date().toISOString() };
   }
 }

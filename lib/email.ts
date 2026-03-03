@@ -15,7 +15,7 @@ if (!process.env.RESEND_API_KEY) {
   console.warn('[email] RESEND_API_KEY is not set — email sends will fail');
 }
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy_123456789")
 const FROM = process.env.EMAIL_FROM ?? 'NEXUS Store <onboarding@resend.dev>'
 
 /**

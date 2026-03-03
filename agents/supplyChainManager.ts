@@ -6,8 +6,8 @@ export class SupplyChainManager extends Agent {
     try {
       const res = await fetch(`${this.ctx.workspace}/api/products`);
       const products = await res.json();
-      const low = products.filter((p:any)=>p.stock < 10);
-      const suggestions = low.map((p:any)=>({ id:p.id, slug:p.slug, needed: 50 - p.stock }));
+      const low = (products.products || products).filter((p: any) => p.stock < 10);
+      const suggestions = low.map((p: any) => ({ id: p.id, slug: p.slug, needed: 50 - p.stock }));
       return { lowStock: low.length, suggestions };
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) };

@@ -1,0 +1,138 @@
+// Extracted Infra Schema
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-infra"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// persisted agent performance metrics that the leader uses for learning
+model Performance {
+  id        String   @id @default(cuid())
+  timestamp DateTime @default(now())
+  orders    Int
+  returns   Int
+  downtime  Boolean  @default(false)
+  notes     String?
+}
+
+// Jobs submitted from the admin panel or scheduler.  Results may be stored in
+// AgentResult, but the existing agents simply run immediately for now.
+model AgentJob {
+  id          String       @id @default(cuid())
+  agentName   String
+  status      AgentStatus  @default(PENDING)
+  triggeredBy String
+  triggeredAt DateTime     @default(now())
+  completedAt DateTime?
+  result      Json?
+  error       String?
+  durationMs  Int?
+  metadata    Json?
+  results     AgentResult?
+
+  @@index([agentName, status])
+  @@index([triggeredAt])
+}
+
+// configuration store for agents; allows you to edit behavior without
+// touching the filesystem (necessary on readonly platforms like Vercel)
+model AgentConfig {
+  id        String   @id @default(cuid())
+  agentName String   @unique
+  config    Json
+  updatedAt DateTime @updatedAt
+}
+
+enum AgentStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  APPROVED
+  REJECTED
+}
+
+model AgentResult {
+  id        String   @id @default(cuid())
+  job       AgentJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  jobId     String   @unique
+  output    Json
+  error     String?
+  createdAt DateTime @default(now())
+}
+
+/// Track all Docker containers registered in infrastructure
+model ContainerRegistry {
+  id            String  @id @default(cuid())
+  containerId   String  @unique
+  containerName String
+  image         String?
+  status        String  @default("active") // active | inactive | failed
+
+  // Extracted metadata
+  ports       Json?    @default("{}")
+  labels      Json?    @default("{}")
+  environment Json?    @default("{}")
+  networks    String[]
+
+  // Registration status per system
+  traefikRegistered Boolean   @default(false)
+  traefikUpdatedAt  DateTime?
+  traefikConfig     Json?
+
+  prometheusRegistered Boolean   @default(false)
+  prometheusUpdatedAt  DateTime?
+  prometheusJobName    String?
+
+  grafanaRegistered Boolean   @default(false)
+  grafanaUpdatedAt  DateTime?
+  grafanaPanelIds   Int[]
+
+  kumaRegistered Boolean   @default(false)
+  kumaUpdatedAt  DateTime?
+  kumaMonitorId  Int?
+
+  wireguardRegistered Boolean   @default(false)
+  wireguardUpdatedAt  DateTime?
+  wireguardIp         String?
+
+  lokiRegistered Boolean   @default(false)
+  lokiUpdatedAt  DateTime?
+
+  // Audit trail
+  firstDetectedAt         DateTime  @default(now())
+  lastEventAt             DateTime  @default(now())
+  registrationCompletedAt DateTime?
+  lastHealthCheck         DateTime?
+
+  createdBy String   @default("system")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events RegistrationEvent[]
+
+  @@index([status])
+  @@index([containerName])
+}
+
+/// Track registration events for containers
+model RegistrationEvent {
+  id          String            @id @default(cuid())
+  containerId String
+  container   ContainerRegistry @relation(fields: [containerId], references: [containerId], onDelete: Cascade)
+
+  eventType    String // detected | validated | registered | failed
+  system       String // traefik | prometheus | grafana | kuma | wireguard | loki
+  status       String // success | failed | pending
+  message      String?
+  errorDetails Json?
+
+  timestamp DateTime @default(now())
+
+  @@index([containerId])
+  @@index([timestamp])
+  @@index([system])
+}

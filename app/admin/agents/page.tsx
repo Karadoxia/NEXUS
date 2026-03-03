@@ -1,6 +1,8 @@
 import { prisma } from '@/src/lib/prisma';
 import { Activity, TrendingDown, TrendingUp, AlertTriangle, Mail } from 'lucide-react';
 import AgentControls from './AgentControls';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 /** Extract the human-readable report text from a job record. */
 function reportText(j: Job): string | null {
@@ -41,13 +43,13 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
   const page = Math.max(1, parseInt(pageStr ?? '1', 10));
 
   const [entries, total, jobs] = (await Promise.all([
-    prisma.performance.findMany({
+    prismaInfra.performance.findMany({
       orderBy: { timestamp: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
-    prisma.performance.count(),
-    prisma.agentJob.findMany({
+    prismaInfra.performance.count(),
+    prismaInfra.agentJob.findMany({
       orderBy: { triggeredAt: 'desc' },
       take: 10,
       // we want both the related AgentResult row and the raw `result`
@@ -66,11 +68,11 @@ export default async function AdminAgentsPage({ searchParams }: Props) {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   // Aggregate totals from all records for the summary cards
-  const agg = await prisma.performance.aggregate({
+  const agg = await prismaInfra.performance.aggregate({
     _sum: { orders: true, returns: true },
     _count: { downtime: true },
   });
-  const downtimeCount = await prisma.performance.count({ where: { downtime: true } });
+  const downtimeCount = await prismaInfra.performance.count({ where: { downtime: true } });
   const totalOrders  = agg._sum.orders  ?? 0;
   const totalReturns = agg._sum.returns ?? 0;
   const returnRate   = totalOrders > 0 ? ((totalReturns / totalOrders) * 100).toFixed(1) : '0.0';

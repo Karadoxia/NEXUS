@@ -1,9 +1,11 @@
 import { StateGraph, START, END } from "@langchain/langgraph";
-import { ChatGroq } from "@langchain/groq";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 // LangSmithTracer may not be available in all langchain versions; we'll
 // dynamically import when needed rather than relying on a static import.
 import { prisma } from "@/src/lib/prisma";
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 export interface AgentConfig {
   name: string;
@@ -18,10 +20,10 @@ export interface AgentConfig {
 // AgentJob records stuck in RUNNING state indefinitely.
 const AGENT_TIMEOUT_MS = 120_000;
 
-// Groq API key — support both common spellings
-function getGroqKey() {
-  const key = process.env.GROQ_API_KEY ?? process.env.GROK_API_KEY ?? "";
-  if (!key) console.warn("[agents] GROQ_API_KEY is not set — LLM calls will fail");
+// Gemini API key
+function getGeminiKey() {
+  const key = process.env.GEMINI_API_KEY ?? "";
+  if (!key) console.warn("[agents] GEMINI_API_KEY is not set — LLM calls will fail");
   return key;
 }
 
@@ -33,10 +35,10 @@ function getGroqKey() {
 const graphCache = new Map<string, ReturnType<typeof buildGraphUncached> extends Promise<infer R> ? R : never>();
 
 async function buildGraphUncached(config: AgentConfig) {
-  const model = new ChatGroq({
-    model: "llama-3.3-70b-versatile",
+  const model = new ChatGoogleGenerativeAI({
+    model: "gemini-1.5-flash",
     temperature: config.temperature ?? 0.3,
-    apiKey: getGroqKey(),
+    apiKey: getGeminiKey(),
   });
 
   // LangSmith tracing is enabled automatically by LangGraph when
@@ -92,10 +94,10 @@ export async function runAgentJob(
   const jobId = existingJobId
     ? existingJobId
     : (
-        await prisma.agentJob.create({
-          data: { agentName: config.name, triggeredBy, status: "RUNNING" },
-        })
-      ).id;
+      await prismaInfra.agentJob.create({
+        data: { agentName: config.name, triggeredBy, status: "RUNNING" },
+      })
+    ).id;
 
   const start = Date.now();
   try {
@@ -119,7 +121,7 @@ export async function runAgentJob(
     const lastContent = (result as { messages: Array<{ content?: unknown }> })?.messages?.at(-1)?.content;
     const text = typeof lastContent === "string" ? lastContent : JSON.stringify(result);
 
-    await prisma.agentJob.update({
+    await prismaInfra.agentJob.update({
       where: { id: jobId },
       data: {
         status: "COMPLETED",
@@ -131,7 +133,7 @@ export async function runAgentJob(
     return { jobId, result: text };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    await prisma.agentJob.update({
+    await prismaInfra.agentJob.update({
       where: { id: jobId },
       data: { status: "FAILED", error: msg },
     });

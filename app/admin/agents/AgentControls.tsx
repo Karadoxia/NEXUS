@@ -19,7 +19,7 @@ export default function AgentControls() {
         const list = cfg.agentList || [];
         const endpoints = list.map((a: any) => ({
           name: a.name,
-          endpoint: `/api/agents/${a.name.replace(/\s+/g,'-').toLowerCase()}/trigger`,
+          endpoint: `/api/agents/${a.name.replace(/\s+/g, '-').toLowerCase()}/trigger`,
           color: 'bg-indigo-600',
           hover: 'hover:bg-indigo-500',
         }));
@@ -33,7 +33,7 @@ export default function AgentControls() {
           { name: 'Sentiment Analyst', endpoint: '/api/agents/sentiment-analyst/trigger', color: 'bg-pink-600', hover: 'hover:bg-pink-500' },
           ...endpoints,
         ]);
-      } catch {}
+      } catch { }
     };
     load();
     const interval = setInterval(load, 30000);
@@ -67,11 +67,11 @@ export default function AgentControls() {
   return (
     <div className="flex flex-wrap items-center gap-4">
       <button
-        onClick={() => runAgent('/api/agents/run-enabled', 'Run Enabled Agents')}
+        onClick={() => runAgent('/api/agents/run-enabled', 'Boss_Bot')}
         disabled={running}
-        className="px-6 py-3 bg-teal-600 hover:bg-teal-500 text-black font-semibold rounded-xl transition-colors disabled:opacity-50"
+        className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl transition-colors disabled:opacity-50 ring-2 ring-red-400 shadow-lg shadow-red-900/50"
       >
-        {running ? 'Running…' : 'Run Enabled'}
+        {running ? 'Running…' : '🤖 Boss_Bot (Run All)'}
       </button>
       {agentEndpoints.map(({ name, endpoint, color, hover }) => (
         <button

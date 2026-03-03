@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { PrismaClient } from '../src/generated/prisma/client';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 async function main() {
   const prisma = new PrismaClient();
@@ -9,7 +11,7 @@ async function main() {
   const cfg = JSON.parse(raw);
   for (const a of cfg.agentList || []) {
     const prompt = cfg.agentPrompts?.[a.name] || a.prompt;
-    await prisma.agentConfig.upsert({
+    await prismaInfra.agentConfig.upsert({
       where: { agentName: a.name },
       update: { config: { prompt, ...a } },
       create: { agentName: a.name, config: { prompt, ...a } },

@@ -141,22 +141,19 @@ fi
 
 # ── 3. Create n8n Postgres database ──────────────────────────────────────
 # n8n does NOT auto-create its database.
-# FIX: always connect to the 'postgres' maintenance database (POSTGRES_DB
-#      is 'nexus_v2', so 'psql -U nexus' without -d would fail looking for
-#      a database named 'nexus' which doesn't exist).
 echo ""
 echo "▶  n8n database…"
-if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+if docker exec nexus_postgres_infra psql -U nexus_infra -d nexus_infra \
     -tAc "SELECT 1 FROM pg_database WHERE datname='n8n'" 2>/dev/null | grep -q 1; then
   ok "n8n database already exists"
 else
-  if docker exec "$POSTGRES_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+  if docker exec nexus_postgres_infra psql -U nexus_infra -d nexus_infra \
       -c "CREATE DATABASE n8n;" 2>&1; then
     ok "n8n database created — restarting n8n to pick it up…"
     docker restart n8n >/dev/null 2>&1 && ok "n8n restarted" || warn "Could not restart n8n"
   else
     fail "Could not create n8n database"
-    info "Debug: docker exec nexus_postgres psql -U nexus -d postgres -c '\\l'"
+    info "Debug: docker exec nexus_postgres_infra psql -U nexus_infra -d nexus_infra -c '\\l'"
   fi
 fi
 

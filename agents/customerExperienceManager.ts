@@ -6,8 +6,10 @@ export class CustomerExperienceManager extends Agent {
     try {
       const res = await fetch(`${this.ctx.workspace}/api/support`);
       const tickets = res.ok ? await res.json() : [];
-      const open = tickets.filter((t:any)=>t.status!=='closed').length;
-      return { total: tickets.length, open };
+      const ticketsData = (tickets.tickets || tickets);
+      const open = ticketsData.filter((t: any) => t.status !== 'closed').length;
+      const total = ticketsData.length;
+      return { total, open };
     } catch (e) {
       return { error: e instanceof Error ? e.message : String(e) };
     }

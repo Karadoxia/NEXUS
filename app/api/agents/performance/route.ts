@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { requireAdmin } from '@/lib/server-auth';
+import { prismaInfra } from '@/src/lib/prisma-infra';
+
 
 export async function GET() {
   const { error } = await requireAdmin();
   if (error) return error;
 
-  const data = await prisma.performance.findMany({
+  const data = await prismaInfra.performance.findMany({
     orderBy: { timestamp: 'desc' },
     take: 500,
   });
@@ -25,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'orders and returns must be numbers' }, { status: 400 });
     }
 
-    const entry = await prisma.performance.create({
+    const entry = await prismaInfra.performance.create({
       data: { orders, returns, downtime: !!downtime, notes },
     });
     return NextResponse.json(entry);
