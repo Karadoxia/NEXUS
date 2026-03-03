@@ -674,6 +674,11 @@ services:
     networks:
       - internal
       - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crowdsec-local.rule=Host(`nexus-crowdsec.local`)"
+      - "traefik.http.routers.crowdsec-local.entrypoints=web"
+      - "traefik.http.services.crowdsec.loadbalancer.server.port=8080"
 
   falco:
     image: falcosecurity/falco:0.38.2
@@ -689,6 +694,12 @@ services:
     command: falco -o "json_output=true" -o "json_include_output_property=true"
     networks:
       - internal
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.falco-local.rule=Host(`nexus-falco.local`)"
+      - "traefik.http.routers.falco-local.entrypoints=web"
+      - "traefik.http.services.falco.loadbalancer.server.port=8765"
 
   trivy-cron:
     image: aquasec/trivy:0.58.0

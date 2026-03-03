@@ -42,6 +42,8 @@ declare -a NEXUS_HOSTS=(
   "nexus-traefik.local      Traefik reverse-proxy dashboard"
   "nexus-npm.local          Nginx Proxy Manager (SSL certs)"
   "nexus-vaultwarden.local  VaultWarden (redirects to localhost:8080)"
+  "nexus-crowdsec.local     CrowdSec Security API"
+  "nexus-falco.local        Falco Runtime Security"
 )
 
 LOCAL_IP="127.0.0.1"

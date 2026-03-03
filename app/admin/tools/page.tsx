@@ -120,6 +120,33 @@ const TOOLS: Tool[] = [
     category: 'Security',
     badge: 'localhost:81',
   },
+  {
+    name: 'CrowdSec',
+    description: 'Community-powered IPS. Monitors logs to block malicious IPs automatically via Traefik bouncer.',
+    localUrl: 'http://nexus-crowdsec.local',
+    icon: Shield,
+    color: 'from-orange-500/20 to-orange-500/5 border-orange-500/20 text-orange-400',
+    category: 'Security',
+    badge: 'Port 8080',
+  },
+  {
+    name: 'Falco',
+    description: 'Cloud-native runtime security. Detects anomalous activity and potential intrusions at the kernel level.',
+    localUrl: 'http://nexus-falco.local',
+    icon: Activity,
+    color: 'from-red-500/20 to-red-500/5 border-red-500/20 text-red-100',
+    category: 'Security',
+    badge: 'Port 8765',
+  },
+  {
+    name: 'Trivy',
+    description: 'Vulnerability scanner for containers. Performs daily scans of your production images.',
+    localUrl: '#',
+    icon: Shield,
+    color: 'from-indigo-500/20 to-indigo-500/5 border-indigo-500/20 text-indigo-100',
+    category: 'Security',
+    badge: 'Scan Cron',
+  },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
