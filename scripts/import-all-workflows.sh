@@ -20,18 +20,6 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Configuration
-N8N_HOST="${N8N_HOST:-http://localhost:5678}"
-N8N_API_KEY="${N8N_API_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMTgzZjY2OS04ODQxLTQ5NTgtOTIyNS05NDJjMmYzYzhjMTgiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiMzlkMjcwZDItYjg4Mi00NjI3LTk0ZjktMjNmNzc1YmZiOGJkIiwiaWF0IjoxNzcyNDgwODM2fQ.5XMnA52rYfkI_l_ezdM74zJK8TImjxYsOknOzJDFiMk}"
-TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-8682512263:AAGMrqWbsy5egthWb9pT5d0AYc7CEjdRvAM}"
-TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-6899339578}"
-RESEND_API_KEY="${RESEND_API_KEY:-re_C51jKwtZ_DeLcpK5JcX6mEp7YmD4ecDk6}"
-GEMINI_API_KEY="${GEMINI_API_KEY:-}"
-DB_PASSWORD="${DB_PASSWORD:-$(cat db_password.txt 2>/dev/null || echo 'password')}"
-
 log_info() {
   echo -e "${BLUE}ℹ️  $1${NC}"
 }
@@ -54,6 +42,20 @@ log_header() {
   echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}\n"
 }
 
+# Load .env if it exists
+if [ -f .env ]; then
+  log_info "Loading environment from .env file..."
+  export $(grep -v '^#' .env | grep -v '^[[:space:]]*$' | xargs -0) 2>/dev/null || true
+  # Manual source for critical variables as fallback
+  N8N_HOST="${N8N_HOST:-http://nexus-n8n.local}" # Use .local to ensure internal resolution if needed
+N8N_API_KEY="${N8N_API_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4ZDViZDgwNS1iN2U0LTRjMjMtOGYwZC1kMmJmNTY1N2U3YWUiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZDFiMTVkYWEtNzkwYi00NDFhLTk2ODItM2ZhNWI2MGQxZjQ2IiwiaWF0IjoxNzcyNTczNzUwfQ.BhF8i8XPoezoTDIp2YORIHkrPBIDhIO4qQVb0ekqgi4}"
+TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-8666760606:AAG85GN98voF1nNZGAlb2uYdtDK9uKdlq6E}"
+TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:-6899339578}"
+RESEND_API_KEY="${RESEND_API_KEY:-re_C51jKwtZ_DeLcpK5JcX6mEp7YmD4ecDk6}"
+GEMINI_API_KEY="${GEMINI_API_KEY:-}"
+DB_PASSWORD="${DB_PASSWORD:-password}"
+fi
+
 # Test n8n connectivity
 log_header "🔌 TESTING n8n CONNECTIVITY"
 log_info "Connecting to n8n at $N8N_HOST..."
@@ -73,7 +75,7 @@ create_credential() {
   log_info "Creating credential: $cred_name..."
 
   response=$(curl -s -X POST "$N8N_HOST/api/v1/credentials" \
-    -H "Authorization: Bearer $N8N_API_KEY" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" \
     -H "Content-Type: application/json" \
     -d "{
       \"name\": \"$cred_name\",
@@ -91,7 +93,7 @@ create_credential() {
     log_warning "Credential may already exist: $cred_name"
     # Try to find existing credential
     existing=$(curl -s "$N8N_HOST/api/v1/credentials?filter={\"name\":\"$cred_name\"}" \
-      -H "Authorization: Bearer $N8N_API_KEY" 2>/dev/null | jq -r '.data[0].id // empty' 2>/dev/null)
+      -H "X-N8N-API-KEY: $N8N_API_KEY" 2>/dev/null | jq -r '.data[0].id // empty' 2>/dev/null)
     if [ ! -z "$existing" ]; then
       log_success "Found existing credential: $cred_name (ID: $existing)"
       echo "$existing"
@@ -135,7 +137,7 @@ PG_AI_ID=$(create_credential "NEXUS Postgres AI" "postgres" "{
 # Telegram
 log_info "Creating Telegram credential..."
 TELEGRAM_ID=$(curl -s -X POST "$N8N_HOST/api/v1/credentials" \
-  -H "Authorization: Bearer $N8N_API_KEY" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"name\": \"NEXUS Telegram Bot\",
@@ -155,7 +157,7 @@ fi
 # Resend Email
 log_info "Creating Resend Email credential..."
 RESEND_ID=$(curl -s -X POST "$N8N_HOST/api/v1/credentials" \
-  -H "Authorization: Bearer $N8N_API_KEY" \
+  -H "X-N8N-API-KEY: $N8N_API_KEY" \
   -H "Content-Type: application/json" \
   -d "{
     \"name\": \"Resend SMTP\",
@@ -203,7 +205,8 @@ for workflow_file in "$WORKFLOWS_DIR"/*.json; do
   log_info "Importing: $workflow_name..."
 
   # Read the workflow file and update credential IDs
-  workflow_json=$(cat "$workflow_file")
+  # IMPORTANT: n8n API POST /workflows only accepts: name, nodes, connections, settings, staticData
+  workflow_json=$(cat "$workflow_file" | jq '{name, nodes, connections, settings, staticData}')
 
   # Replace credential IDs in the workflow
   workflow_json=$(echo "$workflow_json" | jq \
@@ -212,11 +215,15 @@ for workflow_file in "$WORKFLOWS_DIR"/*.json; do
     --arg pg_ai "$PG_AI_ID" \
     --arg telegram "$TELEGRAM_ID" \
     --arg resend "$RESEND_ID" \
-    '.')
+    '(.nodes[] | select(.credentials.postgres) | .credentials.postgres.id) = $pg_v2 |
+     (.nodes[] | select(.credentials.postgres) | select(.name | contains("HR")) | .credentials.postgres.id) = $pg_hr |
+     (.nodes[] | select(.credentials.postgres) | select(.name | contains("AI")) | .credentials.postgres.id) = $pg_ai |
+     (.nodes[] | select(.credentials.telegramApi) | .credentials.telegramApi.id) = $telegram |
+     (.nodes[] | select(.credentials.smtp) | .credentials.smtp.id) = $resend')
 
   # Import the workflow
   response=$(curl -s -X POST "$N8N_HOST/api/v1/workflows" \
-    -H "Authorization: Bearer $N8N_API_KEY" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" \
     -H "Content-Type: application/json" \
     -d "$workflow_json" 2>/dev/null)
 
@@ -227,7 +234,7 @@ for workflow_file in "$WORKFLOWS_DIR"/*.json; do
 
     # Activate the workflow
     activate_response=$(curl -s -X POST "$N8N_HOST/api/v1/workflows/$workflow_id/activate" \
-      -H "Authorization: Bearer $N8N_API_KEY" 2>/dev/null)
+      -H "X-N8N-API-KEY: $N8N_API_KEY" 2>/dev/null)
 
     activate_status=$(echo "$activate_response" | jq -r '.active // false' 2>/dev/null)
     if [ "$activate_status" = "true" ]; then
@@ -258,7 +265,7 @@ log_info "Fetching workflow list from n8n..."
 sleep 2
 
 total_workflows=$(curl -s "$N8N_HOST/api/v1/workflows" \
-  -H "Authorization: Bearer $N8N_API_KEY" 2>/dev/null | jq '.data | length' 2>/dev/null)
+  -H "X-N8N-API-KEY: $N8N_API_KEY" 2>/dev/null | jq '.data | length' 2>/dev/null)
 
 log_success "Total workflows in n8n dashboard: $total_workflows"
 
@@ -271,7 +278,7 @@ fi
 # List all workflows
 log_header "📋 WORKFLOW LIST"
 curl -s "$N8N_HOST/api/v1/workflows?limit=50" \
-  -H "Authorization: Bearer $N8N_API_KEY" 2>/dev/null | jq '.data[] | {id, name, active}' 2>/dev/null | head -60
+  -H "X-N8N-API-KEY: $N8N_API_KEY" 2>/dev/null | jq '.data[] | {id, name, active}' 2>/dev/null | head -60
 
 log_header "✅ WORKFLOW IMPORT COMPLETE"
 log_info "Dashboard URL: $N8N_HOST"
