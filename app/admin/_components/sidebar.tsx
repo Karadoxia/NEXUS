@@ -125,7 +125,11 @@ export default function AdminSidebar({ userEmail }: { userEmail: string }) {
         </div>
         <button
           type="button"
-          onClick={() => { useOrderStore.setState({ orders: [] }); signOut({ callbackUrl: '/' }); }}
+          onClick={async () => {
+            useOrderStore.setState({ orders: [] });
+            await signOut({ redirect: false });
+            window.location.href = '/';
+          }}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all border border-transparent"
         >
           <LogOut size={15} strokeWidth={1.8} />
