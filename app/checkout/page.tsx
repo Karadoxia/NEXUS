@@ -39,7 +39,7 @@ const BRAND_ICON: Record<string, string> = {
   discover: 'DISC',
 };
 
-// ── Clickable payment-method card ────────────────────────────────────────────
+// ── Clickable imported/saved payment-method card ─────────────────────────────
 function PmCard({
   pm,
   selected,
@@ -57,54 +57,68 @@ function PmCard({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-        selected
-          ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_12px_rgba(8,145,178,0.3)]'
-          : 'border-slate-700 bg-slate-800/60 hover:border-slate-500'
-      }`}
+      className={`relative w-full text-left p-5 rounded-xl border-2 transition-all duration-300 overflow-hidden group ${selected
+          ? 'border-cyan-500 bg-slate-900 shadow-[0_0_20px_rgba(8,145,178,0.3)] transform scale-[1.01]'
+          : 'border-slate-800 bg-slate-900/50 hover:bg-slate-800 hover:border-slate-600'
+        }`}
     >
-      <div className="flex items-center gap-3">
+      {/* Decorative gradient overlay when selected */}
+      {selected && (
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent pointer-events-none" />
+      )}
+
+      <div className="relative flex items-center gap-4 z-10">
         <div
-          className="w-12 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold shrink-0"
+          className="w-14 h-10 rounded-lg flex items-center justify-center text-white text-sm font-black tracking-wider shrink-0 shadow-lg border border-white/10"
           style={{ background: BRAND_COLOR[key] ?? '#1e293b' }}
         >
           {icon}
         </div>
+
         <div className="flex-1 min-w-0">
           {isCard ? (
             <>
-              <p className="text-white text-sm font-semibold">
-                {pm.brand} •••• {pm.last4}
-              </p>
-              <p className="text-slate-400 text-xs">
-                Expires {String(pm.expMonth).padStart(2, '0')}/{pm.expYear}
-                {pm.cardholderName ? ` · ${pm.cardholderName}` : ''}
+              <div className="flex items-center gap-2">
+                <p className={`text-sm font-bold tracking-widest ${selected ? 'text-white' : 'text-slate-200'}`}>
+                  •••• {pm.last4}
+                </p>
+                {!pm.stripeId && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-800 text-slate-400">
+                    Local
+                  </span>
+                )}
+              </div>
+              <p className="text-cyan-400/80 text-xs font-medium mt-0.5">
+                Exp {String(pm.expMonth).padStart(2, '0')}/{pm.expYear}
+                {pm.cardholderName ? <span className="text-slate-500"> • {pm.cardholderName}</span> : ''}
               </p>
             </>
           ) : (
             <>
-              <p className="text-white text-sm font-semibold">{pm.brand}</p>
+              <p className={`text-sm font-bold ${selected ? 'text-white' : 'text-slate-200'}`}>
+                {pm.brand}
+              </p>
               {pm.accountEmail && (
-                <p className="text-slate-400 text-xs">{pm.accountEmail}</p>
+                <p className="text-slate-400 text-xs mt-0.5">{pm.accountEmail}</p>
               )}
             </>
           )}
         </div>
-        {!pm.stripeId && (
-          <span className="text-slate-500 text-xs italic shrink-0">demo</span>
-        )}
+
         {selected && (
-          <svg
-            className="w-5 h-5 text-cyan-400 shrink-0"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <div className="w-6 h-6 rounded-full bg-cyan-500/20 flex items-center justify-center shrink-0">
+            <svg
+              className="w-4 h-4 text-cyan-400"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
         )}
       </div>
     </button>
@@ -238,9 +252,8 @@ function SavedMethodForm({
       <div
         className="relative h-44 rounded-2xl p-5 overflow-hidden select-none"
         style={{
-          background: `linear-gradient(135deg, ${
-            BRAND_COLOR[key] ?? '#1e293b'
-          } 0%, #0f172a 100%)`,
+          background: `linear-gradient(135deg, ${BRAND_COLOR[key] ?? '#1e293b'
+            } 0%, #0f172a 100%)`,
         }}
       >
         {/* subtle grid texture */}
@@ -359,14 +372,14 @@ export default function CheckoutPage() {
           if (list.length > 0) setSelectedAddress(list[0]);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     fetch('/api/user/payment-methods')
       .then((r) => r.json())
       .then((pms) => {
         if (Array.isArray(pms)) setPaymentMethods(pms);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [session?.user?.email]);
 
   // Derived flag — true when the selected saved card has a real Stripe token.
@@ -422,7 +435,7 @@ export default function CheckoutPage() {
     // Cleanup: cancel in-flight request (prevents StrictMode double-invoke from
     // creating two PaymentIntents / two orders)
     return () => { clearTimeout(timeout); controller.abort(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useDirectCharge, selectedAddress, selectedPm]);
 
   const handleMock = async () => {
@@ -559,53 +572,49 @@ export default function CheckoutPage() {
                 Payment Method
               </label>
               <div className="space-y-2">
-                {/* New card / PayPal (default) */}
-                <button
-                  type="button"
-                  onClick={() => setSelectedPm(undefined)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${
-                    selectedPm === undefined
-                      ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_12px_rgba(8,145,178,0.3)]'
-                      : 'border-slate-700 bg-slate-800/60 hover:border-slate-500'
-                  }`}
-                >
-                  <div className="w-12 h-8 rounded-md bg-slate-700 flex items-center justify-center shrink-0">
-                    <svg
-                      className="w-5 h-5 text-slate-300"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                {/* Modern Payment Grid (Credit Card, Apple Pay, Google Pay, Crypto, Klarna, PayPal) */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { id: 'card', label: 'Credit Card', icon: '💳', colors: 'border-slate-700 bg-slate-800' },
+                    { id: 'apple_pay', label: 'Apple Pay', icon: '', colors: 'border-slate-800 bg-white text-black' },
+                    { id: 'google_pay', label: 'G Pay', icon: 'G', colors: 'border-slate-700 bg-slate-800' },
+                    { id: 'paypal', label: 'PayPal', icon: 'P', colors: 'border-[#003087] bg-[#00457C]' },
+                    { id: 'klarna', label: 'Klarna.', icon: 'K', colors: 'border-[#FFB3C7] bg-[#FFB3C7] text-black' },
+                    { id: 'crypto', label: 'Crypto', icon: '₿', colors: 'border-indigo-500 bg-indigo-500/10' },
+                  ].map((method) => (
+                    <button
+                      key={method.id}
+                      type="button"
+                      onClick={() => setSelectedPm(method.id === 'card' ? undefined : `new_${method.id}`)}
+                      className={`
+                        w-full p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 group
+                        ${(selectedPm === undefined && method.id === 'card') || selectedPm === `new_${method.id}`
+                          ? `border-cyan-500 shadow-[0_0_15px_rgba(8,145,178,0.4)] ${method.colors.split(' ')[1]}`
+                          : `${method.colors}`
+                        }
+                      `}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white text-sm font-semibold">
-                      New Card / PayPal
-                    </p>
-                    <p className="text-slate-400 text-xs">
-                      Enter card details or pay with PayPal
-                    </p>
-                  </div>
-                  {selectedPm === undefined && (
-                    <svg
-                      className="w-5 h-5 text-cyan-400 shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </button>
+                      <span className={`text-2xl font-black ${method.colors.includes('text-black') ? 'text-black' :
+                        (method.id === 'google_pay' ? 'text-blue-400' :
+                          (method.id === 'paypal' ? 'text-white' : 'text-slate-200'))
+                        }`}>
+                        {method.icon}
+                      </span>
+                      <span className={`text-xs font-bold tracking-wide ${method.colors.includes('text-black') ? 'text-black' :
+                        (method.id === 'paypal' ? 'text-white' : 'text-slate-300')
+                        }`}>
+                        {method.label}
+                      </span>
+                      {((selectedPm === undefined && method.id === 'card') || selectedPm === `new_${method.id}`) && (
+                        <div className="absolute top-2 right-2">
+                          <svg className={`w-4 h-4 ${method.colors.includes('text-black') ? 'text-black' : 'text-cyan-400'}`} fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
 
                 {/* Saved methods */}
                 {paymentMethods.map((pm) => (
