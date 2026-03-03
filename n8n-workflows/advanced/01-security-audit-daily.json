@@ -1,0 +1,142 @@
+{
+  "name": "🛡️ NEXUS - Daily Security Audit + Report",
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 6 * * *"
+      },
+      "id": "cron",
+      "name": "Daily 6AM",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://crowdsec:8080/v1/decisions",
+        "method": "GET"
+      },
+      "id": "crowdsec",
+      "name": "CrowdSec Decisions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://falco:8765",
+        "method": "GET"
+      },
+      "id": "falco",
+      "name": "Falco Alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://loki:3100/loki/api/v1/query",
+        "method": "GET",
+        "parameters": {
+          "query": "{job=\"security\"} |~ \"HIGH|CRITICAL\""
+        }
+      },
+      "id": "loki",
+      "name": "Loki Security Logs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "method": "POST",
+        "authentication": "headerAuth",
+        "headerAuth": "Bearer {{$env.GROQ_API_KEY}}",
+        "jsonBody": true,
+        "body": "{\"model\":\"llama3-70b-8192\",\"messages\":[{\"role\":\"system\",\"content\":\"Summarize security status and risks\"},{\"role\":\"user\",\"content\":\"{{$json}}\"}]}"
+      },
+      "id": "groq",
+      "name": "Groq Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "=🛡️ Daily Security Report: {{$json.choices[0].message.content}}"
+      },
+      "id": "tg",
+      "name": "Telegram Report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Daily 6AM": {
+      "main": [
+        [
+          {
+            "node": "CrowdSec Decisions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CrowdSec Decisions": {
+      "main": [
+        [
+          {
+            "node": "Falco Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Falco Alerts": {
+      "main": [
+        [
+          {
+            "node": "Loki Security Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loki Security Logs": {
+      "main": [
+        [
+          {
+            "node": "Groq Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Summary": {
+      "main": [
+        [
+          {
+            "node": "Telegram Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "errorWorkflow": "Global Error Notifier"
+  },
+  "tags": [
+    "security",
+    "audit"
+  ]
+}

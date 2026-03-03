@@ -1,0 +1,55 @@
+{
+    "name": "🛡️ NEXUS - Intrusion Responder",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "security-alert",
+                "options": {}
+            },
+            "id": "webhook",
+            "name": "Security Alert Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+                "text": "=🚨 SECURITY SCAN ALERT: {{$json.body.message || 'Suspicious activity detected'}}"
+            },
+            "id": "tg-alert",
+            "name": "Telegram Alert",
+            "type": "n8n-nodes-base.telegram",
+            "typeVersion": 1,
+            "position": [
+                460,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Security Alert Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Telegram Alert",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "errorWorkflow": "Global Error Notifier"
+    },
+    "tags": [
+        "security",
+        "intrusion"
+    ]
+}

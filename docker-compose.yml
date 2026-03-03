@@ -47,12 +47,13 @@ services:
       # Public: HTTP → HTTPS redirect
       - "traefik.http.routers.nexus.rule=Host(`app.nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus.entrypoints=web"
-      - "traefik.http.routers.nexus.middlewares=https-redirect"
+      - "traefik.http.routers.nexus.middlewares=https-redirect,crowdsec"
       # Public: HTTPS (TLS) — wildcard-only cert (DuckDNS supports only 1 TXT record)
       - "traefik.http.routers.nexus-tls.rule=Host(`app.nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus-tls.entrypoints=websecure"
       - "traefik.http.routers.nexus-tls.tls.certresolver=letsencrypt"
       - "traefik.http.routers.nexus-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.nexus-tls.middlewares=crowdsec"
       # Local: http://nexus-app.local
       - "traefik.http.routers.nexus-local.rule=Host(`nexus-app.local`)"
       - "traefik.http.routers.nexus-local.entrypoints=web"
@@ -657,24 +658,48 @@ services:
       - "traefik.http.routers.portainer-local.entrypoints=web"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
 
-  # === SECURITY — CrowdSec =====================================================
-  # Community-powered intrusion detection.  Reads Traefik logs and bans known
-  # malicious IPs.  The Traefik bouncer blocks them at the edge.
-  # Docs: https://docs.crowdsec.net/docs/getting_started/install_crowdsec
   crowdsec:
-    image: crowdsecurity/crowdsec:latest
-    container_name: crowdsec
+    image: crowdsecurity/crowdsec:v1.6.4
+    container_name: nexus_crowdsec
     restart: unless-stopped
-    networks:
-      - proxy
-      - internal
     environment:
-      COLLECTIONS: "crowdsecurity/traefik crowdsecurity/http-cve crowdsecurity/linux"
-      GID: "${GID:-1000}"
+      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/docker crowdsecurity/http
+      - BOUNCER_KEY=${CROWDSEC_BOUNCER_KEY}
+      - GID=${GID:-1000}
     volumes:
       - crowdsec-db:/var/lib/crowdsec/data
-      - crowdsec-config:/etc/crowdsec
+      - ./crowdsec/acquis.yaml:/etc/crowdsec/acquis.yaml:ro
       - /var/log/traefik:/var/log/traefik:ro
+      - ./logs:/var/log/nexus:ro
+    networks:
+      - internal
+      - proxy
+
+  falco:
+    image: falcosecurity/falco:0.38.2
+    container_name: nexus_falco
+    restart: unless-stopped
+    privileged: true
+    user: root
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - ./falco/falco_rules.local.yaml:/etc/falco/rules.d/nexus_rules.yaml:ro
+    command: falco -o "json_output=true" -o "json_include_output_property=true"
+    networks:
+      - internal
+
+  trivy-cron:
+    image: aquasec/trivy:0.58.0
+    container_name: nexus_trivy_cron
+    restart: unless-stopped
+    command: >
+      sh -c "while true; do trivy image --format table --exit-code 1 --severity HIGH,CRITICAL nexus_app:latest n8n:latest && sleep 86400; done"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - internal
 
   # === CLOUDFLARE TUNNEL (Secure Remote Access) ================================
   # Provides secure public access without port forwarding

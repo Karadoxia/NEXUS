@@ -14,6 +14,6 @@ export class CRMAgent {
       select: { id: true, email: true, _count: { select: { orders: true } } },
       take: 50,
     });
-    return { activeCustomers: activeUsers.length, sample: (activeUsers.users || activeUsers).slice(0, 5) };
+    return { activeCustomers: activeUsers.length, sample: activeUsers.slice(0, 5) };
   }
 }

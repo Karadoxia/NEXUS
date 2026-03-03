@@ -1,0 +1,212 @@
+# =============================================
+# NEXUS FALCO RULES v2 – DEEP CUSTOM (2026-03-03)
+# Tailored for Karadoxia/NEXUS exact stack
+# =============================================
+
+# LISTS (exact from your repo)
+- list: nexus_containers
+  items:
+    [
+      nexus_app,
+      n8n,
+      nexus_rust,
+      nexus_postgres,
+      nexus_redis,
+      vaultwarden,
+      traefik,
+      crowdsec,
+      wireguard,
+      grafana,
+      loki,
+      prometheus,
+      node_exporter,
+      cadvisor,
+    ]
+
+- list: sensitive_volumes
+  items:
+    [
+      /var/lib/postgresql/data,
+      /home/node/.n8n,
+      /data/vw-data,
+      /letsencrypt/acme.json,
+      /var/run/docker.sock,
+      /app/.env,
+      /root/.sops,
+      /data/redis,
+    ]
+
+- list: ai_outbound_domains
+  items:
+    [api.groq.com, generativelanguage.googleapis.com, openai.com, stripe.com]
+
+- list: shell_binaries
+  items:
+    [
+      bash,
+      sh,
+      zsh,
+      dash,
+      fish,
+      nc,
+      netcat,
+      socat,
+      curl,
+      wget,
+      python,
+      python3,
+      perl,
+      ruby,
+    ]
+
+# MACROS
+- macro: nexus_container
+  condition: container.image.repository in (nexus_containers) or container.name in (nexus_containers)
+
+- macro: sensitive_file_access
+  condition: fd.name startswith /var/lib/postgresql/data or fd.name startswith /home/node/.n8n or fd.name startswith /data/vw-data or fd.name contains .env or fd.name contains .sops or fd.name contains acme.json
+
+- macro: docker_socket_abuse
+  condition: fd.name = /var/run/docker.sock and proc.name != traefik and proc.name != docker
+
+# ==================== DEEP RULES ====================
+
+- rule: Shell in Production Container
+  desc: Shell spawned in nexus_app, n8n or Rust agent (very high risk)
+  condition: spawned_process and nexus_container and proc.name in (shell_binaries)
+  output: "SHELL IN NEXUS CONTAINER (container=%container.name proc=%proc.name cmdline=%proc.cmdline user=%user.name)"
+  priority: CRITICAL
+  tags: [nexus, container, shell, rce]
+
+- rule: Sensitive Volume Write Outside Expected Process
+  desc: Write to Postgres data, n8n config, VaultWarden or .env from wrong container
+  condition: open_write and sensitive_file_access and not proc.name in (postgres, redis-server, n8n, vaultwarden, traefik)
+  output: "SENSITIVE VOLUME WRITE (file=%fd.name container=%container.name proc=%proc.name)"
+  priority: CRITICAL
+  tags: [nexus, credential-theft, tampering]
+
+- rule: n8n Encryption Key or Credential Dump
+  desc: Any process reading n8n encryption_key or credentials outside n8n itself
+  condition: open_read and fd.name contains encryption_key and container.name != n8n
+  output: "N8N ENCRYPTION KEY DUMP (proc=%proc.name container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, n8n, credential-theft]
+
+- rule: Rust Agent Unexpected Outbound
+  desc: nexus_rust contacting non-AI / non-Stripe domains
+  condition: outbound and container.name = nexus_rust and not fd.name contains (api.groq.com, generativelanguage.googleapis.com, stripe.com)
+  output: "RUST AGENT SUSPICIOUS OUTBOUND (dest=%fd.name proc=%proc.name)"
+  priority: WARNING
+  tags: [nexus, rust-agent, exfiltration]
+
+- rule: Docker Socket Abuse from n8n or App
+  desc: n8n or nexus_app accessing Docker socket (container escape risk)
+  condition: docker_socket_abuse and container.name in (n8n, nexus_app)
+  output: "DOCKER SOCKET ABUSE FROM NEXUS (container=%container.name proc=%proc.name)"
+  priority: CRITICAL
+  tags: [nexus, escape, privilege]
+
+- rule: Postgres Data Exfiltration Attempt
+  desc: Any read of nexus_v2 data outside postgres container
+  condition: open_read and fd.directory startswith /var/lib/postgresql/data and container.name != nexus_postgres
+  output: "POSTGRES DATA EXFIL (container=%container.name file=%fd.name)"
+  priority: CRITICAL
+  tags: [nexus, db-theft]
+
+- rule: VaultWarden Admin Token Access
+  desc: Access to VaultWarden data outside vaultwarden container
+  condition: open_read and fd.name startswith /data/vw-data and container.name != vaultwarden
+  output: "VAULTWARDEN DATA ACCESS (container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, secrets]
+
+- rule: Traefik ACME JSON Tampering
+  desc: Write to letsencrypt/acme.json outside traefik
+  condition: open_write and fd.name contains acme.json and container.name != traefik
+  output: "TRAEFIK CERT TAMPERING (container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, mitm]
+
+- rule: AI Prompt Injection Pattern in n8n
+  desc: Suspicious input to n8n that looks like prompt injection
+  condition: proc.cmdline contains (system, prompt, inject, jailbreak) and container.name = n8n
+  output: "POSSIBLE PROMPT INJECTION IN N8N (cmdline=%proc.cmdline)"
+  priority: WARNING
+  tags: [nexus, ai, injection]
+
+- rule: Stripe Webhook Path Tampering
+  desc: Modification of Stripe webhook files or configs
+  condition: modify and fd.name contains stripe and container.name != n8n
+  output: "STRIPE WEBHOOK TAMPERING (file=%fd.name container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, payment]
+
+- rule: High CPU Mining in Any Nexus Container
+  desc: Mining binaries or patterns in any nexus container
+  condition: proc.name in (xmrig, minerd, cpuminer) or proc.cmdline contains stratum and nexus_container
+  output: "CRYPTO MINER IN NEXUS CONTAINER (proc=%proc.name container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, malware]
+
+- rule: Unexpected Package Manager in Running Container
+  desc: apt / apk / yum inside production containers
+  condition: proc.name in (apt, apt-get, apk, yum, dnf) and nexus_container
+  output: "PACKAGE MANAGER IN PRODUCTION CONTAINER (proc=%proc.name container=%container.name)"
+  priority: NOTICE
+  tags: [nexus, persistence]
+
+- rule: Reverse Shell Attempt in Nexus
+  desc: Common reverse shell patterns inside any nexus container
+  condition: (proc.cmdline contains "bash -i >& /dev/tcp" or proc.cmdline contains "nc -e") and nexus_container
+  output: "REVERSE SHELL ATTEMPT (container=%container.name cmdline=%proc.cmdline)"
+  priority: CRITICAL
+  tags: [nexus, rce]
+
+- rule: WireGuard Config Modification
+  desc: Write to WireGuard config outside wireguard container
+  condition: open_write and fd.name contains wireguard and container.name != wireguard
+  output: "WIREGUARD CONFIG TAMPERING (container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, vpn]
+
+- rule: CrowdSec Bypass Attempt
+  desc: Process trying to disable or tamper CrowdSec decisions
+  condition: proc.cmdline contains crowdsec and evt.type in (execve, open_write) and container.name != crowdsec
+  output: "CROWDSEC TAMPERING ATTEMPT (proc=%proc.name)"
+  priority: CRITICAL
+  tags: [nexus, ips]
+
+- rule: Loki Log Injection / Tampering
+  desc: Write to Loki data directory from unexpected container
+  condition: open_write and fd.name startswith /loki and container.name != loki
+  output: "LOKI LOG TAMPERING (container=%container.name)"
+  priority: WARNING
+  tags: [nexus, log-tampering]
+
+- rule: Grafana Admin Password Dump
+  desc: Reading Grafana admin password or session files
+  condition: open_read and fd.name contains GF_SECURITY_ADMIN_PASSWORD and container.name != grafana
+  output: "GRAFANA ADMIN DUMP (container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, credential-theft]
+
+- rule: SOPS File Access Outside Expected
+  desc: Any access to .sops or encrypted .env outside expected processes
+  condition: (open_read or open_write) and (fd.name contains .sops or fd.name contains .env.enc) and not proc.name in (sops, age)
+  output: "SOPS FILE ACCESS (file=%fd.name container=%container.name)"
+  priority: CRITICAL
+  tags: [nexus, secrets]
+
+- rule: Cadvisor / Node Exporter Abuse
+  desc: High-privilege host access from monitoring containers
+  condition: (container.name in (cadvisor, node_exporter) and fd.directory startswith /rootfs) and evt.type = open_read
+  output: "HOST FILESYSTEM ABUSE FROM MONITORING (container=%container.name)"
+  priority: NOTICE
+  tags: [nexus, monitoring]
+
+- rule: High Failed Logins on Traefik / n8n
+  desc: Brute-force pattern on web services
+  condition: evt.type = connect and fd.sport in (80, 443, 5678) and evt.failed = true > 8
+  output: "BRUTE FORCE ON NEXUS SERVICES (container=%container.name)"
+  priority: WARNING
+  tags: [nexus, brute-force]

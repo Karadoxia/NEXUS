@@ -1,0 +1,5 @@
+filenames:
+  - /var/log/traefik/access.log
+  - /var/log/nexus/*.log
+labels:
+  type: traefik
