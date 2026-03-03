@@ -44,18 +44,21 @@
     },
     {
       "parameters": {
-        "url": "https://api.resend.com/emails",
-        "method": "POST",
-        "authentication": "headerAuth",
-        "headerAuth": "Bearer {{ $env.RESEND_API_KEY }}",
-        "jsonBody": true,
-        "body": "{\"from\":\"reports@nexus.store\",\"to\":\"admin@nexus.store\",\"subject\":\"📊 NEXUS Daily Sales Report - {{ new Date().toISOString().split('T')[0] }}\",\"html\":\"<div style='font-family:sans-serif;padding:20px;'><h2>NEXUS Daily Sales Report</h2><p><strong>Date:</strong> {{ new Date().toISOString().split('T')[0] }}</p><p><strong>Revenue:</strong> {{ $json[0].revenue || 0 }}€</p><p><strong>Orders:</strong> {{ $json[0].orders || 0 }}</p><p><strong>Customers:</strong> {{ $json[0].customers || 0 }}</p><hr/><h3>Executive Summary</h3>{{ $json[\\\"Gemini Summary\\\"].candidates[0].content.parts[0].text }}</div>\"}"
+        "fromEmail": "no-reply@resend.dev",
+        "toEmail": "caspertech78@gmail.com",
+        "subject": "=📊 NEXUS Daily Sales Report - {{ new Date().toISOString().split('T')[0] }}",
+        "html": "=<div style='font-family:sans-serif;padding:20px;'><h2>NEXUS Daily Sales Report</h2><p><strong>Date:</strong> {{ new Date().toISOString().split('T')[0] }}</p><p><strong>Revenue:</strong> {{ $('Daily Aggregate').item.json.revenue || 0 }}€</p><p><strong>Orders:</strong> {{ $('Daily Aggregate').item.json.orders || 0 }}</p><p><strong>Customers:</strong> {{ $('Daily Aggregate').item.json.customers || 0 }}</p><hr/><h3>AI Executive Summary</h3><p>{{ $json.text || 'No summary available.' }}</p></div>"
       },
       "id": "email",
       "name": "Email Report",
-      "type": "n8n-nodes-base.httpRequest",
+      "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2,
       "position": [900, 300],
+      "credentials": {
+        "smtp": {
+          "id": "email-resend-1"
+        }
+      },
       "continueOnFail": true
     },
     {

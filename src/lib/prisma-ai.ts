@@ -30,22 +30,8 @@ declare global {
 export const getPrismaAI = (): PrismaClient => {
   if (!global.prismaAI) {
     global.prismaAI = new PrismaClient({
-      log: [
-        { emit: 'event', level: 'query' },
-        { emit: 'stdout', level: 'error' },
-        { emit: 'stdout', level: 'warn' },
-      ],
+      log: ['error', 'warn'],
     });
-
-    // Log queries in development only
-    if (process.env.NODE_ENV === 'development') {
-      global.prismaAI.$on('query', (e) => {
-        console.log('[AI-DB] Query:', e.query);
-        if (e.duration > 100) {
-          console.warn(`[AI-DB] Slow query (${e.duration}ms): ${e.query}`);
-        }
-      });
-    }
   }
 
   return global.prismaAI;

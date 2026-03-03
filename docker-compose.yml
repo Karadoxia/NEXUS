@@ -31,7 +31,7 @@ services:
       NEXTAUTH_SECRET: ${JWT_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://app.nexus-io.duckdns.org}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://app.nexus-io.duckdns.org}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech92@gmail.com}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech78@gmail.com}
       EMAIL_FROM: ${EMAIL_FROM:-NEXUS Store <onboarding@resend.dev>}
       RESEND_API_KEY: ${RESEND_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
@@ -482,6 +482,13 @@ services:
       # QUEUE_BULL_REDIS_PORT: "6379"
       # QUEUE_BULL_REDIS_PASSWORD: ${REDIS_PASSWORD}
       N8N_LOG_LEVEL: info
+      # Enable the public REST API (required for X-N8N-API-KEY auth)
+      N8N_PUBLIC_API_DISABLED: "false"
+      # Disable telemetry / diagnostics to avoid external network calls that slow login
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      # Admin email for reports/alerts
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech78@gmail.com}
       # Telegram Integration - Required for 12 workflows
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}

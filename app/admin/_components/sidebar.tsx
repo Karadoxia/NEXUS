@@ -18,6 +18,7 @@ import {
   Wrench,
   Users2,
   Container,
+  Workflow,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useOrderStore } from '@/src/stores/orderStore';
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { href: '/admin/containers',  label: 'Containers',   icon: Container                      },
   { href: '/admin/newsletter',  label: 'Newsletter',   icon: Mail                           },
   { href: '/admin/performance', label: 'Performance',  icon: TrendingUp                     },
+  { href: '/admin/workflows',   label: 'Workflows',    icon: Workflow                       },
   { href: '/admin/agents',      label: 'Agent Cycles', icon: Bot                            },
   { href: '/admin/config',      label: 'Agent Config', icon: Cpu                            },
   { href: '/admin/logs',        label: 'Audit Log',    icon: ScrollText                     },

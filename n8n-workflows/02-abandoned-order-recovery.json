@@ -70,7 +70,7 @@
         "fromEmail": "recovery@nexus.store",
         "toEmail": "={{ $json.email }}",
         "subject": "😱 Your NEXUS order is waiting… (use code RECOVER20)",
-        "html": "<div style='font-family:sans-serif;'><h3>{{$json[\"Gemini Recovery Email\"].choices[0].message.content.split('subject')[1]?.split('body')[0] || 'Your order is waiting'}}</h3><p>{{$json[\"Gemini Recovery Email\"].choices[0].message.content}}</p><p style='margin-top:2rem;'><strong>Discount Code: RECOVER20</strong> (20% off recovery)</p></div>"
+        "html": "=<div style='font-family:sans-serif;'><h3>Your NEXUS order is waiting...</h3><p>{{ $json['Gemini Recovery Email'].text || 'Complete your purchase and save!' }}</p><p style='margin-top:2rem;'><strong>Discount Code: RECOVER20</strong> (20% off, expires in 24h)</p></div>"
       },
       "id": "email",
       "name": "Send Recovery",

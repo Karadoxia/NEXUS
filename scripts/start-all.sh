@@ -54,6 +54,10 @@ fi
 # shellcheck disable=SC2086
 echo "service list: $services" >&2
 set -x
+# rebuild nexus-app image when --build-app is requested, then start everything
+if $include_app; then
+  docker compose up -d --build nexus-app
+fi
 # shellcheck disable=SC2086
 docker compose up -d $services
 
