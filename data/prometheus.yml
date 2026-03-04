@@ -25,14 +25,6 @@ scrape_configs:
       - targets: ['traefik:8080']
     metrics_path: '/metrics'
 
-  # Uptime Kuma — /metrics endpoint
-  - job_name: 'uptime-kuma'
-    static_configs:
-      - targets: ['uptime_kuma:3001']
-    metrics_path: '/metrics'
-    authorization:
-      credentials: 'uk1_61334cbf5028d22b81cb50778b3ec12ef72eca6ad22cb77941da31cc8567c474'
-
   # Host machine metrics (CPU, RAM, disk, network) — prom/node-exporter
   - job_name: 'node-exporter'
     static_configs:

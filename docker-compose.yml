@@ -265,6 +265,7 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       # Local only — Prometheus must NOT be publicly exposed
       - "traefik.http.routers.prometheus-local.rule=Host(`nexus-prometheus.local`)"
       - "traefik.http.routers.prometheus-local.entrypoints=web"
@@ -450,10 +451,13 @@ services:
     networks:
       - internal
       - proxy
+    ports:
+      - "127.0.0.1:3001:3001"
     volumes:
       - uptime-data:/app/data
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       # Public: HTTP → HTTPS redirect
       - "traefik.http.routers.uptime.rule=Host(`status.nexus-io.duckdns.org`)"
       - "traefik.http.routers.uptime.entrypoints=web"
@@ -619,10 +623,19 @@ services:
     privileged: true
     networks:
       - internal
+      - proxy
+    ports:
+      - "127.0.0.1:8081:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    labels:
+      - "traefik.enable=false"
+      - "traefik.docker.network=proxy"
+    command:
+      - "--port=8080"
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     devices:
