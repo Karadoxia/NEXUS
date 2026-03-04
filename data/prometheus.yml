@@ -53,3 +53,8 @@ scrape_configs:
     static_configs:
       - targets: ['cadvisor:8080']
     metrics_path: '/metrics'
+  # Portainer container management
+  - job_name: 'portainer'
+    static_configs:
+      - targets: ['portainer:9000']
+    metrics_path: '/api/metrics'
