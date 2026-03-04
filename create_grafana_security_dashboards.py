@@ -4,7 +4,7 @@ import json
 
 GRAFANA_URL = 'http://nexus-grafana.local'
 GRAFANA_USER = 'admin'
-GRAFANA_PASSWORD = 'adminpass'
+GRAFANA_PASSWORD = 'C@sper@22032011'
 
 def get_auth():
     return (GRAFANA_USER, GRAFANA_PASSWORD)
