@@ -6,7 +6,7 @@ scrape_configs:
   # Prometheus self-monitoring
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['127.0.0.1:9090']
 
   # Loki log aggregator
   - job_name: 'loki'
@@ -44,4 +44,16 @@ scrape_configs:
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'
+
+  # CrowdSec IPS/IDS Security (metrics API endpoint)
+  - job_name: 'crowdsec'
+    static_configs:
+      - targets: ['nexus_crowdsec:6060']
+    metrics_path: '/api/v1/metrics'
+
+  # Uptime Kuma Status Page (check /metrics endpoint)
+  - job_name: 'uptime-kuma'
+    static_configs:
+      - targets: ['uptime_kuma:3001']
     metrics_path: '/metrics'
