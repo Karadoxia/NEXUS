@@ -355,6 +355,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - proxy
     ports:
       - "9187:9187"
     environment:
@@ -368,6 +369,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - proxy
     ports:
       - "9121:9121"
     environment:
@@ -382,6 +384,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - proxy
     ports:
       - "9188:9187"
     environment:
@@ -395,6 +398,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - proxy
     ports:
       - "9189:9187"
     environment:
