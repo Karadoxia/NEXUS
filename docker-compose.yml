@@ -632,10 +632,26 @@ services:
     container_name: portainer
     restart: unless-stopped
     networks:
+      - internal
       - proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
+    environment:
+      # Use master password for admin
+      PORTAINER_ADMIN_PASSWORD: ${PORTAINER_ADMIN_PASSWORD:-C@sper@22032011}
+      # Enable metrics
+      PORTAINER_HOSTMANAGEMENTENABLED: "true"
+      PORTAINER_EDGEASYNCSENABLED: "false"
+      # Security headers
+      PORTAINER_SECURECOOKIE: "true"
+      PORTAINER_HTTPSONLY: "false"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     labels:
       - "traefik.enable=true"
       # Public: HTTP → HTTPS redirect
@@ -651,6 +667,9 @@ services:
       - "traefik.http.routers.portainer-local.rule=Host(`nexus-portainer.local`)"
       - "traefik.http.routers.portainer-local.entrypoints=web"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
+      # CrowdSec protection
+      - "traefik.http.routers.portainer-local.middlewares=crowdsec-plugin"
+      - "traefik.http.routers.portainer-tls.middlewares=crowdsec-plugin"
 
   crowdsec:
     image: crowdsecurity/crowdsec:v1.6.4

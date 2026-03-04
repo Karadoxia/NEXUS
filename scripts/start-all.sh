@@ -38,9 +38,9 @@ done
 # environment) then exclude that service to avoid build failures.
 # use a plain string so the script works under /bin/sh as well as bash.
 if $include_app; then
-  services="nexus-app postgres postgres-ai redis traefik vaultwarden prometheus loki grafana wireguard telegram-notify uptime-kuma n8n node_exporter postgres_exporter redis_exporter crowdsec falco trivy-cron"
+  services="nexus-app postgres postgres-ai redis traefik vaultwarden prometheus loki grafana wireguard telegram-notify uptime-kuma n8n portainer node_exporter postgres_exporter redis_exporter crowdsec falco trivy-cron"
 else
-  services="postgres postgres-ai redis traefik vaultwarden prometheus loki grafana wireguard telegram-notify uptime-kuma n8n node_exporter postgres_exporter redis_exporter crowdsec falco trivy-cron"
+  services="postgres postgres-ai redis traefik vaultwarden prometheus loki grafana wireguard telegram-notify uptime-kuma n8n portainer node_exporter postgres_exporter redis_exporter crowdsec falco trivy-cron"
 fi
 
 if [ -d rust-agents/crates/service ]; then
