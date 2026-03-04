@@ -1,0 +1,84 @@
+{
+  "Telegram_Alert": {
+    "parameters": {
+      "chatId": "6899339578",
+      "text": "🚨 System Alert\\nSource: {{$json.source}}\\nSeverity: {{$json.severity}}\\n{{$json.message}}",
+      "additionalFields": {}
+    },
+    "id": "telegram_alert",
+    "name": "Telegram Alert",
+    "type": "n8n-nodes-base.telegram",
+    "typeVersion": 1,
+    "position": [
+      700,
+      180
+    ],
+    "credentials": {
+      "telegramApi": {
+        "id": "M6RSYbbNfAzdDfMM",
+        "name": "@Nexusto_bot Token"
+      }
+    }
+  },
+  "Resend_Email": {
+    "parameters": {
+      "method": "POST",
+      "url": "https://api.resend.com/emails",
+      "sendHeaders": true,
+      "headerParameters": {
+        "parameters": [
+          {
+            "name": "Authorization",
+            "value": "Bearer re_C51jKwtZ_DeLcpK5JcX6mEp7YmD4ecDk6"
+          },
+          {
+            "name": "Content-Type",
+            "value": "application/json"
+          }
+        ]
+      },
+      "sendBody": true,
+      "contentType": "json",
+      "specifyBody": "json",
+      "jsonBody": "={{ { from: \"onboarding@resend.dev\", to: \"caspertech78@gmail.com\", subject: \"🚨 NEXUS System Alert - \" + $json.severity, html: \"<h2>System Alert</h2><p><b>Source:</b> \" + $json.source + \"</p><p><b>Severity:</b> \" + $json.severity + \"</p><pre>\" + $json.message + \"</pre>\" } }}"
+    },
+    "id": "email_alert",
+    "name": "Email Alert",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4,
+    "position": [
+      700,
+      300
+    ],
+    "continueOnFail": true
+  },
+  "Gemini_LLM": {
+    "parameters": {
+      "method": "POST",
+      "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyDh2YVY62k0U_RJ_C73LUI8T7tfZ0X2oI4",
+      "sendBody": true,
+      "specifyBody": "json",
+      "jsonBody": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "Generate a comprehensive weekly site audit report with:\n1. Executive Summary\n2. Database Health Check - Status: Healthy\n3. Security Assessment - Status: No threats detected\n4. Link Validation - Status: All valid\n5. Recommendations for improvement"
+              }
+            ],
+            "role": "user"
+          }
+        ]
+      },
+      "options": {}
+    },
+    "id": "gemini_audit_http",
+    "name": "Gemini: Generate Report",
+    "type": "n8n-nodes-base.httpRequest",
+    "typeVersion": 4.1,
+    "position": [
+      1008,
+      304
+    ]
+  }
+}

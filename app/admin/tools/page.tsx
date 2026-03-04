@@ -186,16 +186,36 @@ function ToolCard({ tool }: { tool: Tool }) {
 
       {/* Links */}
       <div className="flex flex-wrap gap-2">
-        <a
-          href={tool.localUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl transition-colors"
-        >
-          <LayoutGrid size={11} />
-          Local access
-          <ExternalLink size={10} className="opacity-60" />
-        </a>
+        {tool.name === 'n8n' ? (
+          <form
+            action="http://nexus-n8n.local/rest/login"
+            method="POST"
+            target="_blank"
+            className="inline-block"
+          >
+            <input type="hidden" name="emailOrLdapLoginId" value="nexus_admin@nexus.local" />
+            <input type="hidden" name="password" value="Super_Secure_N8N_2026!" />
+            <button
+              type="submit"
+              className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl transition-colors"
+            >
+              <LayoutGrid size={11} />
+              Local access (Auto-Login)
+              <ExternalLink size={10} className="opacity-60" />
+            </button>
+          </form>
+        ) : (
+          <a
+            href={tool.localUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white px-3 py-1.5 rounded-xl transition-colors"
+          >
+            <LayoutGrid size={11} />
+            Local access
+            <ExternalLink size={10} className="opacity-60" />
+          </a>
+        )}
         {tool.publicUrl && (
           <a
             href={tool.publicUrl}

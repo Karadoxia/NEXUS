@@ -25,11 +25,12 @@ scrape_configs:
       - targets: ['traefik:8080']
     metrics_path: '/metrics'
 
-  # Uptime Kuma — /metrics endpoint
+  # Uptime Kuma — /metrics endpoint requires Bearer token auth
   - job_name: 'uptime-kuma'
     static_configs:
       - targets: ['uptime_kuma:3001']
     metrics_path: '/metrics'
+    bearer_token: 'uk1__vSY59t4sNCupnB5VG17dO79AZ9JZ-V0oCqamFEp'
 
   # Host machine metrics (CPU, RAM, disk, network) — prom/node-exporter
   - job_name: 'node-exporter'

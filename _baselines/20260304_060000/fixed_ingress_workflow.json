@@ -1,0 +1,23 @@
+{
+  "updatedAt": "2026-03-04T04:11:36.182Z",
+  "createdAt": "2026-03-04T04:08:38.223Z",
+  "id": "sursBjK1ZGzMes8k",
+  "name": "🚨 NEXUS - Unified Alert Ingress",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "aa5fa3d2-c31b-4b35-98a5-552890bb5fa6",
+  "activeVersionId": "aa5fa3d2-c31b-4b35-98a5-552890bb5fa6",
+  "parentFolder": null,
+  "tags": [],
+  "homeProject": {
+    "id": "PERSONAL_PROJECT_CASPER",
+    "type": "personal",
+    "name": "Personal",
+    "icon": null
+  },
+  "sharedWithProjects": []
+}

@@ -1,8 +1,11 @@
 {
+  "updatedAt": "2026-03-04T00:06:43.598Z",
+  "createdAt": "2026-03-03T22:45:51.446Z",
+  "id": "dzvS99TthbtSo8Q2",
   "name": "\ud83e\udd16 NEXUS - Full Site Audit Bot",
-  "description": "Weekly comprehensive site audit with auto-fixes",
-  "version": 1,
-  "active": true,
+  "description": null,
+  "active": false,
+  "isArchived": false,
   "nodes": [
     {
       "parameters": {
@@ -39,27 +42,26 @@
     },
     {
       "parameters": {
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{$env.GEMINI_API_KEY}}",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "method": "POST",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "contents",
-              "value": "=[{\"parts\":[{\"text\":\"Generate a comprehensive weekly site audit report with:\\n1. Executive Summary\\n2. Database Health Check - Status: Healthy\\n3. Security Assessment - Status: No threats detected\\n4. Link Validation - Status: All valid\\n5. Recommendations for improvement\"}]}]"
-            }
-          ]
-        },
-        "responseFormat": "json"
+        "responseFormat": "json",
+        "jsonBody": true,
+        "body": "{\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Generate a comprehensive weekly site audit report with:\\n1. Executive Summary\\n2. Database Health Check - Status: Healthy\\n3. Security Assessment - Status: No threats detected\\n4. Link Validation - Status: All valid\\n5. Recommendations for improvement\"\n        }\n      ]\n    }\n  ]\n}"
       },
       "id": "gemini_audit_summary",
       "name": "Gemini: Generate Report",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.1,
+      "typeVersion": 4,
       "position": [
         1120,
         300
-      ]
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6BklJbKHfDJ6Lbcj",
+          "name": "NEXUS Gemini"
+        }
+      }
     },
     {
       "parameters": {
@@ -78,7 +80,8 @@
       ],
       "credentials": {
         "smtp": {
-          "id": "email-resend-1"
+          "id": "ZaV9ETWNjd8JTohJ",
+          "name": "Resend SMTP"
         }
       }
     },
@@ -97,7 +100,8 @@
       ],
       "credentials": {
         "telegramApi": {
-          "id": "telegram-nexus-1"
+          "id": "P1JqNmgOzQhedrUg",
+          "name": "NEXUS Telegram Bot"
         }
       }
     }
@@ -150,12 +154,51 @@
   },
   "settings": {
     "executionOrder": "v1",
-    "errorWorkflow": "Global Error Notifier"
+    "errorWorkflow": "Global Error Notifier",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
   },
-  "tags": [
-    "maintenance",
-    "audit",
-    "quality-assurance",
-    "ai"
-  ]
+  "staticData": null,
+  "meta": null,
+  "pinData": null,
+  "versionId": "34749a23-3d80-424f-9a66-cf9c377b0f52",
+  "activeVersionId": null,
+  "versionCounter": 4,
+  "triggerCount": 0,
+  "shared": [
+    {
+      "updatedAt": "2026-03-03T22:45:51.446Z",
+      "createdAt": "2026-03-03T22:45:51.446Z",
+      "role": "workflow:owner",
+      "workflowId": "dzvS99TthbtSo8Q2",
+      "projectId": "PERSONAL_PROJECT_CASPER",
+      "project": {
+        "updatedAt": "2026-03-03T22:45:16.530Z",
+        "createdAt": "2026-03-03T22:45:16.530Z",
+        "id": "PERSONAL_PROJECT_CASPER",
+        "name": "Personal",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "a183f669-8841-4958-9225-942c2f3c8c18"
+      }
+    }
+  ],
+  "tags": [],
+  "parentFolder": null,
+  "activeVersion": null,
+  "scopes": [
+    "workflow:create",
+    "workflow:delete",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:unpublish",
+    "workflow:update"
+  ],
+  "checksum": "efaaa9d87d2372aa9c48e36ffceb3e7beb7652fa80b04b79d15b8b303697a446"
 }

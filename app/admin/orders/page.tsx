@@ -3,8 +3,9 @@ import type { Prisma } from '@/src/generated/prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../api/auth/[...nextauth]/route';
 import { redirect } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { Search, AlertTriangle } from 'lucide-react';
 import OrdersTableClient from '../_components/orders-table-client';
+import OrderManagementClient from '../_components/order-management-client';
 
 const STATUSES = ['', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 const PAGE_SIZE = 20;
@@ -66,6 +67,9 @@ export default async function AdminOrdersPage({ searchParams }: Props) {
           </p>
         </div>
       </div>
+
+      {/* Order Management Controls (Danger Zone) */}
+      {total > 0 && <OrderManagementClient totalOrders={total} />}
 
       {/* Search + status filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
