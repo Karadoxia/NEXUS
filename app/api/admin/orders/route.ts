@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/server-auth';
 import { prisma } from '@/src/lib/prisma';
-import { redis } from '@/src/lib/redis';
 
 export async function DELETE(request: Request) {
   const { session, error } = await requireAdmin();
@@ -26,31 +25,11 @@ export async function DELETE(request: Request) {
       await prisma.order.deleteMany({});
 
       console.log('[admin orders DELETE] Deleted all', orderCount, 'orders');
-
-      // Purge order-related cache keys from Redis
-      const cacheKeys = [
-        'orders:*',
-        'user:*:orders',
-        'order:history',
-        'order:stats',
-        'recent:orders',
-      ];
-
-      for (const pattern of cacheKeys) {
-        try {
-          const keys = await redis.keys(pattern);
-          if (keys.length > 0) {
-            await redis.del(...keys);
-            console.log(`[cache] Purged ${keys.length} keys matching pattern: ${pattern}`);
-          }
-        } catch (e) {
-          console.warn(`[cache] Could not purge pattern ${pattern}:`, e);
-        }
-      }
+      console.log('[cache] Note: Browser-side order caches should be cleared on next page reload');
 
       return NextResponse.json({
         success: true,
-        message: `Deleted ${orderCount} orders and purged cache`,
+        message: `Deleted ${orderCount} orders`,
         deletedCount: orderCount,
       });
     } else if (action === 'export') {
@@ -66,7 +45,7 @@ export async function DELETE(request: Request) {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { date: 'desc' },
       });
 
       return NextResponse.json({
@@ -100,21 +79,11 @@ export async function GET(request: Request) {
 
     if (action === 'stats') {
       const orderCount = await prisma.order.count();
-      const orderItemCount = await prisma.orderItem.count();
-
-      // Get sample of cache keys (Redis)
-      let cacheKeyCount = 0;
-      try {
-        const keys = await redis.keys('*');
-        cacheKeyCount = keys.length;
-      } catch (e) {
-        console.warn('[cache] Could not get keys from Redis:', e);
-      }
+      const cartItemCount = await prisma.cartItem.count();
 
       return NextResponse.json({
         orders: orderCount,
-        orderItems: orderItemCount,
-        cacheKeys: cacheKeyCount,
+        orderItems: cartItemCount,
         readyForDeletion: orderCount > 0,
       });
     }

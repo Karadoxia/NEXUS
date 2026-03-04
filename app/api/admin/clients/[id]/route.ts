@@ -19,18 +19,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         phone: true,
         image: true,
         createdAt: true,
-        updatedAt: true,
         addresses: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            street: true,
+            label: true,
+            line1: true,
+            line2: true,
             city: true,
             state: true,
-            postalCode: true,
+            postal: true,
             country: true,
-            isDefault: true,
           },
         },
         _count: {
@@ -94,7 +92,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         name: true,
         phone: true,
         image: true,
-        updatedAt: true,
       },
     });
 

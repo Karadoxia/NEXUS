@@ -38,7 +38,7 @@ export default function OrderManagementClient({ totalOrders }: OrderManagementCl
   };
 
   const deleteAllOrders = async () => {
-    if (!confirm('⚠️ This will DELETE ALL ORDERS and clear the order cache.\n\nMake sure you have exported them first if needed.\n\nContinue?')) {
+    if (!confirm('⚠️ This will DELETE ALL ORDERS permanently.\n\nMake sure you have exported them first if needed.\n\nContinue?')) {
       return;
     }
 

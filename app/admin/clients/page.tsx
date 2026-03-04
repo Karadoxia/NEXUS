@@ -19,17 +19,15 @@ interface ClientProfile {
 }
 
 interface ClientDetails extends ClientProfile {
-  updatedAt: string;
   addresses: Array<{
     id: string;
-    firstName: string;
-    lastName: string;
-    street: string;
+    label: string;
+    line1: string;
+    line2?: string;
     city: string;
-    state: string;
-    postalCode: string;
+    state?: string;
+    postal: string;
     country: string;
-    isDefault: boolean;
   }>;
 }
 
@@ -358,11 +356,10 @@ export default function ClientsPage() {
                     <div className="space-y-3">
                       {selectedClient.addresses.map((addr) => (
                         <div key={addr.id} className="bg-slate-900/50 p-3 rounded-lg text-sm">
-                          <div className="font-semibold text-cyan-400">{addr.firstName} {addr.lastName}</div>
-                          <div className="text-slate-400">{addr.street}</div>
-                          <div className="text-slate-400">{addr.city}, {addr.state} {addr.postalCode}</div>
+                          <div className="font-semibold text-cyan-400">{addr.label}</div>
+                          <div className="text-slate-400">{addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}</div>
+                          <div className="text-slate-400">{addr.city}{addr.state ? `, ${addr.state}` : ''} {addr.postal}</div>
                           <div className="text-slate-500">{addr.country}</div>
-                          {addr.isDefault && <div className="text-xs text-amber-400 mt-1">Default Address</div>}
                         </div>
                       ))}
                     </div>
