@@ -376,6 +376,32 @@ services:
     depends_on:
       - redis
 
+  postgres-ai-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_ai_exporter
+    restart: unless-stopped
+    networks:
+      - internal
+    ports:
+      - "9188:9187"
+    environment:
+      DATA_SOURCE_NAME: 'postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai?sslmode=disable'
+    depends_on:
+      - postgres-ai
+
+  postgres-infra-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_infra_exporter
+    restart: unless-stopped
+    networks:
+      - internal
+    ports:
+      - "9189:9187"
+    environment:
+      DATA_SOURCE_NAME: 'postgresql://nexus_infra:${DB_PASSWORD}@postgres-infra:5432/nexus_infra?sslmode=disable'
+    depends_on:
+      - postgres-infra
+
   # === WIREGUARD VPN ===
   # FIX: switched from unmaintained weejewel/wg-easy to the active fork
   # ghcr.io/wg-easy/wg-easy which uses PASSWORD_HASH instead of PASSWORD
