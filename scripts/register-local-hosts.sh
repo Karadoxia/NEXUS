@@ -37,6 +37,7 @@ declare -a NEXUS_HOSTS=(
   "nexus-prometheus.local   Prometheus metrics"
   "nexus-loki.local         Loki log explorer"
   "nexus-n8n.local          n8n workflow automation"
+  "nexus-portainer.local    Portainer container management"
   "nexus-uptime.local       Uptime Kuma monitoring"
   "nexus-vpn.local          WireGuard VPN admin"
   "nexus-traefik.local      Traefik reverse-proxy dashboard"

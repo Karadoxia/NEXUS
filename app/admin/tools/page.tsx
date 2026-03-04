@@ -55,11 +55,12 @@ const TOOLS: Tool[] = [
   {
     name: 'Portainer',
     description: 'Centralized container management and Docker introspection dashboard.',
-    localUrl: 'http://nexus-portainer.local',
+    localUrl: 'http://nexus-portainer.local:9000',
     publicUrl: 'https://portainer.nexus-io.duckdns.org',
     icon: Container,
     color: 'from-blue-500/20 to-blue-500/5 border-blue-500/20 text-blue-400',
     category: 'Infrastructure',
+    badge: 'Port 9000',
   },
   {
     name: 'Traefik',

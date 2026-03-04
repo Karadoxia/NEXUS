@@ -634,6 +634,8 @@ services:
     networks:
       - internal
       - proxy
+    ports:
+      - "127.0.0.1:9000:9000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -654,22 +656,24 @@ services:
       start_period: 20s
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       # Public: HTTP → HTTPS redirect
       - "traefik.http.routers.portainer.rule=Host(`portainer.nexus-io.duckdns.org`)"
       - "traefik.http.routers.portainer.entrypoints=web"
       - "traefik.http.routers.portainer.middlewares=https-redirect"
+      - "traefik.http.routers.portainer.service=portainer"
       # Public: HTTPS (TLS)
       - "traefik.http.routers.portainer-tls.rule=Host(`portainer.nexus-io.duckdns.org`)"
       - "traefik.http.routers.portainer-tls.entrypoints=websecure"
       - "traefik.http.routers.portainer-tls.tls.certresolver=letsencrypt"
       - "traefik.http.routers.portainer-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
+      - "traefik.http.routers.portainer-tls.service=portainer"
       # Local: http://nexus-portainer.local
       - "traefik.http.routers.portainer-local.rule=Host(`nexus-portainer.local`)"
       - "traefik.http.routers.portainer-local.entrypoints=web"
+      - "traefik.http.routers.portainer-local.service=portainer"
+      # Service backend
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
-      # CrowdSec protection
-      - "traefik.http.routers.portainer-local.middlewares=crowdsec-plugin"
-      - "traefik.http.routers.portainer-tls.middlewares=crowdsec-plugin"
 
   crowdsec:
     image: crowdsecurity/crowdsec:v1.6.4
