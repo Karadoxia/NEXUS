@@ -47,13 +47,12 @@ services:
       # Public: HTTP → HTTPS redirect
       - "traefik.http.routers.nexus.rule=Host(`app.nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus.entrypoints=web"
-      - "traefik.http.routers.nexus.middlewares=https-redirect,crowdsec"
+      - "traefik.http.routers.nexus.middlewares=https-redirect"
       # Public: HTTPS (TLS) — wildcard-only cert (DuckDNS supports only 1 TXT record)
       - "traefik.http.routers.nexus-tls.rule=Host(`app.nexus-io.duckdns.org`)"
       - "traefik.http.routers.nexus-tls.entrypoints=websecure"
       - "traefik.http.routers.nexus-tls.tls.certresolver=letsencrypt"
       - "traefik.http.routers.nexus-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
-      - "traefik.http.routers.nexus-tls.middlewares=crowdsec"
       # Local: http://nexus-app.local
       - "traefik.http.routers.nexus-local.rule=Host(`nexus-app.local`)"
       - "traefik.http.routers.nexus-local.entrypoints=web"
@@ -203,15 +202,11 @@ services:
       # Shared HTTPS-redirect middleware used by all public routers
       - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
       - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
-      # VaultWarden: redirect nexus-vaultwarden.local → http://localhost:8080
-      # (web vault requires a secure context: HTTPS or localhost — .local doesn't qualify)
+      # VaultWarden: local HTTPS via Traefik self-signed certs
       - "traefik.http.routers.vaultwarden-local.rule=Host(`nexus-vaultwarden.local`)"
-      - "traefik.http.routers.vaultwarden-local.entrypoints=web"
-      - "traefik.http.routers.vaultwarden-local.middlewares=vault-local-redirect"
-      - "traefik.http.routers.vaultwarden-local.service=noop@internal"
-      - "traefik.http.middlewares.vault-local-redirect.redirectregex.regex=.*"
-      - "traefik.http.middlewares.vault-local-redirect.redirectregex.replacement=http://localhost:8080"
-      - "traefik.http.middlewares.vault-local-redirect.redirectregex.permanent=false"
+      - "traefik.http.routers.vaultwarden-local.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden-local.tls=true"
+      - "traefik.http.services.vault.loadbalancer.server.port=80"
       # Loki: rewrite root / → /metrics (Loki is API-only, no web UI at root)
       # replacepathregex matches path-only (not full URL), so ^/$ works correctly
       - "traefik.http.middlewares.loki-root-rewrite.replacepathregex.regex=^/$$"
@@ -233,7 +228,6 @@ services:
     volumes:
       - vw-data:/data
     environment:
-      DOMAIN: https://vault.nexus-io.duckdns.org
       SIGNUPS_ALLOWED: "false"
       ADMIN_TOKEN: ${VAULTWARDEN_ADMIN_TOKEN:-}
       ROCKET_PORT: "80"

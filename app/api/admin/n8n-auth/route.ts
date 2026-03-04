@@ -41,7 +41,8 @@ export async function POST(request: Request) {
       },
       // Include the n8n-api-key for direct API calls
       apiKey: process.env.N8N_API_KEY || '',
-      n8nBaseUrl: N8N_BASE,
+      // Use public URL for browser access
+      n8nBaseUrl: 'http://nexus-n8n.local:5678',
     });
   } catch (err) {
     console.error('[n8n-auth]', err);

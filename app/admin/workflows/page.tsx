@@ -49,16 +49,7 @@ export default function WorkflowsPage() {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={async () => {
-              try {
-                const authRes = await fetch('/api/admin/n8n-auth', { method: 'POST' });
-                if (!authRes.ok) throw new Error('Auth failed');
-                const { n8nBaseUrl } = await authRes.json();
-                window.open(`${n8nBaseUrl.replace('/api/v1', '')}/home`, '_blank');
-              } catch (err) {
-                alert(err instanceof Error ? err.message : 'Failed to authenticate with n8n');
-              }
-            }}
+            onClick={() => window.open('http://nexus-n8n.local:5678', '_blank')}
             className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white px-3 py-2 rounded-xl transition-colors"
           >
             Open n8n Dashboard
