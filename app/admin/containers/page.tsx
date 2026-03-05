@@ -8,6 +8,10 @@ import {
   Clock,
   RefreshCw,
   Download,
+  Terminal,
+  Play,
+  Square,
+  RefreshCcw,
 } from 'lucide-react';
 
 interface RegistrationStatus {
@@ -50,11 +54,61 @@ interface ContainerStatus {
   recentEvents: any[];
 }
 
+function ContainerStats({ containerId, status }: { containerId: string, status: string }) {
+  const [stats, setStats] = useState<{ cpuPercent: number, memoryPercent: number, memoryUsageBytes: number } | null>(null);
+
+  useEffect(() => {
+    if (status !== 'active') {
+      setStats(null);
+      return;
+    }
+
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`/api/docker/containers/${containerId}/stats`);
+        if (res.ok) {
+          setStats(await res.json());
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
+  }, [containerId, status]);
+
+  if (status !== 'active') return <span className="text-xs text-slate-500">Offline</span>;
+  if (!stats) return <span className="text-xs text-slate-500 flex items-center gap-1"><RefreshCw size={12} className="animate-spin" /> Loading...</span>;
+
+  return (
+    <div className="flex flex-col gap-1 w-32">
+      <div className="flex items-center justify-between text-xs text-slate-400">
+        <span>CPU</span>
+        <span>{stats.cpuPercent}%</span>
+      </div>
+      <div className="w-full bg-slate-800 rounded-full h-1.5">
+        <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, stats.cpuPercent)}%` }}></div>
+      </div>
+      <div className="flex items-center justify-between text-xs text-slate-400 mt-1">
+        <span>RAM</span>
+        <span>{stats.memoryPercent}%</span>
+      </div>
+      <div className="w-full bg-slate-800 rounded-full h-1.5">
+        <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, stats.memoryPercent)}%` }}></div>
+      </div>
+    </div>
+  );
+}
+
 export default function ContainersPage() {
   const [containers, setContainers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedContainer, setSelectedContainer] = useState<ContainerStatus | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [actioningId, setActioningId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchContainers();
@@ -105,6 +159,51 @@ export default function ContainersPage() {
     }
   };
 
+  const handleSyncDocker = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await fetch('/api/docker/sync', { method: 'POST' });
+      if (!res.ok) throw new Error('Sync failed');
+      const data = await res.json();
+      alert(`Sync Complete: Scanned ${data.scanned} containers. Imported ${data.synced} new containers.`);
+      await fetchContainers();
+    } catch (err) {
+      console.error('Docker Sync failed:', err);
+      alert('Failed to synchronize with local Docker daemon.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleContainerAction = async (containerId: string, action: 'start' | 'stop' | 'restart', e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      setActioningId(containerId + action);
+      const res = await fetch(`/api/docker/containers/${containerId}/action`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.details || 'Action failed');
+      }
+      await fetchContainers(); // Refresh list to get new status
+    } catch (err: any) {
+      console.error(`${action} failed:`, err);
+      alert(`Failed to ${action} container: ${err.message}`);
+    } finally {
+      setActioningId(null);
+    }
+  };
+
+  const handleConsole = (containerName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    // For a real terminal, this would open a WebSocket to a backend proxy.
+    // For now, we provide the CLI command to the user.
+    alert(`Console Access\n\nRun this command in your terminal to attach:\n\ndocker exec -it ${containerName} /bin/sh`);
+  };
+
   const getStatusColor = (registered: boolean) => {
     return registered ? 'text-green-400' : 'text-red-400';
   };
@@ -127,13 +226,23 @@ export default function ContainersPage() {
             Monitor and manage automatic container registration across infrastructure
           </p>
         </div>
-        <button
-          onClick={fetchContainers}
-          className="flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition"
-        >
-          <RefreshCw size={20} />
-          Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchContainers}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition"
+          >
+            <RefreshCw size={20} />
+            Refresh
+          </button>
+          <button
+            onClick={handleSyncDocker}
+            disabled={isSyncing}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition"
+          >
+            <Download size={20} />
+            {isSyncing ? 'Syncing...' : 'Sync Local Docker'}
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -202,6 +311,9 @@ export default function ContainersPage() {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-slate-400">
                     Status
                   </th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-slate-400">
+                    Performance
+                  </th>
                   <th className="px-6 py-3 text-center text-sm font-semibold text-slate-400">
                     Registration Progress
                   </th>
@@ -249,28 +361,29 @@ export default function ContainersPage() {
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            container.status === 'active'
-                              ? 'bg-green-500/20 text-green-400'
-                              : 'bg-red-500/20 text-red-400'
-                          }`}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${container.status === 'active'
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-red-500/20 text-red-400'
+                            }`}
                         >
                           {container.status}
                         </span>
                       </td>
                       <td className="px-6 py-4">
+                        <ContainerStats containerId={container.containerId} status={container.status} />
+                      </td>
+                      <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <div className="w-24 bg-slate-800 rounded-full h-2">
                             <div
-                              className={`h-full rounded-full transition-all ${
-                                isComplete
-                                  ? 'bg-green-500'
-                                  : percentage > 50
+                              className={`h-full rounded-full transition-all ${isComplete
+                                ? 'bg-green-500'
+                                : percentage > 50
                                   ? 'bg-cyan-500'
                                   : percentage > 0
-                                  ? 'bg-yellow-500'
-                                  : 'bg-red-500'
-                              }`}
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                                }`}
                               style={{ width: `${percentage}%` }}
                             />
                           </div>
@@ -280,15 +393,49 @@ export default function ContainersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            fetchContainerStatus(container.containerId);
-                          }}
-                          className="px-3 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-white rounded transition"
-                        >
-                          Details
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => handleContainerAction(container.containerId, 'start', e)}
+                            disabled={actioningId === container.containerId + 'start' || container.status === 'active'}
+                            title="Start"
+                            className="p-1.5 bg-slate-800 hover:bg-green-600/20 text-green-500 disabled:opacity-30 disabled:hover:bg-slate-800 rounded transition"
+                          >
+                            <Play size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => handleContainerAction(container.containerId, 'restart', e)}
+                            disabled={actioningId === container.containerId + 'restart'}
+                            title="Restart"
+                            className="p-1.5 bg-slate-800 hover:bg-yellow-600/20 text-yellow-500 disabled:opacity-30 disabled:hover:bg-slate-800 rounded transition"
+                          >
+                            <RefreshCcw size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => handleContainerAction(container.containerId, 'stop', e)}
+                            disabled={actioningId === container.containerId + 'stop' || container.status !== 'active'}
+                            title="Stop"
+                            className="p-1.5 bg-slate-800 hover:bg-red-600/20 text-red-500 disabled:opacity-30 disabled:hover:bg-slate-800 rounded transition"
+                          >
+                            <Square size={16} />
+                          </button>
+                          <div className="w-px h-5 bg-slate-700 mx-1"></div>
+                          <button
+                            onClick={(e) => handleConsole(container.containerName, e)}
+                            title="Console"
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded transition"
+                          >
+                            <Terminal size={16} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fetchContainerStatus(container.containerId);
+                            }}
+                            className="ml-2 px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded transition"
+                          >
+                            Status
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -330,11 +477,10 @@ export default function ContainersPage() {
                   </p>
                   <div className="w-full bg-slate-700 rounded-full h-2 mt-2">
                     <div
-                      className={`h-full rounded-full transition-all ${
-                        selectedContainer.summary.allRegistered
-                          ? 'bg-green-500'
-                          : 'bg-cyan-500'
-                      }`}
+                      className={`h-full rounded-full transition-all ${selectedContainer.summary.allRegistered
+                        ? 'bg-green-500'
+                        : 'bg-cyan-500'
+                        }`}
                       style={{
                         width: `${selectedContainer.summary.completionPercentage}%`,
                       }}

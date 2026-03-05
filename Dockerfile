@@ -19,9 +19,12 @@ ENV AI_DATABASE_URL=$AI_DATABASE_URL
 ENV INFRA_DATABASE_URL=$INFRA_DATABASE_URL
 ENV RESEND_API_KEY=$RESEND_API_KEY
 
-# Copy source then generate Prisma client for main schema
+# Copy source then generate all Prisma clients
 COPY . .
-RUN npx prisma generate --schema=prisma/schema.prisma
+RUN npx prisma generate --schema=prisma/schema.prisma && \
+    npx prisma generate --schema=prisma/schema.infra.prisma && \
+    npx prisma generate --schema=prisma/schema.ai.prisma && \
+    npx prisma generate --schema=prisma/schema.hr.prisma
 
 # Build Next.js
 RUN npm run build

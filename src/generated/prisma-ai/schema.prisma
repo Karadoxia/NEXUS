@@ -1,0 +1,266 @@
+// ============================================================
+// NEXUS AI/ML DATABASE SCHEMA
+// File: prisma/schema.ai.prisma
+//
+// Purpose: Dedicated database for AI model training, predictions,
+// embeddings, and ML pipeline data (separate from commerce DB)
+//
+// Setup:
+//   1. Set AI_DATABASE_URL in .env
+//   2. Run: npx prisma migrate dev --name init_ai --skip-generate -- --schema=prisma/schema.ai.prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-ai"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("AI_DATABASE_URL")
+}
+
+// ─── AI MODEL TRAINING DATA ────────────────────────────────
+
+/// Product embeddings for similarity search and recommendations
+model ProductEmbedding {
+  id           String   @id @default(cuid())
+  productId    String   @unique // FK to nexus_v2.Product
+  embedding    Float[] // Vector of dimensions (e.g., 1536 for OpenAI)
+  model        String   @default("openai-embed-3-small") // Model used
+  modelVersion String   @default("v1")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([productId])
+}
+
+/// Customer behavioral data for ML training (anonymized)
+model CustomerBehavior {
+  id         String   @id @default(cuid())
+  customerId String // FK to nexus_v2.User (anonymized)
+  eventType  String // "view", "click", "add_to_cart", "purchase", "search"
+  productId  String // FK to nexus_v2.Product
+  category   String // Category for trend analysis
+  sessionId  String
+  duration   Int // seconds spent
+  metadata   Json // Extra context (device, referrer, etc.)
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@index([productId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+/// Churn prediction features & scores
+model ChurnPrediction {
+  id             String   @id @default(cuid())
+  customerId     String   @unique // FK to nexus_v2.User
+  churnScore     Float // 0.0 to 1.0 (1.0 = will churn)
+  riskFactors    String[] // ["no_recent_purchase", "low_ltv", "high_return_rate"]
+  lastUpdated    DateTime @default(now()) @updatedAt
+  nextReviewDate DateTime // When to re-evaluate
+
+  @@index([churnScore])
+  @@index([lastUpdated])
+}
+
+/// Product recommendation results & CTR metrics
+model ProductRecommendation {
+  id         String   @id @default(cuid())
+  customerId String // FK to nexus_v2.User
+  productId  String // FK to nexus_v2.Product (recommended)
+  score      Float // Similarity/relevance 0.0-1.0
+  method     String // "collaborative", "content-based", "hybrid"
+  clicked    Boolean  @default(false)
+  purchased  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([customerId])
+  @@index([method])
+  @@index([clicked])
+  @@index([createdAt])
+}
+
+/// Sentiment analysis results from reviews/feedback
+model SentimentAnalysis {
+  id         String   @id @default(cuid())
+  productId  String // FK to nexus_v2.Product
+  customerId String // FK to nexus_v2.User
+  text       String   @db.Text
+  sentiment  String   @db.VarChar(20) // "positive", "neutral", "negative"
+  score      Float // -1.0 to 1.0 (-1 = very negative, 1 = very positive)
+  emotions   String[] // ["joy", "trust", "anger", etc.]
+  language   String   @default("en")
+  model      String   @default("openai-davinci-003")
+  createdAt  DateTime @default(now())
+
+  @@index([productId])
+  @@index([sentiment])
+  @@index([score])
+  @@index([createdAt])
+}
+
+/// Price elasticity & optimization data
+model PriceOptimization {
+  id              String   @id @default(cuid())
+  productId       String   @unique // FK to nexus_v2.Product
+  currentPrice    Float
+  optimalPrice    Float // ML-suggested price
+  elasticity      Float // Price sensitivity (-2 to 0)
+  conversionRate  Float // Baseline conversion
+  expectedRevenue Float // At optimal price
+  lastOptimized   DateTime @default(now()) @updatedAt
+
+  @@index([productId])
+}
+
+/// Customer lifetime value predictions
+model CustomerLTV {
+  id               String   @id @default(cuid())
+  customerId       String   @unique // FK to nexus_v2.User
+  ltv              Float // Lifetime value in USD
+  clv              Float // Customer lifetime value
+  segment          String // "high-value", "mid-tier", "churn-risk"
+  roi              Float // Return on acquisition cost
+  predictedMonthly Float // Avg monthly spend
+  lastComputed     DateTime @default(now()) @updatedAt
+
+  @@index([customerId])
+  @@index([segment])
+}
+
+/// A/B test configurations & results
+model ABTest {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  variantA     Json // Config for variant A
+  variantB     Json // Config for variant B
+  controlGroup String[] // Customer IDs in control
+  testGroup    String[] // Customer IDs in test
+  metric       String // "conversion_rate", "aov", "ctr"
+  startDate    DateTime
+  endDate      DateTime?
+  pValue       Float? // Statistical significance
+  winner       String? // "A", "B", or null if inconclusive
+  createdAt    DateTime  @default(now())
+
+  @@index([name])
+  @@index([startDate])
+}
+
+/// Fraud detection flags & scores
+model FraudScore {
+  id          String    @id @default(cuid())
+  customerId  String // FK to nexus_v2.User
+  orderId     String // FK to nexus_v2.Order
+  score       Float // 0.0 to 1.0 (1.0 = high fraud risk)
+  riskFactors String[] // ["unusual_location", "high_amount", "velocity"]
+  flagged     Boolean   @default(false)
+  reviewedAt  DateTime?
+  reviewedBy  String? // Admin email
+  decision    String? // "approved", "rejected", "manual_review"
+  createdAt   DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([orderId])
+  @@index([score])
+  @@index([flagged])
+}
+
+// ─── ML MODEL METADATA ─────────────────────────────────────
+
+/// Track deployed ML models and their performance
+model MLModel {
+  id            String    @id @default(cuid())
+  name          String // "churn-detector-v2", "price-optimizer-v1"
+  version       String
+  type          String // "classification", "regression", "clustering"
+  framework     String // "scikit-learn", "tensorflow", "pytorch"
+  modelPath     String // Path to saved model
+  accuracy      Float? // Training accuracy
+  precision     Float? // For classification models
+  recall        Float? // For classification models
+  f1Score       Float? // For classification models
+  deployedAt    DateTime?
+  lastEvaluated DateTime?
+  status        String    @default("development") // "development", "staging", "production"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([name])
+  @@index([status])
+  @@index([deployedAt])
+}
+
+/// Model training logs for debugging and optimization
+model ModelTrainingLog {
+  id           String   @id @default(cuid())
+  modelId      String // FK to MLModel
+  epoch        Int
+  loss         Float
+  accuracy     Float?
+  val_loss     Float?
+  val_accuracy Float?
+  timestamp    DateTime @default(now())
+
+  @@index([modelId])
+  @@index([timestamp])
+}
+
+// ─── FEATURE ENGINEERING ──────────────────────────────────
+
+/// User features for ML pipelines
+model UserFeatures {
+  id                 String   @id @default(cuid())
+  customerId         String   @unique // FK to nexus_v2.User
+  totalOrders        Int
+  totalSpent         Float
+  avgOrderValue      Float
+  daysSinceLastOrder Int
+  categoryPreference String[] // Top 3 categories
+  deviceType         String // "mobile", "desktop", "tablet"
+  browser            String
+  timezone           String
+  lastComputedAt     DateTime @default(now()) @updatedAt
+
+  @@index([customerId])
+}
+
+/// Product features for ML pipelines
+model ProductFeatures {
+  id              String   @id @default(cuid())
+  productId       String   @unique // FK to nexus_v2.Product
+  category        String
+  avgRating       Float
+  reviewCount     Int
+  returnRate      Float
+  profitMargin    Float
+  stockLevel      Int
+  competitorCount Int
+  seasonality     String? // "summer", "winter", "holiday"
+  lastComputedAt  DateTime @default(now()) @updatedAt
+
+  @@index([productId])
+  @@index([category])
+}
+
+// ─── AUDIT LOG ─────────────────────────────────────────────
+
+/// Audit trail for AI operations & decisions
+model AIAuditLog {
+  id         String   @id @default(cuid())
+  action     String // "model_deployed", "prediction_made", "recommendation_sent"
+  modelName  String?
+  customerId String?
+  productId  String?
+  details    Json
+  result     String // "success", "failure", "partial"
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}

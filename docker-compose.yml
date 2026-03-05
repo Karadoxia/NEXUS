@@ -57,6 +57,8 @@ services:
           memory: 512M
     ports:
       - "3030:3030"
+    group_add:
+      - "120"
     networks:
       - backend
       - proxy
@@ -83,6 +85,8 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       N8N_API_KEY: ${N8N_API_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     secrets:
       - db_password
       - jwt_secret

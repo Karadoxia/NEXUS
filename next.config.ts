@@ -34,6 +34,16 @@ const nextConfig: NextConfig = {
       ],
     },
   ],
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/vpn-stack/**', '**/node_modules/**'],
+    };
+    return config;
+  },
+  turbopack: {
+    // Empty config allows Turbopack to run alongside Webpack config in Next 16
+  }
 };
 
 export default nextConfig;
