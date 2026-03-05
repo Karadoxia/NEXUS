@@ -1,0 +1,213 @@
+# ══════════════════════════════════════════════════════════════
+# STAGING ENVIRONMENT — Deploy alongside production
+# Usage: docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d shop-staging
+#
+# This file defines staging versions of key services that run on
+# different ports, test databases, and test credentials.
+# Perfect for testing deployments before promoting to prod.
+# ══════════════════════════════════════════════════════════════
+
+version: "3.9"
+
+services:
+  # ──────────────────────────────────────────────────────────
+  # STAGING SHOP BACKEND (production code, test data)
+  # ──────────────────────────────────────────────────────────
+  shop-staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: staging
+    container_name: shop-staging
+    restart: unless-stopped
+    ports:
+      - "3001:3000"  # Staging on port 3001 (prod is 3000)
+    environment:
+      # ◆ App configuration
+      NODE_ENV: staging
+      APP_NAME: "NEXUS Shop (Staging)"
+      LOG_LEVEL: debug
+      PORT: 3000
+
+      # ◆ Database — SEPARATE staging DB
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASS}@postgres:5432/shop_staging
+
+      # ◆ NextAuth — test secret (different from prod)
+      NEXTAUTH_URL: https://staging.${DOMAIN}
+      NEXTAUTH_SECRET: ${STAGING_NEXTAUTH_SECRET}
+
+      # ◆ Identity services
+      LLDAP_URL: ldap://lldap:3890
+      LLDAP_BIND_DN: cn=admin,dc=yourshop,dc=com
+      LLDAP_PASSWORD: ${LLDAP_ADMIN_PASS}
+      KEYCLOAK_URL: http://keycloak:8180
+      KEYCLOAK_REALM: nexus
+
+      # ◆ External services
+      REDIS_URL: redis://redis:6379/1  # DB 1 (prod uses 0)
+      MINIO_URL: http://minio:9000
+      MINIO_BUCKET: shop-staging  # Separate bucket for staging
+      N8N_BASE_URL: http://n8n:5678
+
+      # ◆ JWT configuration (same keys as prod for testing rotating tokens)
+      JWT_ACCESS_TOKEN_EXPIRES: 12h
+      JWT_REFRESH_TOKEN_EXPIRES: 7d
+
+      # ◆ Feature flags (enable/disable features in staging)
+      FEATURE_PAYMENTS: "true"
+      FEATURE_EMAIL: "true"  # Use test SendGrid sandbox
+      FEATURE_ANALYTICS: "true"
+      FEATURE_SEARCH: "true"
+
+      # ◆ Test email config (SendGrid sandbox)
+      SENDGRID_API_KEY: ${STAGING_SENDGRID_API_KEY}
+      SENDGRID_FROM_EMAIL: staging-noreply@${DOMAIN}
+
+      # ◆ Rate limiting (more permissive in staging for testing)
+      RATE_LIMIT_ENABLED: "true"
+      RATE_LIMIT_WINDOW_MS: 900000
+      RATE_LIMIT_MAX_REQUESTS: 100
+
+    networks:
+      - frontend-staging
+      - backend
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      lldap:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"     # Less than prod (0.75)
+          memory: 512M    # Less than prod (768M)
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+    security_opt:
+      - no-new-privileges=true
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING NGINX PM PROXY (reverse proxy for staging)
+  # ──────────────────────────────────────────────────────────
+  nginx-pm-staging:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: nginx-pm-staging
+    restart: unless-stopped
+    ports:
+      - "80:80"    # We'll use different port for staging admin
+      - "443:443"
+      - "81:81"    # Admin UI for staging config
+    environment:
+      DISABLE_IPV6: "true"
+      DB_MYSQL_HOST: mariadb
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: npm
+      DB_MYSQL_PASSWORD: ${NPM_DB_PASS}
+      DB_MYSQL_NAME: npm
+    volumes:
+      - nginx-pm-staging-data:/data
+      - nginx-pm-staging-letsencrypt:/etc/letsencrypt
+    networks:
+      - frontend-staging
+    depends_on:
+      - mariadb
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING DATABASE (PostgreSQL, separate from prod)
+  # Created with: CREATE DATABASE shop_staging;
+  # Already exists — postgres service in main compose
+  # ──────────────────────────────────────────────────────────
+  # shop_staging DB uses existing postgres service
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING GRAFANA (monitoring dashboard for staging perf)
+  # ──────────────────────────────────────────────────────────
+  grafana-staging:
+    image: grafana/grafana:latest
+    container_name: grafana-staging
+    restart: unless-stopped
+    ports:
+      - "3007:3000"  # Staging Grafana on 3007 (prod is 3006)
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASS}
+      GF_INSTALL_PLUGINS: "grafana-piechart-panel"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SMTP_ENABLED: "true"
+      GF_SMTP_HOST: postfix:25
+      GF_SMTP_FROM_ADDRESS: staging-grafana@${DOMAIN}
+    volumes:
+      - grafana-staging-data:/var/lib/grafana
+    networks:
+      - backend
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+
+  # ──────────────────────────────────────────────────────────
+  # STAGING LOKI (log aggregation for staging)
+  # ──────────────────────────────────────────────────────────
+  loki-staging:
+    image: grafana/loki:latest
+    container_name: loki-staging
+    restart: unless-stopped
+    ports:
+      - "3101:3100"  # Loki HTTP API
+    volumes:
+      - loki-staging-data:/loki
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    cap_drop:
+      - ALL
+    user: "1000:1000"
+
+networks:
+  frontend-staging:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-staging-frontend
+
+volumes:
+  nginx-pm-staging-data:
+    driver: local
+  nginx-pm-staging-letsencrypt:
+    driver: local
+  grafana-staging-data:
+    driver: local
+  loki-staging-data:
+    driver: local

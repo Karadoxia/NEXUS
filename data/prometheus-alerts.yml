@@ -1,0 +1,276 @@
+groups:
+  # ====== INFRASTRUCTURE & SYSTEM ======
+  - name: infrastructure-alerts
+    rules:
+      - alert: DiskSpaceWarning
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space low: {{ $labels.instance }}"
+          description: "Less than 15% disk space available ({{ $value | humanizePercentage }})"
+
+      - alert: DiskSpaceCritical
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 CRITICAL: Disk space critically low: {{ $labels.instance }}"
+          description: "Less than 5% disk space available ({{ $value | humanizePercentage }})"
+
+      - alert: ContainerMemoryUsageHigh
+        expr: container_memory_usage_bytes / (1024 * 1024) > 1500
+        for: 5m
+        labels:
+          severity: warning
+          container: "{{ $labels.name }}"
+        annotations:
+          summary: "Container {{ $labels.name }} using high memory"
+          description: "Memory usage: {{ $value | humanize }}MB (limit may trigger OOM)"
+
+      - alert: ContainerCPUUsageHigh
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          container: "{{ $labels.name }}"
+        annotations:
+          summary: "Container {{ $labels.name }} sustained high CPU (>80%)"
+          description: "CPU usage: {{ $value | humanizePercentage }}"
+
+  # ====== DATABASE HEALTH ======
+  - name: database-alerts
+    rules:
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: postgres
+        annotations:
+          summary: "PostgreSQL is down: {{ $labels.instance }}"
+          description: "Postgres connection failed. Service may be crashed."
+
+      - alert: PostgresConnectionsHigh
+        expr: pg_stat_activity_count > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: postgres
+        annotations:
+          summary: "PostgreSQL connection count high: {{ $labels.instance }}"
+          description: "Active connections: {{ $value }} (max ~100). Apps may be leaking connections."
+
+      - alert: PostgresSlowQueries
+        expr: pg_slow_queries > 100
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has many slow queries"
+          description: "Slow query count: {{ $value }}. Consider query optimization."
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down: {{ $labels.instance }}"
+          description: "Redis connection failed. Cache layer offline."
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Memory: {{ $value | humanizePercentage }} (evictions may occur)"
+
+  # ====== HTTP/WEB TRAFFIC ======
+  - name: web-alerts
+    rules:
+      - alert: HTTPErrorRateHigh
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP 5xx error rate > 1%"
+          description: "Error rate: {{ $value | humanizePercentage }}. Check app logs."
+
+      - alert: HTTPRequestLatencyHigh
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP request P95 latency > 1s"
+          description: "Latency: {{ $value | humanize }}s. Performance degradation."
+
+      - alert: ServiceDown
+        expr: probe_success == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service down: {{ $labels.instance }}"
+          description: "Blackbox probe failing. Service unreachable."
+
+  # ====== TLS/CERTIFICATE ======
+  - name: tls-alerts
+    rules:
+      - alert: SSLCertExpiringSoon
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS cert expires in < 14 days: {{ $labels.instance }}"
+          description: "Days until expiry: {{ (($value | toDate).Unix() - now | toDate).Unix() / 86400 }}"
+
+      - alert: SSLCertExpiryCritical
+        expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 3
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🚨 TLS cert expires in < 3 days: {{ $labels.instance }}"
+          description: "URGENT: Certificate renewal needed immediately."
+
+  # ====== OBSERVABILITY & MONITORING ======
+  - name: monitoring-alerts
+    rules:
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 5m
+        labels:
+          severity: warning
+          job: "{{ $labels.job }}"
+        annotations:
+          summary: "Prometheus target down: {{ $labels.job }}/{{ $labels.instance }}"
+          description: "Metric collection failing. Check target health."
+
+      - alert: PrometheusHighCardinality
+        expr: prometheus_tsdb_symbol_table_size_bytes > 100000000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Prometheus cardinality growing (>100MB symbol table)"
+          description: "High cardinality metrics may cause storage/performance issues."
+
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Alertmanager is down"
+          description: "Alert routing offline. No notifications will be sent."
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grafana is down"
+          description: "Visualization dashboard offline. Alerts still working."
+
+      - alert: LokiDown
+        expr: up{job="loki"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Loki log aggregation is down"
+          description: "Log collection offline. Logs not being indexed."
+
+  # ====== SECURITY & SCANNING ======
+  - name: security-alerts
+    rules:
+      - alert: TrivyScanFailed
+        expr: trivy_scan_success == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: trivy-cron
+        annotations:
+          summary: "Trivy scan failed or found high/critical vulnerabilities"
+          description: "trivy_scan_success is 0 for at least 10 minutes. Check scan logs."
+
+      - alert: TrivyScanStale
+        expr: (time() - trivy_scan_last_run_timestamp) > 93600
+        for: 15m
+        labels:
+          severity: critical
+          service: trivy-cron
+        annotations:
+          summary: "Trivy scan metrics are stale (no scan for 26h)"
+          description: "Fresh image scanning not running. Vulnerability scans may be missed."
+
+      - alert: TrivyScanMissingMetrics
+        expr: absent(trivy_scan_last_run_timestamp)
+        for: 15m
+        labels:
+          severity: critical
+          service: trivy-cron
+        annotations:
+          summary: "Trivy metrics are missing"
+          description: "Pushgateway ingestion may be broken. Check Trivy container."
+
+      - alert: CrowdSecDown
+        expr: up{job="crowdsec"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          service: crowdsec
+        annotations:
+          summary: "CrowdSec threat detection is down"
+          description: "Brute force and attack detection offline."
+
+  # ====== SLO & BURN RATE ALERTS (Production SLOs) ======
+  - name: slo-alerts
+    rules:
+      - alert: AvailabilitySLOBreach
+        expr: |
+          (1 - avg_over_time(probe_success{instance="http://nexus-app:3030"}[1h]))
+          > 0.001
+        for: 30m
+        labels:
+          severity: critical
+          slo: "Availability"
+        annotations:
+          summary: "Availability SLO breached (target: 99.9%)"
+          description: "Current availability below 99.9% for past hour. Incident response needed."
+
+      - alert: LatencySLOBreach
+        expr: |
+          histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
+          > 0.5
+        for: 15m
+        labels:
+          severity: warning
+          slo: "Latency"
+        annotations:
+          summary: "Latency SLO breached (target: P95 < 500ms)"
+          description: "P95 latency exceeded 500ms. Performance degradation."
+
+      - alert: ErrorRateSLOBreach
+        expr: |
+          rate(http_requests_total{status=~"5.."}[5m]) /
+          rate(http_requests_total[5m])
+          > 0.01
+        for: 10m
+        labels:
+          severity: warning
+          slo: "ErrorRate"
+        annotations:
+          summary: "Error rate SLO breached (target: < 1%)"
+          description: "HTTP 5xx rate exceeds 1%. Check application logs."

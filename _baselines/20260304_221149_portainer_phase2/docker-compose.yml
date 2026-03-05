@@ -1,38 +1,10 @@
 networks:
-  # External/reverse-proxy tier
+  internal:
+    driver: bridge
+    internal: true
   proxy:
     name: proxy          # explicit name so Traefik's --providers.docker.network=proxy works
     driver: bridge
-
-  # Application backend tier
-  backend:
-    driver: bridge
-    internal: true
-
-  # Database tier (isolated from other services)
-  database:
-    driver: bridge
-    internal: true
-
-  # Identity services tier (lldap, Keycloak, Semaphore)
-  identity:
-    driver: bridge
-    internal: true
-
-  # Monitoring tier (isolated from application logic)
-  monitoring:
-    driver: bridge
-    internal: true
-
-  # Security tools tier (isolated from other tiers)
-  security:
-    driver: bridge
-    internal: true
-
-  # Infrastructure/management tier
-  infrastructure:
-    driver: bridge
-    internal: true
 
 services:
   # === NEXUS APP (Next.js) ===
@@ -40,23 +12,10 @@ services:
     build: .
     container_name: nexus_app
     restart: unless-stopped
-    user: "node"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     ports:
       - "3030:3030"
     networks:
-      - backend
+      - internal
       - proxy
     depends_on:
       postgres:
@@ -109,21 +68,8 @@ services:
     image: postgres:16-alpine
     container_name: nexus_postgres
     restart: unless-stopped
-    user: "postgres"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     networks:
-      - backend
+      - internal
     environment:
       POSTGRES_USER: nexus
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
@@ -141,21 +87,8 @@ services:
     image: postgres:16-alpine
     container_name: nexus_postgres_ai
     restart: unless-stopped
-    user: "postgres"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     networks:
-      - backend
+      - internal
     environment:
       POSTGRES_USER: nexus_ai
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
@@ -175,23 +108,10 @@ services:
     image: postgres:16-alpine
     container_name: nexus_postgres_infra
     restart: unless-stopped
-    user: "postgres"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     ports:
       - "5433:5432"
     networks:
-      - backend
+      - internal
     environment:
       POSTGRES_USER: nexus_infra
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
@@ -210,21 +130,8 @@ services:
     image: redis:7-alpine
     container_name: nexus_redis
     restart: unless-stopped
-    user: "redis"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     networks:
-      - backend
+      - internal
     command: redis-server --requirepass ${REDIS_PASSWORD}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
@@ -244,26 +151,13 @@ services:
     container_name: nexus_rust
     restart: unless-stopped
     networks:
-      - backend
+      - internal
 
   # === TRAEFIK (public entrypoint) ===
   traefik:
     image: traefik:v3.1
     container_name: traefik
     restart: unless-stopped
-    user: "65532:65532"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 64M
     networks:
       - proxy
     ports:
@@ -326,21 +220,8 @@ services:
     image: vaultwarden/server:latest
     container_name: vaultwarden
     restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     networks:
-      - backend
+      - internal
       - proxy
     ports:
       - "127.0.0.1:8080:80"
@@ -368,28 +249,12 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     networks:
-      - backend
+      - internal
       - proxy
-    ports:
-      - "127.0.0.1:9090:9090"
     volumes:
       - prometheus-data:/prometheus
       - ./data/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./data/prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -398,121 +263,17 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
       # Local only — Prometheus must NOT be publicly exposed
       - "traefik.http.routers.prometheus-local.rule=Host(`nexus-prometheus.local`)"
       - "traefik.http.routers.prometheus-local.entrypoints=web"
       - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
 
-  blackbox-exporter:
-    image: prom/blackbox-exporter:latest
-    container_name: blackbox_exporter
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    networks:
-      - backend
-      - proxy
-    ports:
-      - "9115:9115"
-    volumes:
-      - ./data/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
-    command:
-      - '--config.file=/etc/blackbox_exporter/config.yml'
-
-  pushgateway:
-    image: prom/pushgateway:latest
-    container_name: pushgateway
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    networks:
-      - backend
-      - proxy
-    ports:
-      - "9091:9091"
-
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: alertmanager
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
-    networks:
-      - backend
-      - proxy
-    ports:
-      - "127.0.0.1:9093:9093"
-    volumes:
-      - ./data/alertmanager.tmpl.yml:/etc/alertmanager/alertmanager.tmpl.yml:ro
-      - alertmanager-data:/alertmanager
-    environment:
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - "sed \"s|__TELEGRAM_BOT_TOKEN__|$${TELEGRAM_BOT_TOKEN}|g; s|__TELEGRAM_CHAT_ID__|$${TELEGRAM_CHAT_ID}|g\" /etc/alertmanager/alertmanager.tmpl.yml > /tmp/alertmanager.yml && /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
-      # Local only — Alertmanager web UI for managing alerts/silences
-      - "traefik.http.routers.alertmanager-local.rule=Host(`nexus-alertmanager.local`)"
-      - "traefik.http.routers.alertmanager-local.entrypoints=web"
-      - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
-
-
   loki:
     image: grafana/loki:latest
     container_name: loki
     restart: unless-stopped
-    user: "10001:10001"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     networks:
-      - backend
+      - internal
       - proxy
     volumes:
       - loki-data:/loki
@@ -531,21 +292,8 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
-    user: "472:472"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
     networks:
-      - backend
+      - internal
       - proxy
     depends_on:
       - prometheus
@@ -585,21 +333,8 @@ services:
     image: prom/node-exporter:latest
     container_name: node_exporter
     restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
     networks:
-      - backend
+      - internal
     ports:
       - "9100:9100"
     volumes:
@@ -615,22 +350,8 @@ services:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres_exporter
     restart: unless-stopped
-    user: "65534:65534"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
     networks:
-      - backend
-      - proxy
+      - internal
     ports:
       - "9187:9187"
     environment:
@@ -642,22 +363,8 @@ services:
     image: oliver006/redis_exporter:latest
     container_name: redis_exporter
     restart: unless-stopped
-    user: "65534:65534"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
     networks:
-      - backend
-      - proxy
+      - internal
     ports:
       - "9121:9121"
     environment:
@@ -665,60 +372,6 @@ services:
       REDIS_PASSWORD: '${REDIS_PASSWORD}'
     depends_on:
       - redis
-
-  postgres-ai-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres_ai_exporter
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    networks:
-      - backend
-      - proxy
-    ports:
-      - "9188:9187"
-    environment:
-      DATA_SOURCE_NAME: 'postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai?sslmode=disable'
-    depends_on:
-      - postgres-ai
-
-  postgres-infra-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres_infra_exporter
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    networks:
-      - backend
-      - proxy
-    ports:
-      - "9189:9187"
-    environment:
-      DATA_SOURCE_NAME: 'postgresql://nexus_infra:${DB_PASSWORD}@postgres-infra:5432/nexus_infra?sslmode=disable'
-    depends_on:
-      - postgres-infra
 
   # === WIREGUARD VPN ===
   # FIX: switched from unmaintained weejewel/wg-easy to the active fork
@@ -728,24 +381,11 @@ services:
     image: ghcr.io/wg-easy/wg-easy
     container_name: wireguard
     restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
+    networks:
+      - proxy
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
-    networks:
-      - proxy
     devices:
       - /dev/net/tun:/dev/net/tun
     sysctls:
@@ -787,57 +427,13 @@ services:
       - "traefik.http.routers.wireguard-local.entrypoints=web"
       - "traefik.http.services.wireguard.loadbalancer.server.port=51821"
 
-  wireguard-exporter:
-    image: mindflavor/prometheus-wireguard-exporter:latest
-    container_name: wireguard_exporter
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 64M
-        reservations:
-          cpus: '0.05'
-          memory: 16M
-    network_mode: "service:wireguard"
-    depends_on:
-      - wireguard
-    environment:
-      PROMETHEUS_WIREGUARD_EXPORTER_ADDRESS: "0.0.0.0"
-      PROMETHEUS_WIREGUARD_EXPORTER_PORT: "9586"
-      PROMETHEUS_WIREGUARD_EXPORTER_VERBOSE_ENABLED: "false"
-      PROMETHEUS_WIREGUARD_EXPORTER_PREPEND_SUDO_ENABLED: "false"
-    command:
-      - "--prepend_sudo"
-      - "false"
-    cap_add:
-      - NET_ADMIN
-
   # === TELEGRAM NOTIFIER (SMS/OTP replacement) ===
   telegram-notify:
     image: planecore/notifybot
     container_name: telegram_notify
     restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
     networks:
-      - backend
+      - internal
     environment:
       BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
@@ -849,29 +445,13 @@ services:
     image: louislam/uptime-kuma
     container_name: uptime_kuma
     restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     networks:
-      - backend
+      - internal
       - proxy
-    ports:
-      - "127.0.0.1:3001:3001"
     volumes:
       - uptime-data:/app/data
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=proxy"
       # Public: HTTP → HTTPS redirect
       - "traefik.http.routers.uptime.rule=Host(`status.nexus-io.duckdns.org`)"
       - "traefik.http.routers.uptime.entrypoints=web"
@@ -894,23 +474,10 @@ services:
     image: n8nio/n8n:latest
     container_name: n8n
     restart: unless-stopped
-    user: "node"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     ports:
       - "5678:5678"
     networks:
-      - backend
+      - internal
       - proxy
     depends_on:
       postgres-infra:
@@ -941,9 +508,6 @@ services:
       # Disable telemetry / diagnostics to avoid external network calls that slow login
       N8N_DIAGNOSTICS_ENABLED: "false"
       N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
-      N8N_METRICS: "true"
-      N8N_METRICS_INCLUDE_QUEUE_METRICS: "true"
-      N8N_METRICS_INCLUDE_WORKFLOW_METRICS: "true"
       # Admin email for reports/alerts
       ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech78@gmail.com}
       # Telegram Integration - Required for 12 workflows
@@ -976,21 +540,8 @@ services:
       dockerfile: Dockerfile.mcp
     container_name: n8n_mcp
     restart: unless-stopped
-    user: "node"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     networks:
-      - backend
+      - internal
       - proxy
     depends_on:
       - n8n
@@ -1033,19 +584,6 @@ services:
     image: jc21/nginx-proxy-manager:latest
     container_name: nginx_proxy_manager
     restart: unless-stopped
-    user: "101:101"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     networks:
       - proxy
     ports:
@@ -1076,34 +614,13 @@ services:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     restart: unless-stopped
-    user: "65534:65534"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
+    privileged: true
     networks:
-      - backend
-      - proxy
-    ports:
-      - "127.0.0.1:8081:8080"
+      - internal
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    labels:
-      - "traefik.enable=false"
-      - "traefik.docker.network=proxy"
-    command:
-      - "--port=8080"
       - /var/lib/docker/:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
     devices:
@@ -1114,21 +631,8 @@ services:
     image: portainer/portainer-ce:latest
     container_name: portainer
     restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     networks:
-      - backend
+      - internal
       - proxy
     ports:
       - "127.0.0.1:9000:9000"
@@ -1175,19 +679,6 @@ services:
     image: crowdsecurity/crowdsec:v1.6.4
     container_name: nexus_crowdsec
     restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     environment:
       - COLLECTIONS=crowdsecurity/traefik crowdsecurity/docker crowdsecurity/http
       - BOUNCER_KEY=${CROWDSEC_BOUNCER_KEY}
@@ -1198,7 +689,7 @@ services:
       - /var/log/traefik:/var/log/traefik:ro
       - ./logs:/var/log/nexus:ro
     networks:
-      - backend
+      - internal
       - proxy
     labels:
       - "traefik.enable=true"
@@ -1210,23 +701,8 @@ services:
     image: falcosecurity/falco:0.38.2
     container_name: nexus_falco
     restart: unless-stopped
+    privileged: true
     user: root
-    security_opt:
-      - no-new-privileges:false
-    cap_add:
-      - SYS_PTRACE
-      - SYS_RESOURCE
-      - SYS_ADMIN
-      - SYS_CHROOT
-    cap_drop: []
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock:ro
       - /proc:/host/proc:ro
@@ -1234,7 +710,7 @@ services:
       - ./falco/falco_rules.local.yaml:/etc/falco/rules.d/nexus_rules.yaml:ro
     command: falco -o "json_output=true" -o "json_include_output_property=true"
     networks:
-      - backend
+      - internal
       - proxy
     labels:
       - "traefik.enable=true"
@@ -1246,27 +722,12 @@ services:
     image: aquasec/trivy:0.58.0
     container_name: nexus_trivy_cron
     restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - "while true; do ts=$$(date +%s); trivy image --quiet --format table --exit-code 1 --severity HIGH,CRITICAL nexus-v2-nexus-app; c1=$$?; trivy image --quiet --format table --exit-code 1 --severity HIGH,CRITICAL n8nio/n8n:latest; c2=$$?; code=0; if [ $$c1 -ne 0 ] || [ $$c2 -ne 0 ]; then code=1; fi; status=0; if [ $$code -eq 0 ]; then status=1; fi; printf 'trivy_scan_last_run_timestamp %s\\ntrivy_scan_exit_code %s\\ntrivy_scan_success %s\\n' $$ts $$code $$status >/tmp/trivy_metrics.prom; if command -v curl >/dev/null 2>&1; then curl -s --data-binary @/tmp/trivy_metrics.prom http://pushgateway:9091/metrics/job/trivy_cron >/dev/null; elif command -v wget >/dev/null 2>&1; then wget -qO- --post-file=/tmp/trivy_metrics.prom http://pushgateway:9091/metrics/job/trivy_cron >/dev/null; fi; sleep 86400; done"
+    command: >
+      sh -c "while true; do trivy image --format table --exit-code 1 --severity HIGH,CRITICAL nexus_app:latest n8n:latest && sleep 86400; done"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
-      - backend
-      - proxy
+      - internal
 
   # === CLOUDFLARE TUNNEL (Secure Remote Access) ================================
   # Provides secure public access without port forwarding
@@ -1284,178 +745,6 @@ services:
     profiles:
       - cloudflare-tunnel
 
-  # === IDENTITY SERVICES =================================================
-  # lldap — LDAP directory server (identity, user management)
-  lldap:
-    image: lldap/lldap:stable
-    container_name: lldap
-    restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
-    networks:
-      - backend
-      - identity
-    ports:
-      - "127.0.0.1:3890:3890"     # LDAP protocol (internal only)
-      - "17170:17170"             # Web UI
-    environment:
-      LLDAP_JWT_SECRET: ${LLDAP_JWT_SECRET:-change-me-generate-with-openssl}
-      LLDAP_LDAP_USER_PASS: ${LLDAP_ADMIN_PASSWORD:-change-me-generate-with-openssl}
-      LLDAP_LDAP_BASE_DN: dc=yourshop,dc=com
-    volumes:
-      - lldap-data:/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-    labels:
-      - "traefik.enable=true"
-      # Direct web UI access (internal only on :17170)
-      - "traefik.tcp.routers.lldap.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.lldap.entrypoints=ldap"
-      - "traefik.tcp.services.lldap.loadbalancer.server.port=3890"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:17170"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # Keycloak — OAuth2/OIDC identity broker (Federation from lldap)
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
-    container_name: keycloak
-    restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 512M
-    networks:
-      - backend
-      - identity
-      - proxy
-    ports:
-      - "8180:8080"
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-change-me}
-      KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: ${DB_PASSWORD}
-      KC_PROXY: edge
-      KC_HOSTNAME_STRICT: 'false'
-      KC_HTTP_ENABLED: 'true'
-      KC_LOG_LEVEL: INFO
-    depends_on:
-      postgres:
-        condition: service_healthy
-    labels:
-      - "traefik.enable=true"
-      # Public HTTPS access
-      - "traefik.http.routers.keycloak-tls.rule=Host(`keycloak.nexus-io.duckdns.org`) || Host(`keycloak.yourshop.com`)"
-      - "traefik.http.routers.keycloak-tls.entrypoints=websecure"
-      - "traefik.http.routers.keycloak-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.keycloak-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
-      # Local access
-      - "traefik.http.routers.keycloak-local.rule=Host(`keycloak.local`) || Host(`nexus-keycloak.local`)"
-      - "traefik.http.routers.keycloak-local.entrypoints=web"
-      - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 40s
-
-  # Ansible Semaphore — Playbook execution + audit trail
-  semaphore:
-    image: semaphoreui/semaphore:latest
-    container_name: semaphore
-    restart: unless-stopped
-    user: "1000:1000"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.1'
-          memory: 256M
-    networks:
-      - backend
-      - identity
-      - infrastructure
-      - proxy
-    ports:
-      - "3001:3000"
-    environment:
-      SEMAPHORE_DB_USER: semaphore
-      SEMAPHORE_DB_PASS: ${DB_PASSWORD}
-      SEMAPHORE_DB_HOST: postgres
-      SEMAPHORE_DB_PORT: "5432"
-      SEMAPHORE_DB_DIALECT: postgres
-      SEMAPHORE_DB: semaphore
-      SEMAPHORE_ADMIN: admin
-      SEMAPHORE_ADMIN_EMAIL: caspertech78@gmail.com
-      SEMAPHORE_ADMIN_PASSWORD: ${SEMAPHORE_ADMIN_PASSWORD:-change-me}
-      SEMAPHORE_ACCESS_KEY_ENCRYPTION: ${SEMAPHORE_ENCRYPT_KEY:-change-me-generate-random-32-chars}
-      # LDAP Integration
-      SEMAPHORE_LDAP_ACTIVATED: "yes"
-      SEMAPHORE_LDAP_HOST: lldap
-      SEMAPHORE_LDAP_PORT: "3890"
-      SEMAPHORE_LDAP_DN_BIND: "cn=svc.readonly,ou=people,dc=yourshop,dc=com"
-      SEMAPHORE_LDAP_PASSWORD: ${LDAP_READONLY_PASSWORD:-change-me}
-      SEMAPHORE_LDAP_DN_SEARCH: "dc=yourshop,dc=com"
-      SEMAPHORE_LDAP_SEARCH_FILTER: "(&(uid=%s)(memberOf=cn=infra_admins,ou=groups,dc=yourshop,dc=com))"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      lldap:
-        condition: service_healthy
-    volumes:
-      - semaphore-data:/home/semaphore
-      - ./ansible-playbooks:/home/semaphore/ansible:ro
-    labels:
-      - "traefik.enable=true"
-      # Public HTTPS
-      - "traefik.http.routers.semaphore-tls.rule=Host(`semaphore.nexus-io.duckdns.org`) || Host(`semaphore.yourshop.com`)"
-      - "traefik.http.routers.semaphore-tls.entrypoints=websecure"
-      - "traefik.http.routers.semaphore-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.semaphore-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
-      # Local access
-      - "traefik.http.routers.semaphore-local.rule=Host(`semaphore.local`) || Host(`nexus-semaphore.local`)"
-      - "traefik.http.routers.semaphore-local.entrypoints=web"
-      - "traefik.http.services.semaphore.loadbalancer.server.port=3000"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # === FAIL2BAN (SSH Brute Force Protection) ===================================
   # Monitors logs and bans IPs after failed login attempts
   fail2ban:
@@ -1463,7 +752,7 @@ services:
     container_name: fail2ban
     restart: unless-stopped
     networks:
-      - backend
+      - internal
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -1483,7 +772,6 @@ volumes:
   letsencrypt:
   vw-data:
   prometheus-data:
-  alertmanager-data:
   loki-data:
   grafana-data:
   wireguard-config:
@@ -1495,8 +783,6 @@ volumes:
   crowdsec-db:
   crowdsec-config:
   portainer_data:
-  lldap-data:
-  semaphore-data:
 
 secrets:
   db_password:
