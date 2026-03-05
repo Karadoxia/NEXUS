@@ -38,7 +38,7 @@ services:
   # === NEXUS APP (Next.js) ===
   nexus-app:
     build: .
-    container_name: nexus_app
+    container_name: nexus-app
     restart: unless-stopped
     user: "node"
     security_opt:
@@ -107,7 +107,7 @@ services:
   # === DB & CACHE (internal only) ===
   postgres:
     image: postgres:16-alpine
-    container_name: nexus_postgres
+    container_name: nexus-postgres
     restart: unless-stopped
     user: "postgres"
     security_opt:
@@ -139,7 +139,7 @@ services:
   # === AI/ML DEDICATED DATABASE ===
   postgres-ai:
     image: postgres:16-alpine
-    container_name: nexus_postgres_ai
+    container_name: nexus-postgres-ai
     restart: unless-stopped
     user: "postgres"
     security_opt:
@@ -173,7 +173,7 @@ services:
   # === INFRASTRUCTURE DEDICATED DATABASE (n8n, Vault, Monitoring) ===
   postgres-infra:
     image: postgres:16-alpine
-    container_name: nexus_postgres_infra
+    container_name: nexus-postgres-infra
     restart: unless-stopped
     user: "postgres"
     security_opt:
@@ -208,7 +208,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: nexus_redis
+    container_name: nexus-redis
     restart: unless-stopped
     user: "redis"
     security_opt:
@@ -241,7 +241,7 @@ services:
   nexus-rust-service:
     profiles: [rust]
     build: ./rust-agents/crates/service
-    container_name: nexus_rust
+    container_name: nexus-rust
     restart: unless-stopped
     networks:
       - backend
@@ -249,7 +249,7 @@ services:
   # === TRAEFIK (public entrypoint) ===
   traefik:
     image: traefik:v3.1
-    container_name: traefik
+    container_name: nexus-traefik
     restart: unless-stopped
     user: "65532:65532"
     security_opt:
@@ -324,7 +324,7 @@ services:
   # Solution: bind port 8080 on localhost — http://localhost:8080 IS a secure context.
   vaultwarden:
     image: vaultwarden/server:latest
-    container_name: vaultwarden
+    container_name: nexus-vaultwarden
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -366,7 +366,7 @@ services:
   # === MONITORING (Grafana + Prometheus + Loki) ===
   prometheus:
     image: prom/prometheus:latest
-    container_name: prometheus
+    container_name: nexus-prometheus
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -406,7 +406,7 @@ services:
 
   blackbox-exporter:
     image: prom/blackbox-exporter:latest
-    container_name: blackbox_exporter
+    container_name: nexus-blackbox-exporter
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -433,7 +433,7 @@ services:
 
   pushgateway:
     image: prom/pushgateway:latest
-    container_name: pushgateway
+    container_name: nexus-pushgateway
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -456,7 +456,7 @@ services:
 
   alertmanager:
     image: prom/alertmanager:latest
-    container_name: alertmanager
+    container_name: nexus-alertmanager
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -496,7 +496,7 @@ services:
 
   loki:
     image: grafana/loki:latest
-    container_name: loki
+    container_name: nexus-loki
     restart: unless-stopped
     user: "10001:10001"
     security_opt:
@@ -529,7 +529,7 @@ services:
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: nexus-grafana
     restart: unless-stopped
     user: "472:472"
     security_opt:
@@ -583,7 +583,7 @@ services:
   # === EXPORTERS (for Prometheus metrics) ===
   node_exporter:
     image: prom/node-exporter:latest
-    container_name: node_exporter
+    container_name: nexus-node-exporter
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -613,7 +613,7 @@ services:
 
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres_exporter
+    container_name: nexus-postgres-exporter
     restart: unless-stopped
     user: "65534:65534"
     security_opt:
@@ -640,7 +640,7 @@ services:
 
   redis_exporter:
     image: oliver006/redis_exporter:latest
-    container_name: redis_exporter
+    container_name: nexus-redis-exporter
     restart: unless-stopped
     user: "65534:65534"
     security_opt:
@@ -668,7 +668,7 @@ services:
 
   postgres-ai-exporter:
     image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres_ai_exporter
+    container_name: nexus-postgres-ai-exporter
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -695,7 +695,7 @@ services:
 
   postgres-infra-exporter:
     image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres_infra_exporter
+    container_name: nexus-postgres-infra-exporter
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -726,7 +726,7 @@ services:
   # and correctly handles WG_ALLOWED_IPS, WG_DEFAULT_DNS, etc.
   wireguard:
     image: ghcr.io/wg-easy/wg-easy
-    container_name: wireguard
+    container_name: nexus-wireguard
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -789,7 +789,7 @@ services:
 
   wireguard-exporter:
     image: mindflavor/prometheus-wireguard-exporter:latest
-    container_name: wireguard_exporter
+    container_name: nexus-wireguard-exporter
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -821,7 +821,7 @@ services:
   # === TELEGRAM NOTIFIER (SMS/OTP replacement) ===
   telegram-notify:
     image: planecore/notifybot
-    container_name: telegram_notify
+    container_name: nexus-telegram-notify
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -847,7 +847,7 @@ services:
   # === UPTIME KUMA (monitoring) ===
   uptime-kuma:
     image: louislam/uptime-kuma
-    container_name: uptime_kuma
+    container_name: nexus-uptime-kuma
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -892,7 +892,7 @@ services:
   # n8n will restart automatically once the database is available.
   n8n:
     image: n8nio/n8n:latest
-    container_name: n8n
+    container_name: nexus-n8n
     restart: unless-stopped
     user: "node"
     security_opt:
@@ -974,7 +974,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.mcp
-    container_name: n8n_mcp
+    container_name: nexus-n8n-mcp
     restart: unless-stopped
     user: "node"
     security_opt:
@@ -1031,7 +1031,7 @@ services:
   #   use "DNS Challenge" in NPM → configure your DNS provider API token.
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
-    container_name: nginx_proxy_manager
+    container_name: nexus-nginx-pm
     restart: unless-stopped
     user: "101:101"
     security_opt:
@@ -1074,7 +1074,7 @@ services:
   # cAdvisor — per-container CPU/RAM/network/disk metrics
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
-    container_name: cadvisor
+    container_name: nexus-cadvisor
     restart: unless-stopped
     user: "65534:65534"
     security_opt:
@@ -1112,7 +1112,7 @@ services:
   # === PORTAINER (Container Management) =======================================
   portainer:
     image: portainer/portainer-ce:latest
-    container_name: portainer
+    container_name: nexus-portainer
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -1173,7 +1173,7 @@ services:
 
   crowdsec:
     image: crowdsecurity/crowdsec:v1.6.4
-    container_name: nexus_crowdsec
+    container_name: nexus-crowdsec
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -1208,7 +1208,7 @@ services:
 
   falco:
     image: falcosecurity/falco:0.38.2
-    container_name: nexus_falco
+    container_name: nexus-falco
     restart: unless-stopped
     user: root
     security_opt:
@@ -1244,7 +1244,7 @@ services:
 
   trivy-cron:
     image: aquasec/trivy:0.58.0
-    container_name: nexus_trivy_cron
+    container_name: nexus-trivy-cron
     restart: unless-stopped
     user: "nobody"
     security_opt:
@@ -1274,7 +1274,7 @@ services:
   # Setup: https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared
+    container_name: nexus-cloudflared
     restart: unless-stopped
     networks:
       - proxy
@@ -1288,7 +1288,7 @@ services:
   # lldap — LDAP directory server (identity, user management)
   lldap:
     image: lldap/lldap:stable
-    container_name: lldap
+    container_name: nexus-lldap
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -1334,7 +1334,7 @@ services:
   # Keycloak — OAuth2/OIDC identity broker (Federation from lldap)
   keycloak:
     image: quay.io/keycloak/keycloak:latest
-    container_name: keycloak
+    container_name: nexus-keycloak
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -1390,7 +1390,7 @@ services:
   # Ansible Semaphore — Playbook execution + audit trail
   semaphore:
     image: semaphoreui/semaphore:latest
-    container_name: semaphore
+    container_name: nexus-semaphore
     restart: unless-stopped
     user: "1000:1000"
     security_opt:
@@ -1460,7 +1460,7 @@ services:
   # Monitors logs and bans IPs after failed login attempts
   fail2ban:
     image: crazymax/fail2ban:latest
-    container_name: fail2ban
+    container_name: nexus-fail2ban
     restart: unless-stopped
     networks:
       - backend
