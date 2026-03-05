@@ -1,8 +1,10 @@
+name: nexus-v2
+
 networks:
   # External/reverse-proxy tier
   proxy:
-    name: proxy          # explicit name so Traefik's --providers.docker.network=proxy works
-    driver: bridge
+    name: proxy # explicit name so Traefik's --providers.docker.network=proxy works
+    external: true
 
   # Application backend tier
   backend:
@@ -48,10 +50,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     ports:
       - "3030:3030"
@@ -61,8 +63,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      postgres-infra:
-        condition: service_healthy
       postgres-ai:
         condition: service_healthy
       redis:
@@ -70,13 +70,17 @@ services:
     environment:
       DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2
       HR_DATABASE_URL: postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_hr
-      INFRA_DATABASE_URL: postgresql://nexus_infra:${DB_PASSWORD}@postgres-infra:5432/nexus_infra
       AI_DATABASE_URL: postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai
-      NEXTAUTH_SECRET: ${JWT_SECRET}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      RUN_MIGRATIONS: "true"
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-https://app.nexus-io.duckdns.org}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://app.nexus-io.duckdns.org}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-caspertech78@gmail.com}
       EMAIL_FROM: ${EMAIL_FROM:-NEXUS Store <onboarding@resend.dev>}
+      INFRA_DATABASE_URL: postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai
+      RESEND_API_KEY: ${RESEND_API_KEY}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       N8N_API_KEY: ${N8N_API_KEY}
     secrets:
@@ -117,10 +121,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'
+          cpus: "2.0"
           memory: 2G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     networks:
       - backend
@@ -149,10 +153,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 256M
     networks:
       - backend
@@ -170,42 +174,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # === INFRASTRUCTURE DEDICATED DATABASE (n8n, Vault, Monitoring) ===
-  postgres-infra:
-    image: postgres:16-alpine
-    container_name: nexus-postgres-infra
-    restart: unless-stopped
-    user: "postgres"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    ports:
-      - "5433:5432"
-    networks:
-      - backend
-    environment:
-      POSTGRES_USER: nexus_infra
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-      POSTGRES_DB: nexus_infra
-    secrets:
-      - db_password
-    volumes:
-      - nexus_infra_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexus_infra"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     container_name: nexus-redis
@@ -218,10 +186,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     networks:
       - backend
@@ -251,7 +219,7 @@ services:
     image: traefik:v3.1
     container_name: nexus-traefik
     restart: unless-stopped
-    user: "65532:65532"
+    user: "65532:120" # Run as non-root user with docker group (GID 120)
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -259,10 +227,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 256M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 64M
     networks:
       - proxy
@@ -326,7 +294,7 @@ services:
     image: vaultwarden/server:latest
     container_name: nexus-vaultwarden
     restart: unless-stopped
-    user: "1000:1000"
+    user: "0:0"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -334,10 +302,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 64M
     networks:
       - backend
@@ -376,10 +344,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 256M
     networks:
       - backend
@@ -391,11 +359,11 @@ services:
       - ./data/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./data/prometheus-alerts.yml:/etc/prometheus/alerts.yml:ro
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -416,10 +384,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
@@ -429,7 +397,7 @@ services:
     volumes:
       - ./data/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
     command:
-      - '--config.file=/etc/blackbox_exporter/config.yml'
+      - "--config.file=/etc/blackbox_exporter/config.yml"
 
   pushgateway:
     image: prom/pushgateway:latest
@@ -443,10 +411,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
@@ -466,10 +434,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 64M
     networks:
       - backend
@@ -484,7 +452,7 @@ services:
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
     entrypoint: ["/bin/sh", "-c"]
     command:
-      - "sed \"s|__TELEGRAM_BOT_TOKEN__|$${TELEGRAM_BOT_TOKEN}|g; s|__TELEGRAM_CHAT_ID__|$${TELEGRAM_CHAT_ID}|g\" /etc/alertmanager/alertmanager.tmpl.yml > /tmp/alertmanager.yml && /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager"
+      - 'sed "s|__TELEGRAM_BOT_TOKEN__|$${TELEGRAM_BOT_TOKEN}|g; s|__TELEGRAM_CHAT_ID__|$${TELEGRAM_CHAT_ID}|g" /etc/alertmanager/alertmanager.tmpl.yml > /tmp/alertmanager.yml && /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager'
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -492,7 +460,6 @@ services:
       - "traefik.http.routers.alertmanager-local.rule=Host(`nexus-alertmanager.local`)"
       - "traefik.http.routers.alertmanager-local.entrypoints=web"
       - "traefik.http.services.alertmanager.loadbalancer.server.port=9093"
-
 
   loki:
     image: grafana/loki:latest
@@ -506,10 +473,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     networks:
       - backend
@@ -539,10 +506,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
     networks:
       - backend
@@ -593,10 +560,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
@@ -607,9 +574,9 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
 
   postgres_exporter:
     image: prometheuscommunity/postgres-exporter:latest
@@ -623,10 +590,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
@@ -634,7 +601,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: 'postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2?sslmode=disable'
+      DATA_SOURCE_NAME: "postgresql://nexus:${DB_PASSWORD}@postgres:5432/nexus_v2?sslmode=disable"
     depends_on:
       - postgres
 
@@ -650,10 +617,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
@@ -661,8 +628,8 @@ services:
     ports:
       - "9121:9121"
     environment:
-      REDIS_ADDR: 'redis:6379'
-      REDIS_PASSWORD: '${REDIS_PASSWORD}'
+      REDIS_ADDR: "redis:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
     depends_on:
       - redis
 
@@ -678,10 +645,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
@@ -689,36 +656,9 @@ services:
     ports:
       - "9188:9187"
     environment:
-      DATA_SOURCE_NAME: 'postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai?sslmode=disable'
+      DATA_SOURCE_NAME: "postgresql://nexus_ai:${DB_PASSWORD}@postgres-ai:5432/nexus_ai?sslmode=disable"
     depends_on:
       - postgres-ai
-
-  postgres-infra-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: nexus-postgres-infra-exporter
-    restart: unless-stopped
-    user: "nobody"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 128M
-        reservations:
-          cpus: '0.05'
-          memory: 32M
-    networks:
-      - backend
-      - proxy
-    ports:
-      - "9189:9187"
-    environment:
-      DATA_SOURCE_NAME: 'postgresql://nexus_infra:${DB_PASSWORD}@postgres-infra:5432/nexus_infra?sslmode=disable'
-    depends_on:
-      - postgres-infra
 
   # === WIREGUARD VPN ===
   # FIX: switched from unmaintained weejewel/wg-easy to the active fork
@@ -728,21 +668,22 @@ services:
     image: ghcr.io/wg-easy/wg-easy
     container_name: nexus-wireguard
     restart: unless-stopped
-    user: "1000:1000"
+    user: "0:0"
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL - Removed to ensure iptables and networking function correctly
     cap_add:
       - NET_ADMIN
+      - NET_RAW
       - SYS_MODULE
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 64M
     networks:
       - proxy
@@ -799,10 +740,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 64M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 16M
     network_mode: "service:wireguard"
     depends_on:
@@ -823,7 +764,7 @@ services:
     image: planecore/notifybot
     container_name: nexus-telegram-notify
     restart: unless-stopped
-    user: "nobody"
+    user: "0:0"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -831,16 +772,17 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
         reservations:
-          cpus: '0.05'
+          cpus: "0.05"
           memory: 32M
     networks:
       - backend
     environment:
       BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
+    command: ["sh", "./docker-start.sh"]
     volumes:
       - ./notify-db:/usr/src/app/db
 
@@ -849,18 +791,18 @@ services:
     image: louislam/uptime-kuma
     container_name: nexus-uptime-kuma
     restart: unless-stopped
-    user: "1000:1000"
+    user: "0:0"
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL - Removed to allow setpriv to function correctly
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 64M
     networks:
       - backend
@@ -902,10 +844,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 256M
     ports:
       - "5678:5678"
@@ -913,16 +855,14 @@ services:
       - backend
       - proxy
     depends_on:
-      postgres-infra:
-        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
       DB_TYPE: postgresdb
-      DB_POSTGRESDB_HOST: postgres-infra
+      DB_POSTGRESDB_HOST: nexus-postgres
       DB_POSTGRESDB_PORT: "5432"
       DB_POSTGRESDB_DATABASE: n8n
-      DB_POSTGRESDB_USER: nexus_infra
+      DB_POSTGRESDB_USER: nexus
       DB_POSTGRESDB_PASSWORD: ${DB_PASSWORD}
       N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-changeme32charslongpleasechange}
       # Local vs production settings — override via .env for production
@@ -931,6 +871,9 @@ services:
       WEBHOOK_URL: ${N8N_WEBHOOK_URL:-https://n8n.nexus-io.duckdns.org}
       N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-true}
       EXECUTIONS_MODE: regular
+      # Admin account initialization
+      N8N_DEFAULT_ADMIN_EMAIL: caspertech92@gmail.com
+      N8N_DEFAULT_ADMIN_PASSWORD: C@sper@22032011
       # Queue mode disabled - no workers configured
       # QUEUE_BULL_REDIS_HOST: redis
       # QUEUE_BULL_REDIS_PORT: "6379"
@@ -968,53 +911,6 @@ services:
       - "traefik.http.routers.n8n-local.entrypoints=web"
       - "traefik.http.services.n8n.loadbalancer.server.port=5678"
 
-  # === n8n MCP SERVER (Model Context Protocol) =====================================
-  # Enables Claude and other AI models to interact with n8n workflows via REST API
-  n8n-mcp:
-    build:
-      context: .
-      dockerfile: Dockerfile.mcp
-    container_name: nexus-n8n-mcp
-    restart: unless-stopped
-    user: "node"
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
-    networks:
-      - backend
-      - proxy
-    depends_on:
-      - n8n
-    environment:
-      N8N_API_BASE: http://n8n:5678/api/v1
-      N8N_API_KEY: ${N8N_API_KEY}
-      MCP_PORT: "3000"
-      NODE_ENV: production
-    labels:
-      - "traefik.enable=true"
-      # Public: HTTP → HTTPS redirect
-      - "traefik.http.routers.mcp.rule=Host(`mcp.nexus-io.duckdns.org`)"
-      - "traefik.http.routers.mcp.entrypoints=web"
-      - "traefik.http.routers.mcp.middlewares=https-redirect"
-      # Public: HTTPS (TLS)
-      - "traefik.http.routers.mcp-tls.rule=Host(`mcp.nexus-io.duckdns.org`)"
-      - "traefik.http.routers.mcp-tls.entrypoints=websecure"
-      - "traefik.http.routers.mcp-tls.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.mcp-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
-      # Local: http://nexus-mcp.local
-      - "traefik.http.routers.mcp-local.rule=Host(`nexus-mcp.local`)"
-      - "traefik.http.routers.mcp-local.entrypoints=web"
-      - "traefik.http.services.mcp.loadbalancer.server.port=3000"
-
   # === NGINX PROXY MANAGER — SSL Certificate Management UI ===
   # Free/open-source cert manager with web dashboard and Let's Encrypt auto-renewal.
   # Complements Traefik: Traefik handles all service routing/certs automatically,
@@ -1033,18 +929,18 @@ services:
     image: jc21/nginx-proxy-manager:latest
     container_name: nexus-nginx-pm
     restart: unless-stopped
-    user: "101:101"
+    # user: "101:101" - Removed to allow s6-overlay to manage permissions
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL - Removed to allow Nginx and management processes to function
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     networks:
       - proxy
@@ -1073,7 +969,7 @@ services:
   # === MONITORING EXPORTERS =====================================================
   # cAdvisor — per-container CPU/RAM/network/disk metrics
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: nexus-cadvisor
     restart: unless-stopped
     user: "65534:65534"
@@ -1084,10 +980,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 64M
     networks:
       - backend
@@ -1114,7 +1010,7 @@ services:
     image: portainer/portainer-ce:latest
     container_name: nexus-portainer
     restart: unless-stopped
-    user: "1000:1000"
+    user: "0:0"
     security_opt:
       - no-new-privileges:true
     cap_drop:
@@ -1122,10 +1018,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     networks:
       - backend
@@ -1145,11 +1041,19 @@ services:
       PORTAINER_SECURECOOKIE: "true"
       PORTAINER_HTTPSONLY: "false"
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/api/status"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:9000/api/system/status",
+        ]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 20s
+      retries: 5
+      start_period: 60s
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
@@ -1175,21 +1079,21 @@ services:
     image: crowdsecurity/crowdsec:v1.6.4
     container_name: nexus-crowdsec
     restart: unless-stopped
-    user: "1000:1000"
+    user: "0:0"
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL - Removed to allow crowdsec to manage its environment and collections
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 64M
     environment:
-      - COLLECTIONS=crowdsecurity/traefik crowdsecurity/docker crowdsecurity/http
+      - COLLECTIONS=crowdsecurity/traefik
       - BOUNCER_KEY=${CROWDSEC_BOUNCER_KEY}
       - GID=${GID:-1000}
     volumes:
@@ -1207,12 +1111,12 @@ services:
       - "traefik.http.services.crowdsec.loadbalancer.server.port=8080"
 
   falco:
-    image: falcosecurity/falco:0.38.2
+    image: falcosecurity/falco-no-driver:latest
     container_name: nexus-falco
     restart: unless-stopped
-    user: root
-    security_opt:
-      - no-new-privileges:false
+    privileged: true
+    environment:
+      - FALCO_DRIVER_CHOICE=modern_ebpf
     cap_add:
       - SYS_PTRACE
       - SYS_RESOURCE
@@ -1222,10 +1126,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock:ro
@@ -1254,10 +1158,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -1290,29 +1194,30 @@ services:
     image: lldap/lldap:stable
     container_name: nexus-lldap
     restart: unless-stopped
-    user: "1000:1000"
+    # user: "1000:1000"  # Commented out - LLDAP needs root to setup permissions
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL  # Commented out - LLDAP needs capabilities to manage /data folder
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 128M
     networks:
       - backend
       - identity
+      - proxy
     ports:
-      - "127.0.0.1:3890:3890"     # LDAP protocol (internal only)
-      - "17170:17170"             # Web UI
+      - "127.0.0.1:3890:3890" # LDAP protocol (internal only)
+      - "17170:17170" # Web UI
     environment:
       LLDAP_JWT_SECRET: ${LLDAP_JWT_SECRET:-change-me-generate-with-openssl}
       LLDAP_LDAP_USER_PASS: ${LLDAP_ADMIN_PASSWORD:-change-me-generate-with-openssl}
-      LLDAP_LDAP_BASE_DN: dc=yourshop,dc=com
+      LLDAP_LDAP_BASE_DN: dc=nexus-io,dc=org
     volumes:
       - lldap-data:/data
     depends_on:
@@ -1320,10 +1225,16 @@ services:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      # Direct web UI access (internal only on :17170)
-      - "traefik.tcp.routers.lldap.rule=HostSNI(`*`)"
-      - "traefik.tcp.routers.lldap.entrypoints=ldap"
-      - "traefik.tcp.services.lldap.loadbalancer.server.port=3890"
+
+      # Web UI (HTTP/HTTPS)
+      - "traefik.http.routers.lldap-web.rule=Host(`lldap.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.lldap-web.entrypoints=web"
+      - "traefik.http.routers.lldap-web.middlewares=https-redirect"
+      - "traefik.http.routers.lldap-web-tls.rule=Host(`lldap.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.lldap-web-tls.entrypoints=websecure"
+      - "traefik.http.routers.lldap-web-tls.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lldap-web-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
+      - "traefik.http.services.lldap-web.loadbalancer.server.port=17170"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:17170"]
       interval: 30s
@@ -1336,18 +1247,19 @@ services:
     image: quay.io/keycloak/keycloak:latest
     container_name: nexus-keycloak
     restart: unless-stopped
-    user: "1000:1000"
+    # user: "1000:1000"  # Commented out - Keycloak needs proper permissions
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL  # Commented out - Keycloak needs capabilities
+    command: start
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 1G
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 512M
     networks:
       - backend
@@ -1363,16 +1275,20 @@ services:
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: ${DB_PASSWORD}
       KC_PROXY: edge
-      KC_HOSTNAME_STRICT: 'false'
-      KC_HTTP_ENABLED: 'true'
+      KC_HOSTNAME_STRICT: "false"
+      KC_HTTP_ENABLED: "true"
       KC_LOG_LEVEL: INFO
     depends_on:
       postgres:
         condition: service_healthy
     labels:
       - "traefik.enable=true"
-      # Public HTTPS access
-      - "traefik.http.routers.keycloak-tls.rule=Host(`keycloak.nexus-io.duckdns.org`) || Host(`keycloak.yourshop.com`)"
+      # Public: HTTP → HTTPS redirect
+      - "traefik.http.routers.keycloak.rule=Host(`keycloak.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.keycloak.entrypoints=web"
+      - "traefik.http.routers.keycloak.middlewares=https-redirect"
+      # Public: HTTPS (TLS)
+      - "traefik.http.routers.keycloak-tls.rule=Host(`keycloak.nexus-io.duckdns.org`)"
       - "traefik.http.routers.keycloak-tls.entrypoints=websecure"
       - "traefik.http.routers.keycloak-tls.tls.certresolver=letsencrypt"
       - "traefik.http.routers.keycloak-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
@@ -1392,18 +1308,18 @@ services:
     image: semaphoreui/semaphore:latest
     container_name: nexus-semaphore
     restart: unless-stopped
-    user: "1000:1000"
+    # user: "1000:1000"  # Commented out - Semaphore needs proper permissions
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
+    # cap_drop:
+    #   - ALL  # Commented out - Semaphore needs capabilities
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
         reservations:
-          cpus: '0.1'
+          cpus: "0.1"
           memory: 256M
     networks:
       - backend
@@ -1411,7 +1327,7 @@ services:
       - infrastructure
       - proxy
     ports:
-      - "3001:3000"
+      - "3002:3000"
     environment:
       SEMAPHORE_DB_USER: semaphore
       SEMAPHORE_DB_PASS: ${DB_PASSWORD}
@@ -1427,10 +1343,10 @@ services:
       SEMAPHORE_LDAP_ACTIVATED: "yes"
       SEMAPHORE_LDAP_HOST: lldap
       SEMAPHORE_LDAP_PORT: "3890"
-      SEMAPHORE_LDAP_DN_BIND: "cn=svc.readonly,ou=people,dc=yourshop,dc=com"
+      SEMAPHORE_LDAP_DN_BIND: "cn=svc.readonly,ou=people,dc=nexus-io,dc=org"
       SEMAPHORE_LDAP_PASSWORD: ${LDAP_READONLY_PASSWORD:-change-me}
-      SEMAPHORE_LDAP_DN_SEARCH: "dc=yourshop,dc=com"
-      SEMAPHORE_LDAP_SEARCH_FILTER: "(&(uid=%s)(memberOf=cn=infra_admins,ou=groups,dc=yourshop,dc=com))"
+      SEMAPHORE_LDAP_DN_SEARCH: "dc=nexus-io,dc=org"
+      SEMAPHORE_LDAP_SEARCH_FILTER: "(&(uid=%s)(memberOf=cn=infra_admins,ou=groups,dc=nexus-io,dc=org))"
     depends_on:
       postgres:
         condition: service_healthy
@@ -1441,8 +1357,12 @@ services:
       - ./ansible-playbooks:/home/semaphore/ansible:ro
     labels:
       - "traefik.enable=true"
+      # Public HTTP → HTTPS redirect
+      - "traefik.http.routers.semaphore.rule=Host(`semaphore.nexus-io.duckdns.org`)"
+      - "traefik.http.routers.semaphore.entrypoints=web"
+      - "traefik.http.routers.semaphore.middlewares=https-redirect"
       # Public HTTPS
-      - "traefik.http.routers.semaphore-tls.rule=Host(`semaphore.nexus-io.duckdns.org`) || Host(`semaphore.yourshop.com`)"
+      - "traefik.http.routers.semaphore-tls.rule=Host(`semaphore.nexus-io.duckdns.org`)"
       - "traefik.http.routers.semaphore-tls.entrypoints=websecure"
       - "traefik.http.routers.semaphore-tls.tls.certresolver=letsencrypt"
       - "traefik.http.routers.semaphore-tls.tls.domains[0].main=*.nexus-io.duckdns.org"
@@ -1479,7 +1399,6 @@ services:
 volumes:
   nexus_v2_postgres_data:
   nexus_ai_postgres_data:
-  nexus_infra_postgres_data:
   letsencrypt:
   vw-data:
   prometheus-data:

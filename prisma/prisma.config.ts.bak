@@ -1,0 +1,9 @@
+// Prisma configuration for datasources
+// This file is used by Prisma tooling to resolve datasource URLs
+export default {
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || '',
+    },
+  },
+};

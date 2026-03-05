@@ -1,0 +1,95 @@
+---
+- name: NEXUS — Full Backup + Verification
+  hosts: nexus-local
+  gather_facts: true
+
+  vars:
+    backup_base: "/mnt/Data_Disk/backups/nexus"
+    backup_date: "{{ ansible_date_time.date }}"
+    backup_dir: "{{ backup_base }}/{{ backup_date }}"
+    retention_days: 30
+
+  tasks:
+    - name: Create backup directory
+      file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: "0750"
+
+    - name: Dump nexus-postgres (all databases)
+      shell: |
+        docker exec nexus-postgres pg_dumpall -U postgres | \
+          gzip > {{ backup_dir }}/postgres-main.sql.gz
+
+    - name: Dump nexus-postgres-ai
+      shell: |
+        docker exec nexus-postgres-ai pg_dumpall -U postgres | \
+          gzip > {{ backup_dir }}/postgres-ai.sql.gz
+
+    - name: Backup Redis (BGSAVE + copy RDB)
+      shell: |
+        docker exec nexus-redis redis-cli BGSAVE
+        sleep 3
+        docker cp nexus-redis:/data/dump.rdb {{ backup_dir }}/redis-dump.rdb
+
+    - name: Archive critical config directories
+      archive:
+        path:
+          - "{{ compose_dir }}/traefik"
+          - "{{ compose_dir }}/lldap"
+          - "{{ compose_dir }}/crowdsec"
+          - "{{ compose_dir }}/falco"
+          - "{{ compose_dir }}/prometheus"
+          - "{{ compose_dir }}/grafana"
+          - "{{ compose_dir }}/.env"
+        dest: "{{ backup_dir }}/configs.tar.gz"
+        format: gz
+
+    - name: Verify backup sizes (nothing should be < 1KB)
+      stat:
+        path: "{{ item }}"
+      loop:
+        - "{{ backup_dir }}/postgres-main.sql.gz"
+        - "{{ backup_dir }}/postgres-ai.sql.gz"
+        - "{{ backup_dir }}/redis-dump.rdb"
+        - "{{ backup_dir }}/configs.tar.gz"
+      register: backup_files
+
+    - name: Fail if any backup file is suspiciously small
+      fail:
+        msg: "❌ Backup {{ item.stat.path }} is {{ item.stat.size }} bytes — too small!"
+      when: item.stat.size < 1000
+      loop: "{{ backup_files.results }}"
+
+    - name: Calculate total backup size
+      set_fact:
+        total_size: "{{ backup_files.results | map(attribute='stat.size') | map('int') | sum }}"
+
+    - name: Remove backups older than {{ retention_days }} days
+      find:
+        paths: "{{ backup_base }}"
+        age: "{{ retention_days }}d"
+        file_type: directory
+        recurse: false
+      register: old_backups
+
+    - name: Delete old backup directories
+      file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ old_backups.files }}"
+
+    - name: Send backup success notification
+      uri:
+        url: "https://api.telegram.org/bot{{ lookup('env','TELEGRAM_BOT_TOKEN') }}/sendMessage"
+        method: POST
+        body_format: json
+        body:
+          chat_id: "{{ lookup('env','TELEGRAM_CHAT_ID') }}"
+          text: |
+            ✅ NEXUS BACKUP COMPLETE
+            📅 {{ backup_date }}
+            💾 Total size: {{ (total_size | int / 1024 / 1024) | round(1) }} MB
+            🗂️ Files backed up: 4
+            🗑️ Old backups pruned: {{ old_backups.files | length }}
+            📁 Path: {{ backup_dir }}

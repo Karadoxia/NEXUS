@@ -132,7 +132,7 @@ groups:
           severity: warning
         annotations:
           summary: "TLS cert expires in < 14 days: {{ $labels.instance }}"
-          description: "Days until expiry: {{ (($value | toDate).Unix() - now | toDate).Unix() / 86400 }}"
+          description: "Time until expiry: {{ $value | humanizeDuration }}"
 
       - alert: SSLCertExpiryCritical
         expr: probe_ssl_earliest_cert_expiry - time() < 86400 * 3

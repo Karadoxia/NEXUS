@@ -461,7 +461,7 @@ function SecurityAlert() {
 
 export default function IdentityRBACDashboard() {
   const [activeTab, setActiveTab] = useState('schema')
-  const [expandedRole, setExpandedRole] = useState('super_admin')
+  const [expandedRole, setExpandedRole] = useState<string | null>('super_admin')
 
   return (
     <div
@@ -792,14 +792,14 @@ export default function IdentityRBACDashboard() {
                         marginTop: 12,
                       }}
                     >
-                      {[
+                      {([
                         ['🐘 Databases', role.access.databases],
                         ['⚙️ Services', role.access.services],
                         ['🖥️ Servers', role.access.servers],
                         ['🔑 LDAP', role.access.ldap],
-                      ].map(([title, items]) => (
+                      ] as [string, string[]][]).map(([title, items], idx) => (
                         <div
-                          key={title}
+                          key={idx}
                           style={{
                             background: 'rgba(0,0,0,0.3)',
                             border: `1px solid ${role.color}20`,

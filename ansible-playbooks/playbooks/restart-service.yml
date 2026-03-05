@@ -1,0 +1,14 @@
+---
+- name: NEXUS — Dynamic Service Restart
+  hosts: nexus-local
+  gather_facts: false
+
+  vars:
+    service_name: "{{ target_service | default('nexus-app') }}"
+
+  tasks:
+    - name: Restart specific service
+      community.docker.docker_container:
+        name: "{{ service_name }}"
+        state: started
+        restart: true

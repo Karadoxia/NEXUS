@@ -310,7 +310,7 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
       return { jobId: job.id, sent: 0 };
     }
 
-    // Step 2: LLM writes the intro paragraph
+    // Step 2: LLM writes the intro paragraph and suggests search terms for themed products
     let intro =
       `Welcome to this week's NEXUS Intelligence briefing! We have ${totalProducts} products in stock, ` +
       `${weeklyOrders} orders this week, and ${subscriberCount} community members. ` +
@@ -319,26 +319,62 @@ export async function runNewsletterAgent(triggeredBy = "admin") {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (geminiKey) {
       try {
+        const newsThemes = newsRaw.map((n: any) => n.title).join(", ");
         const result = await safeAgentRun({
-          name: "newsletter-intro-writer",
-          description: "Writes newsletter intro",
+          name: "newsletter-editor",
+          description: "Writes newsletter intro and suggests product search terms",
           systemPrompt:
             "You are a witty tech newsletter writer for NEXUS, a premium AI-powered e-commerce store. " +
-            "Write a short, engaging 2-3 sentence intro paragraph for the weekly newsletter. " +
-            "Mention the stats provided. Be energetic, professional, and human.",
+            "Task: \n" +
+            "1. Write a short, engaging 2-3 sentence intro paragraph.\n" +
+            "2. Suggest 2-3 search keywords to find products in our store that would be relevant to this week's AI news themes.\n" +
+            "Respond in JSON format: { \"intro\": \"...\", \"searchTerms\": [\"term1\", \"term2\"] }",
           tools: [],
           temperature: 0.7,
           messages: [
             {
               role: "user",
-              content: `Write the intro. Stats: ${totalProducts} products in stock, ${weeklyOrders} orders this week, ${subscriberCount} subscribers.`,
+              content: `Stats: ${totalProducts} prodotti in stock, ${weeklyOrders} ordini, ${subscriberCount} iscritti. News themes: ${newsThemes}`,
             },
           ],
         });
-        const text = result?.messages?.at(-1)?.content;
-        if (text) intro = text;
+
+        const content = result?.messages?.at(-1)?.content;
+        if (content) {
+          try {
+            // Clean up markdown if present
+            const jsonStr = String(content).replace(/```json\n?|\n?```/g, '').trim();
+            const parsed = JSON.parse(jsonStr);
+            if (parsed.intro) intro = parsed.intro;
+
+            // If we have search terms, fetch those products too
+            if (parsed.searchTerms && Array.isArray(parsed.searchTerms)) {
+              const themedProducts = await prisma.product.findMany({
+                where: {
+                  OR: parsed.searchTerms.map((term: string) => ({
+                    OR: [
+                      { name: { contains: term, mode: "insensitive" } },
+                      { description: { contains: term, mode: "insensitive" } },
+                    ]
+                  })),
+                  stock: { gt: 0 }
+                },
+                take: 3
+              });
+              // Append unique themed products to the existing productsRaw
+              for (const tp of themedProducts) {
+                if (!productsRaw.some((p: any) => p.slug === tp.slug)) {
+                  productsRaw.push(tp);
+                }
+              }
+            }
+          } catch (e) {
+            // If it's not valid JSON, it might just be the intro text
+            if (typeof content === 'string' && content.length > 20) intro = content;
+          }
+        }
       } catch {
-        // fallback to static intro above
+        // fallback to static intro
       }
     }
 

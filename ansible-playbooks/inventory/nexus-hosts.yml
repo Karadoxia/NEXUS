@@ -1,0 +1,74 @@
+all:
+  vars:
+    ansible_user: redbend
+    ansible_python_interpreter: /usr/bin/python3
+    compose_dir: /mnt/Data_Disk/2027-Projects/NEXUS-PROJECT/00-2027-MyLocalServer
+    compose_project: nexus-v2
+    compose_cmd: "docker compose --project-directory {{ compose_dir }} -p {{ compose_project }}"
+
+  hosts:
+    nexus-local:
+      ansible_host: localhost
+      ansible_connection: local
+
+  children:
+    docker_host:
+      hosts:
+        nexus-local:
+
+    databases:
+      hosts:
+        nexus-local:
+      vars:
+        db_containers: [nexus-postgres, nexus-postgres-ai, nexus-redis]
+
+    monitoring:
+      hosts:
+        nexus-local:
+      vars:
+        monitor_containers:
+          - nexus-prometheus
+          - nexus-grafana
+          - nexus-loki
+          - nexus-alertmanager
+          - nexus-pushgateway
+          - nexus-node-exporter
+          - nexus-cadvisor
+          - nexus-blackbox-exporter
+
+    security:
+      hosts:
+        nexus-local:
+      vars:
+        security_containers:
+          - nexus-crowdsec
+          - nexus-falco
+          - nexus-trivy-cron
+
+    identity:
+      hosts:
+        nexus-local:
+      vars:
+        identity_containers:
+          - nexus-lldap
+          - nexus-keycloak
+
+    app:
+      hosts:
+        nexus-local:
+      vars:
+        app_containers:
+          - nexus-app
+          - nexus-n8n
+          - nexus-n8n-mcp
+          - nexus-vaultwarden
+
+    broken:
+      hosts:
+        nexus-local:
+      vars:
+        broken_containers:
+          - nexus-nginx-pm
+          - nexus-falco
+          - nexus-crowdsec
+          - nexus-wireguard

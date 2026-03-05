@@ -1,0 +1,117 @@
+---
+- name: NEXUS — Fix Crashed Containers
+  hosts: nexus-local
+  gather_facts: false
+
+  tasks:
+    - name: Check nginx-pm logs for crash reason
+      command: docker logs nexus-nginx-pm --tail 20
+      register: npm_logs
+      ignore_errors: true
+
+    - name: Show nginx-pm crash logs
+      debug:
+        var: npm_logs.stdout_lines
+
+    - name: Check what's using port 80/81/443
+      shell: ss -tlnp | grep -E ':80|:81|:443'
+      register: port_check
+      ignore_errors: true
+
+    - name: Show port conflicts
+      debug:
+        var: port_check.stdout_lines
+
+    - name: Stop nginx-pm
+      community.docker.docker_container:
+        name: nexus-nginx-pm
+        state: stopped
+      ignore_errors: true
+
+    - name: Recreate nginx-pm with correct port binding
+      community.docker.docker_container:
+        name: nexus-nginx-pm
+        image: jc21/nginx-proxy-manager:latest
+        state: started
+        restart_policy: unless-stopped
+        published_ports:
+          - "127.0.0.1:81:81"
+        volumes:
+          - "{{ compose_dir }}/nginx-pm/data:/data"
+          - "{{ compose_dir }}/nginx-pm/letsencrypt:/etc/letsencrypt"
+        env:
+          DISABLE_IPV6: "true"
+
+    - name: Load WireGuard kernel module
+      community.general.modprobe:
+        name: wireguard
+        state: present
+      become: true
+
+    - name: Verify WireGuard module loaded
+      command: lsmod
+      register: lsmod_output
+
+    - name: Restart wireguard container
+      community.docker.docker_container:
+        name: nexus-wireguard
+        state: started
+        restart: true
+
+    - name: Check crowdsec config
+      stat:
+        path: "{{ compose_dir }}/crowdsec/config/acquis.yaml"
+      register: acquis_check
+
+    - name: Create acquis.yaml if missing
+      copy:
+        dest: "{{ compose_dir }}/crowdsec/config/acquis.yaml"
+        content: |
+          ---
+          source: docker
+          container_name:
+            - nexus-traefik
+            - nexus-nginx-pm
+            - nexus-app
+          labels:
+            type: traefik
+          ---
+          source: docker
+          container_name:
+            - nexus-lldap
+            - nexus-keycloak
+          labels:
+            type: syslog
+      when: not acquis_check.stat.exists
+
+    - name: Restart CrowdSec
+      command: >
+        {{ compose_cmd }} restart crowdsec
+      environment:
+        COMPOSE_DIR: "{{ compose_dir }}"
+
+    - name: Switch Falco to no-driver image
+      command: >
+        {{ compose_cmd }} up -d --force-recreate falco
+      environment:
+        FALCO_IMAGE: "falcosecurity/falco-no-driver:latest"
+
+    - name: Wait 15 seconds for containers to stabilize
+      wait_for:
+        timeout: 15
+
+    - name: Check status of previously-broken containers
+      community.docker.docker_container_info:
+        name: "{{ item }}"
+      loop:
+        - nexus-nginx-pm
+        - nexus-wireguard
+        - nexus-crowdsec
+        - nexus-falco
+        - nexus-portainer
+      register: fixed_status
+
+    - name: Report fix results
+      debug:
+        msg: "{{ item.item }}: {{ item.container.State.Status }} (restarting: {{ item.container.State.Restarting }})"
+      loop: "{{ fixed_status.results }}"

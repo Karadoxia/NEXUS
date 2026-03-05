@@ -1,0 +1,76 @@
+---
+- name: NEXUS — Full Stack Health Check
+  hosts: nexus-local
+  gather_facts: false
+
+  vars:
+    critical_containers:
+      - nexus-traefik
+      - nexus-postgres
+      - nexus-redis
+      - nexus-app
+      - nexus-lldap
+      - nexus-keycloak
+      - nexus-prometheus
+      - nexus-n8n
+
+  tasks:
+    - name: Get all container statuses
+      community.docker.docker_container_info:
+        name: "{{ item }}"
+      loop: "{{ critical_containers }}"
+      register: container_states
+      ignore_errors: true
+
+    - name: Find unhealthy / not-running containers
+      set_fact:
+        unhealthy: "{{ container_states.results | selectattr('container.State.Status', 'ne', 'running') | map(attribute='item') | list }}"
+        restarting: "{{ container_states.results | selectattr('container.State.Restarting', 'equalto', true) | map(attribute='item') | list }}"
+
+    - name: Show health summary
+      debug:
+        msg: |
+          ✅ Running: {{ container_states.results | selectattr('container.State.Status', 'equalto', 'running') | list | length }}
+          ❌ Unhealthy: {{ unhealthy | join(', ') or 'none' }}
+          🔄 Restarting: {{ restarting | join(', ') or 'none' }}
+
+    - name: Get disk usage
+      command: df -h /mnt/Data_Disk
+      register: disk_info
+
+    - name: Get memory info
+      command: free -h
+      register: mem_info
+
+    - name: Check Postgres connectivity
+      command: >
+        docker exec nexus-postgres
+        psql -U postgres -c "SELECT COUNT(*) FROM pg_database;"
+      register: pg_check
+      ignore_errors: true
+
+    - name: Check Redis connectivity
+      command: docker exec nexus-redis redis-cli ping
+      register: redis_check
+      ignore_errors: true
+
+    - name: Send Telegram alert if issues found
+      when: unhealthy | length > 0 or restarting | length > 0
+      uri:
+        url: "https://api.telegram.org/bot{{ lookup('env','TELEGRAM_BOT_TOKEN') }}/sendMessage"
+        method: POST
+        body_format: json
+        body:
+          chat_id: "{{ lookup('env','TELEGRAM_CHAT_ID') }}"
+          text: |
+            🚨 NEXUS HEALTH ALERT
+            ❌ Unhealthy: {{ unhealthy | join(', ') or 'none' }}
+            🔄 Restarting: {{ restarting | join(', ') or 'none' }}
+            💾 Disk: {{ disk_info.stdout_lines[1] }}
+            📅 {{ ansible_date_time.iso8601 }}
+          parse_mode: HTML
+
+    - name: Report all green
+      when: unhealthy | length == 0 and restarting | length == 0
+      debug:
+        msg: "✅ All critical containers healthy"

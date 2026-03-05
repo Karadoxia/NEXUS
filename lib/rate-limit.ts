@@ -6,7 +6,6 @@
  * ══════════════════════════════════════════════════════════════
  */
 
-import { Redis } from "ioredis";
 import { NextRequest, NextResponse } from "next/server";
 
 // ──────────────────────────────────────────────────────────────
@@ -55,15 +54,17 @@ interface RateLimitEntry {
 
 const memoryStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  memoryStore.forEach((value, key) => {
-    if (value.resetAt < now) {
-      memoryStore.delete(key);
-    }
-  });
-}, 300_000); // 5 minutes
+// Cleanup old entries every 5 minutes (disabled in Edge)
+if (process.env.NEXT_RUNTIME !== 'edge') {
+  setInterval(() => {
+    const now = Date.now();
+    memoryStore.forEach((value, key) => {
+      if (value.resetAt < now) {
+        memoryStore.delete(key);
+      }
+    });
+  }, 300_000); // 5 minutes
+}
 
 /**
  * In-memory rate limiter (single server, instant response)
@@ -122,15 +123,24 @@ export function rateLimitMemory(
 // REDIS RATE LIMIT STORE (persists across restarts, multi-server)
 // ──────────────────────────────────────────────────────────────
 
-let redis: Redis | null = null;
+let redis: any = null;
 
-function getRedis(): Redis {
+async function getRedis() {
+  if (process.env.NEXT_RUNTIME === 'edge') {
+    return null; // Redis (ioredis) is not compatible with Edge Runtime
+  }
+
   if (!redis) {
-    redis = new Redis(process.env.REDIS_URL || "redis://redis:6379");
-    redis.on("error", (err) => {
-      console.error("Redis connection error in rate limiter:", err);
-      // Fall back to memory store if Redis fails
-    });
+    try {
+      const { Redis } = await import("ioredis");
+      redis = new Redis(process.env.REDIS_URL || "redis://redis:6379");
+      redis.on("error", (err: any) => {
+        console.error("Redis connection error in rate limiter:", err);
+      });
+    } catch (e) {
+      console.error("Failed to load ioredis:", e);
+      return null;
+    }
   }
   return redis;
 }
@@ -149,7 +159,13 @@ export async function rateLimitRedis(
   usedRedis: boolean;
 }> {
   try {
-    const redis = getRedis();
+    const redis = await getRedis();
+    if (!redis) {
+      return {
+        ...rateLimitMemory(identifier, config),
+        usedRedis: false,
+      };
+    }
     const key = `rl:count:${identifier}`;
     const penaltyKey = `rl:penalty:${identifier}`;
 
@@ -217,7 +233,15 @@ export async function progressiveRateLimit(
   offense: number;
 }> {
   try {
-    const redis = getRedis();
+    const redis = await getRedis();
+    if (!redis) {
+      return {
+        success: false,
+        remaining: 0,
+        resetAt: Date.now() + 3600000,
+        offense: -1,
+      };
+    }
     const offenseKey = `rl:offense:${identifier}`;
     const offenses = parseInt((await redis.get(offenseKey)) || "0");
 
@@ -393,4 +417,21 @@ export function getRequestIp(request: Request): string {
   const fwd = request.headers.get('x-forwarded-for');
   if (fwd) return fwd.split(',')[0].trim();
   return 'unknown';
+}
+
+/**
+ * Simple rate limit check for API routes (legacy signature)
+ * @param identifier - Unique identifier (e.g., "auth:user@email.com")
+ * @param max - Maximum attempts allowed
+ * @param windowMs - Time window in milliseconds
+ * @returns true if allowed, false if rate limited
+ */
+export async function checkRateLimitSimple(
+  identifier: string,
+  max: number,
+  windowMs: number
+): Promise<boolean> {
+  const windowSecs = Math.floor(windowMs / 1000);
+  const result = await rateLimitRedis(identifier, { max, windowSecs });
+  return result.success;
 }

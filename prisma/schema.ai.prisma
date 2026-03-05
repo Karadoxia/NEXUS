@@ -17,6 +17,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("AI_DATABASE_URL")
 }
 
 // ─── AI MODEL TRAINING DATA ────────────────────────────────

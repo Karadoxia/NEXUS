@@ -304,7 +304,7 @@ export async function rotateExpiredTokens(): Promise<number> {
 
 /**
  * Background job: Clean up expired sessions
- * Run via cron: */5 * * * * (every 5 min)
+ * Run via cron: every 5 minutes
  */
 export async function cleanupExpiredSessions(): Promise<number> {
   try {
@@ -515,19 +515,4 @@ async function logSessionEvent(event: {
   } catch (error) {
     console.error('Error logging session event:', error)
   }
-}
-
-// ===== EXPORTS =====
-
-export {
-  invalidateSession,
-  invalidateAllUserSessions,
-  invalidateDeviceSession,
-  rotateToken,
-  rotateExpiredTokens,
-  cleanupExpiredSessions,
-  cleanupOldSessionLogs,
-  enforceSessionLimit,
-  trackDeviceSession,
-  SESSION_CONFIG,
 }
