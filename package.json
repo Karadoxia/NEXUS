@@ -91,7 +91,7 @@
     "tailwindcss": "3.4.19",
     "ts-node": "^10.9.2",
     "typescript": "^5",
-    "vercel": "^32.3.0",
+    "vercel": "^50.28.0",
     "vitest": "^4.0.18",
     "wasm-pack": "^0.0.0"
   }
