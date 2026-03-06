@@ -1,0 +1,60 @@
+// HR Management Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-hr"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("HR_DATABASE_URL")
+}
+
+model Employee {
+  id             String       @id @default(cuid())
+  email          String       @unique
+  name           String
+  hashedPassword String
+  role           EmployeeRole @default(EDITOR)
+  department     String?
+  phone          String?
+  avatar         String?
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  createdBy      String? // email of admin who created this account
+  lastLogin      DateTime?
+
+  auditLogs HrLog[]
+
+  @@index([role])
+  @@index([isActive])
+  @@index([email])
+}
+
+enum EmployeeRole {
+  SUPERADMIN
+  ADMIN
+  MANAGER
+  MARKETING
+  IT
+  SUPPORT
+  EDITOR
+  TRAINEE
+}
+
+/// Audit log for all employee management actions
+model HrLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  performedBy String // admin email who performed the action
+  action      String // "create" | "update" | "deactivate" | "activate" | "password_reset"
+  targetEmail String // employee email affected
+  detail      String?
+
+  employee Employee @relation(fields: [performedBy], references: [email], onDelete: Cascade)
+
+  @@index([timestamp])
+  @@index([performedBy])
+  @@index([targetEmail])
+}
