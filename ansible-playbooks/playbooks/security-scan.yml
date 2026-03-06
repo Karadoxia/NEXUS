@@ -1,0 +1,37 @@
+---
+- name: NEXUS — Security Vulnerability Scan
+  hosts: nexus-local
+  gather_facts: false
+
+  tasks:
+    - name: Scan nexus-app image
+      command: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image nexus-app:latest
+      register: scan_app
+      ignore_errors: true
+
+    - name: Scan n8n image
+      command: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image n8nio/n8n:latest
+      register: scan_n8n
+      ignore_errors: true
+
+    - name: Check Falco alerts count (last 24h)
+      shell: docker logs nexus-falco 2>&1 | grep "CRITICAL" | wc -l
+      register: falco_alerts
+
+    - name: Check CrowdSec decisions
+      command: docker exec nexus-crowdsec cscli decisions list -o json
+      register: cs_decisions
+
+    - name: Push to Prometheus Gateway
+      uri:
+        url: "http://localhost:9091/metrics/job/trivy_scan"
+        method: POST
+        body: |
+          # HELP trivy_vulnerabilities Number of vulnerabilities found by Trivy
+          # TYPE trivy_vulnerabilities gauge
+          trivy_vulnerabilities{image="nexus-app"} {{ scan_app.stdout | regex_findall('Total: (\d+)') | first | default(0) }}
+          trivy_vulnerabilities{image="n8n"} {{ scan_n8n.stdout | regex_findall('Total: (\d+)') | first | default(0) }}
+          # HELP falco_critical_alerts Number of critical Falco alerts in last logs
+          # TYPE falco_critical_alerts gauge
+          falco_critical_alerts {{ falco_alerts.stdout | trim }}
+        status_code: 202

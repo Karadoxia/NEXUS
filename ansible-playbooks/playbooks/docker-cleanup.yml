@@ -1,0 +1,21 @@
+---
+- name: NEXUS — Docker Cleanup
+  hosts: nexus-local
+  gather_facts: false
+
+  tasks:
+    - name: Prune all unused Docker objects
+      community.docker.docker_prune:
+        containers: true
+        images: true
+        networks: true
+        volumes: false
+        builder_cache: true
+
+    - name: Show disk usage after cleanup
+      command: docker system df
+      register: df_out
+
+    - name: Print df
+      debug:
+        var: df_out.stdout_lines

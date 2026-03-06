@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { checkRateLimit, getRequestIp } from '@/lib/rate-limit';
+import { checkRateLimitSimple, getRequestIp } from '@/lib/rate-limit';
 
 // Role-based access control: which paths each role can access
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -25,7 +25,8 @@ function hasPathAccess(role: string, pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const ip = getRequestIp(request);
   // global rate limit: 100 requests per minute per IP
-  if (!checkRateLimit(`global:${ip}`, 100, 60_000)) {
+  const rateLimitOk = await checkRateLimitSimple(`global:${ip}`, 100, 60_000);
+  if (!rateLimitOk) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

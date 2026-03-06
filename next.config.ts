@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+  },
   images: {
     remotePatterns: [
       // Original
@@ -31,6 +34,16 @@ const nextConfig: NextConfig = {
       ],
     },
   ],
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/vpn-stack/**', '**/node_modules/**'],
+    };
+    return config;
+  },
+  turbopack: {
+    // Empty config allows Turbopack to run alongside Webpack config in Next 16
+  }
 };
 
 export default nextConfig;

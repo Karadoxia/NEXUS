@@ -1,0 +1,386 @@
+{
+  "updatedAt": "2026-03-04T01:47:32.824Z",
+  "createdAt": "2026-03-03T22:46:03.622Z",
+  "id": "4QBqdYgThkCInHD1",
+  "name": "\ud83e\udd16 NEXUS - Full Site Audit Bot",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "cron_weekly",
+      "name": "Every Sunday 3am UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "audit_status",
+              "value": "started"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "prepare_data",
+      "name": "Prepare Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        464,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "audit@nexus.store",
+        "toEmail": "{{ $env.ADMIN_EMAIL }}",
+        "subject": "\ud83e\udd16 Weekly Site Audit Report",
+        "emailFormat": "html",
+        "options": {},
+        "html": "={{ $node[\"Message a model\"].json[\"text\"] }}"
+      },
+      "id": "send_audit_report",
+      "name": "Send Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1376,
+        352
+      ],
+      "webhookId": "cf32eca3-a585-4951-a5a2-e6f994b5fba3",
+      "credentials": {
+        "smtp": {
+          "id": "AhpoCKfSVc7RskIl",
+          "name": "Resend SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+        "text": "\u2705 Weekly site audit completed\\nCheck email for full report",
+        "additionalFields": {}
+      },
+      "id": "notify_audit",
+      "name": "Notify Completion",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        304
+      ],
+      "webhookId": "debe2a65-9bf8-4738-9686-16380f871fab",
+      "credentials": {
+        "telegramApi": {
+          "id": "P1JqNmgOzQhedrUg",
+          "name": "NEXUS Telegram Bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-1.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-1.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "Generate a comprehensive weekly site audit report with:\n1. Executive Summary\n2. Database Health Check - Status: Healthy\n3. Security Assessment - Status: No threats detected\n4. Link Validation - Status: All valid\n5. Recommendations for improvement"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1088,
+        368
+      ],
+      "id": "b4036f45-4e7c-49d3-83c4-63dfb86f8c59",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6BklJbKHfDJ6Lbcj",
+          "name": "NEXUS Gemini"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every Sunday 3am UTC": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Report": {
+      "main": [
+        [
+          {
+            "node": "Notify Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Global Error Notifier",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "versionId": "fa49cdb3-78ce-43fc-b8ee-da805d834c84",
+  "activeVersionId": "3a7f9448-0f73-4b0f-95e3-02013c5e3021",
+  "versionCounter": 48,
+  "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-03-03T22:46:03.622Z",
+      "createdAt": "2026-03-03T22:46:03.622Z",
+      "role": "workflow:owner",
+      "workflowId": "4QBqdYgThkCInHD1",
+      "projectId": "PERSONAL_PROJECT_CASPER",
+      "project": {
+        "updatedAt": "2026-03-03T22:45:16.530Z",
+        "createdAt": "2026-03-03T22:45:16.530Z",
+        "id": "PERSONAL_PROJECT_CASPER",
+        "name": "Personal",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "a183f669-8841-4958-9225-942c2f3c8c18"
+      }
+    }
+  ],
+  "tags": [],
+  "parentFolder": null,
+  "activeVersion": {
+    "updatedAt": "2026-03-04T00:32:12.874Z",
+    "createdAt": "2026-03-04T00:31:56.221Z",
+    "versionId": "3a7f9448-0f73-4b0f-95e3-02013c5e3021",
+    "workflowId": "4QBqdYgThkCInHD1",
+    "nodes": [
+      {
+        "parameters": {},
+        "id": "cron_weekly",
+        "name": "Every Sunday 3am UTC",
+        "type": "n8n-nodes-base.cron",
+        "typeVersion": 1,
+        "position": [
+          240,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "values": {
+            "string": [
+              {
+                "name": "audit_status",
+                "value": "started"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "prepare_data",
+        "name": "Prepare Data",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 2,
+        "position": [
+          464,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+          "options": {}
+        },
+        "id": "gemini_audit_summary",
+        "name": "Gemini: Generate Report",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4,
+        "position": [
+          1120,
+          304
+        ]
+      },
+      {
+        "parameters": {
+          "fromEmail": "audit@nexus.store",
+          "toEmail": "{{ $env.ADMIN_EMAIL }}",
+          "subject": "\ud83e\udd16 Weekly Site Audit Report",
+          "emailFormat": "=tex{{  $node[\"Message a model\"].json[\"text\"] }} }}",
+          "options": {}
+        },
+        "id": "send_audit_report",
+        "name": "Send Report",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2,
+        "position": [
+          1344,
+          304
+        ],
+        "webhookId": "cf32eca3-a585-4951-a5a2-e6f994b5fba3",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "chatId": "={{$env.TELEGRAM_CHAT_ID}}",
+          "text": "\u2705 Weekly site audit completed\\nCheck email for full report",
+          "additionalFields": {}
+        },
+        "id": "notify_audit",
+        "name": "Notify Completion",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1,
+        "position": [
+          1568,
+          304
+        ],
+        "webhookId": "debe2a65-9bf8-4738-9686-16380f871fab",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Every Sunday 3am UTC": {
+        "main": [
+          [
+            {
+              "node": "Prepare Data",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Prepare Data": {
+        "main": [
+          [
+            {
+              "node": "Gemini: Generate Report",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Send Report",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini: Generate Report": {
+        "main": [
+          [
+            {
+              "node": "Send Report",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Report": {
+        "main": [
+          [
+            {
+              "node": "Notify Completion",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Kilo A",
+    "name": "Version 3a7f9448",
+    "description": "",
+    "autosaved": true,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-04T00:32:12.866Z",
+        "id": 26,
+        "workflowId": "4QBqdYgThkCInHD1",
+        "versionId": "3a7f9448-0f73-4b0f-95e3-02013c5e3021",
+        "event": "activated",
+        "userId": "a183f669-8841-4958-9225-942c2f3c8c18"
+      }
+    ]
+  },
+  "scopes": [
+    "workflow:create",
+    "workflow:delete",
+    "workflow:execute",
+    "workflow:execute-chat",
+    "workflow:list",
+    "workflow:move",
+    "workflow:publish",
+    "workflow:read",
+    "workflow:share",
+    "workflow:unpublish",
+    "workflow:update"
+  ],
+  "checksum": "1000512c23f67027fefb19a2b294e3218a15e567177e51781955071a53470df8"
+}

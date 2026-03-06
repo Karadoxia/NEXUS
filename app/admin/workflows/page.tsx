@@ -13,8 +13,8 @@ interface N8nWorkflow {
 
 export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<N8nWorkflow[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -34,7 +34,7 @@ export default function WorkflowsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const active   = workflows.filter((w) => w.active).length;
+  const active = workflows.filter((w) => w.active).length;
   const inactive = workflows.length - active;
 
   return (
@@ -48,15 +48,13 @@ export default function WorkflowsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <a
-            href="http://nexus-n8n.local/home/workflows"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => window.open('http://nexus-n8n.local:5678', '_blank')}
             className="inline-flex items-center gap-1.5 text-xs font-medium bg-slate-900 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white px-3 py-2 rounded-xl transition-colors"
           >
-            Open n8n
+            Open n8n Dashboard
             <ExternalLink size={11} className="opacity-60" />
-          </a>
+          </button>
           <button
             onClick={load}
             disabled={loading}
@@ -83,9 +81,9 @@ export default function WorkflowsPage() {
       {!loading && !error && workflows.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { label: 'Total',    value: workflows.length, color: 'text-white',       ring: 'bg-slate-800 border-slate-700' },
-            { label: 'Active',   value: active,           color: 'text-green-400',   ring: 'bg-green-500/10 border-green-500/20' },
-            { label: 'Inactive', value: inactive,         color: 'text-slate-400',   ring: 'bg-slate-800 border-slate-700' },
+            { label: 'Total', value: workflows.length, color: 'text-white', ring: 'bg-slate-800 border-slate-700' },
+            { label: 'Active', value: active, color: 'text-green-400', ring: 'bg-green-500/10 border-green-500/20' },
+            { label: 'Inactive', value: inactive, color: 'text-slate-400', ring: 'bg-slate-800 border-slate-700' },
           ].map(({ label, value, color, ring }) => (
             <div key={label} className={`${ring} border rounded-2xl p-5`}>
               <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">{label}</p>
@@ -129,11 +127,10 @@ export default function WorkflowsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase ${
-                      w.active
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase ${w.active
                         ? 'bg-green-500/10 border-green-500/20 text-green-400'
                         : 'bg-slate-800 border-slate-700 text-slate-400'
-                    }`}>
+                      }`}>
                       {w.active ? <Play size={9} /> : <Pause size={9} />}
                       {w.active ? 'Active' : 'Inactive'}
                     </span>

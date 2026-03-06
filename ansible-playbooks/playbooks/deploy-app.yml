@@ -1,0 +1,30 @@
+---
+- name: NEXUS — Application Deployment (CI/CD)
+  hosts: nexus-local
+  gather_facts: false
+
+  tasks:
+    - name: Pull latest code (if applicable)
+      command: git pull
+      args:
+        chdir: "{{ compose_dir }}"
+      ignore_errors: true
+
+    - name: Build nexus-app
+      command: "{{ compose_cmd }} build nexus-app"
+
+    - name: Restart nexus-app
+      command: "{{ compose_cmd }} up -d nexus-app"
+
+    - name: Run database migrations
+      command: docker exec nexus-app npx prisma migrate deploy
+      register: migrate_out
+
+    - name: Verify health endpoint
+      uri:
+        url: "http://localhost:3000/api/health"
+        return_content: yes
+      register: health_check
+      until: health_check.status == 200
+      retries: 10
+      delay: 5

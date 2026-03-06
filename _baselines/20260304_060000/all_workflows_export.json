@@ -1,0 +1,303 @@
+{
+  "leIf1Fu1dpl1o3e7": {
+    "id": "leIf1Fu1dpl1o3e7",
+    "name": "🔥 NEXUS - Global Error Notifier",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "D4pnvZoiir0s8beO": {
+    "id": "D4pnvZoiir0s8beO",
+    "name": "🛡️ NEXUS - Daily Security Audit + Report",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "M7M4ScIcDtp5DJEG": {
+    "id": "M7M4ScIcDtp5DJEG",
+    "name": "🛡️ NEXUS - Intrusion Responder",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "joMJlpQnyhYfKGxW": {
+    "id": "joMJlpQnyhYfKGxW",
+    "name": "🛡️ NEXUS - Security Incident Aggregator FULL",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "a15lUB7Xk6uR3Ag3": {
+    "id": "a15lUB7Xk6uR3Ag3",
+    "name": "🐳 NEXUS - Container Auto-Registration FIXED",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "ZDyBk1dZtxB66V0X": {
+    "id": "ZDyBk1dZtxB66V0X",
+    "name": "📧 NEXUS - Newsletter Generator",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "ULXf1HpmhbZpp1pj": {
+    "id": "ULXf1HpmhbZpp1pj",
+    "name": "💾 NEXUS - Automated Backup + Offsite Upload",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "ZgKXk3dpfZeTbtr7": {
+    "id": "ZgKXk3dpfZeTbtr7",
+    "name": "🛡️ NEXUS - Fraud Pattern Detector",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "pBXddfriFhyVxSl4": {
+    "id": "pBXddfriFhyVxSl4",
+    "name": "🧪 Test Telegram",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "I8f6Vj9cK9uN6HOO": {
+    "id": "I8f6Vj9cK9uN6HOO",
+    "name": "🛡️ NEXUS - Daily Security Audit + Report",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "EMfpXuXYRaOO09ec": {
+    "id": "EMfpXuXYRaOO09ec",
+    "name": "🛡️ NEXUS - Intrusion Responder",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "xXslnSTEMJ8yoBQN": {
+    "id": "xXslnSTEMJ8yoBQN",
+    "name": "📧 NEXUS - Newsletter Generator",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "yiB69tTctK4sFwQE": {
+    "id": "yiB69tTctK4sFwQE",
+    "name": "💾 NEXUS - Automated Backup + Offsite Upload",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "otq7jRzHUXqGujX6": {
+    "id": "otq7jRzHUXqGujX6",
+    "name": "🛡️ NEXUS - Fraud Pattern Detector",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "3feC9nfs9jqQ0GoE": {
+    "id": "3feC9nfs9jqQ0GoE",
+    "name": "🧪 Test Telegram",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "Di6Nzu13QvGBLkak": {
+    "id": "Di6Nzu13QvGBLkak",
+    "name": "💬 NEXUS - AI Support Ticket Router FULL",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "b5eYg7GfV6rl4ADe": {
+    "id": "b5eYg7GfV6rl4ADe",
+    "name": "💬 NEXUS - AI Support Ticket Router FULL",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "SmsJjNj0K417SlPj": {
+    "id": "SmsJjNj0K417SlPj",
+    "name": "🚀 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "SXZ0IRbJsrevHD5P": {
+    "id": "SXZ0IRbJsrevHD5P",
+    "name": "💰 NEXUS - Abandoned Order Recovery AI v3 FULL",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "o6oZ9WANQ4JubCUD": {
+    "id": "o6oZ9WANQ4JubCUD",
+    "name": "📊 NEXUS - Daily Sales Report + AI + Backup v3 FULL",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "7Dc0UN4UIqmgQVdd": {
+    "id": "7Dc0UN4UIqmgQVdd",
+    "name": "🎯 NEXUS - AI Product Upsell on New Order FULL",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "okoZ81SlqdOxDE9p": {
+    "id": "okoZ81SlqdOxDE9p",
+    "name": "📦 NEXUS - AI Inventory Restock",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "ONlYKWiQtwyFhyO5": {
+    "id": "ONlYKWiQtwyFhyO5",
+    "name": "⭐ NEXUS - AI Review Collector",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "tRuBuliIhBDHI03P": {
+    "id": "tRuBuliIhBDHI03P",
+    "name": "📊 NEXUS - Performance Monitor + Auto-Optimize",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "CS7l0eKGyJN3PBeX": {
+    "id": "CS7l0eKGyJN3PBeX",
+    "name": "🔍 NEXUS - SEO Content Optimizer",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "4qCHEuFFUJSQyOp1": {
+    "id": "4qCHEuFFUJSQyOp1",
+    "name": "📱 NEXUS - Social Media Auto-Poster",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "kfURE9gNP3qEDp35": {
+    "id": "kfURE9gNP3qEDp35",
+    "name": "📉 NEXUS - Churn Predictor + Retention",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "BSFRC35rXDBakupz": {
+    "id": "BSFRC35rXDBakupz",
+    "name": "🚀 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "J9bAZNXkvtQwjVBe": {
+    "id": "J9bAZNXkvtQwjVBe",
+    "name": "💰 NEXUS - Abandoned Order Recovery AI v3 FULL",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "xGUNbwImqHmBkG9x": {
+    "id": "xGUNbwImqHmBkG9x",
+    "name": "📊 NEXUS - Daily Sales Report + AI + Backup v3 FULL",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "Bn0xoONMwnjW1o58": {
+    "id": "Bn0xoONMwnjW1o58",
+    "name": "🎯 NEXUS - AI Product Upsell on New Order FULL",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "g38Jh0VhrvYMGAfj": {
+    "id": "g38Jh0VhrvYMGAfj",
+    "name": "📦 NEXUS - AI Inventory Restock",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "xVsiKPAArQt0d8eQ": {
+    "id": "xVsiKPAArQt0d8eQ",
+    "name": "⭐ NEXUS - AI Review Collector",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "K5ncPGaD0hYIV4iq": {
+    "id": "K5ncPGaD0hYIV4iq",
+    "name": "🔍 NEXUS - SEO Content Optimizer",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "tlLzUjRLWAycg4Sw": {
+    "id": "tlLzUjRLWAycg4Sw",
+    "name": "📱 NEXUS - Social Media Auto-Poster",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "Ysdw9zAOqNCtLmOE": {
+    "id": "Ysdw9zAOqNCtLmOE",
+    "name": "📉 NEXUS - Churn Predictor + Retention",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "dzvS99TthbtSo8Q2": {
+    "id": "dzvS99TthbtSo8Q2",
+    "name": "🤖 NEXUS - Full Site Audit Bot",
+    "active": false,
+    "nodes": null,
+    "connections": null
+  },
+  "4QBqdYgThkCInHD1": {
+    "id": "4QBqdYgThkCInHD1",
+    "name": "🤖 NEXUS - Full Site Audit Bot",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "LSeOJC8VuWOL4dp4": {
+    "id": "LSeOJC8VuWOL4dp4",
+    "name": "🔥 NEXUS - Global Error Notifier",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "wS7fV23QTcEyElD4": {
+    "id": "wS7fV23QTcEyElD4",
+    "name": "🛡️ NEXUS - Security Incident Aggregator FULL",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "JIYezWmylRm4V2nB": {
+    "id": "JIYezWmylRm4V2nB",
+    "name": "📊 NEXUS - Performance Monitor + Auto-Optimize",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "aiLY498cB2sjk9Nw": {
+    "id": "aiLY498cB2sjk9Nw",
+    "name": "🐳 NEXUS - Container Auto-Registration FIXED",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  },
+  "sursBjK1ZGzMes8k": {
+    "id": "sursBjK1ZGzMes8k",
+    "name": "🚨 NEXUS - Unified Alert Ingress",
+    "active": true,
+    "nodes": null,
+    "connections": null
+  }
+}

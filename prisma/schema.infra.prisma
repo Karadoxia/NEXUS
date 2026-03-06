@@ -6,6 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("INFRA_DATABASE_URL")
 }
 
 /// persisted agent performance metrics that the leader uses for learning

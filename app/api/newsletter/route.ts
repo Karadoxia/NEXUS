@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/src/lib/prisma';
 import { requireAdmin } from '@/lib/server-auth';
-import { checkRateLimit, getRequestIp } from '@/lib/rate-limit';
+import { checkRateLimitSimple, getRequestIp } from '@/lib/rate-limit';
 import { sendWelcomeEmail } from '@/lib/email';
 
 // POST /api/newsletter — subscribe an email
 export async function POST(request: Request) {
   const ip = getRequestIp(request);
-  if (!checkRateLimit(`newsletter:${ip}`, 10, 10 * 60_000)) {
+  const rateLimitOk = await checkRateLimitSimple(`newsletter:${ip}`, 10, 10 * 60_000);
+  if (!rateLimitOk) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

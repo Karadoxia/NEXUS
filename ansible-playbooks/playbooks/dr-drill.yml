@@ -1,0 +1,58 @@
+---
+- name: NEXUS — Disaster Recovery Drill
+  hosts: nexus-local
+  gather_facts: false
+
+  vars:
+    test_db: dr_test_db
+    backup_file: "/mnt/Data_Disk/backups/nexus/{{ ansible_date_time.date }}/postgres-main.sql.gz"
+
+  tasks:
+    - name: Verify backup file exists
+      stat:
+        path: "{{ backup_file }}"
+      register: backup_stat
+
+    - name: Fail if backup missing
+      fail:
+        msg: "❌ DR Drill failed: Backup file {{ backup_file }} not found!"
+      when: not backup_stat.stat.exists
+
+    - name: Create test database in postgres
+      command: >
+        docker exec nexus-postgres
+        psql -U postgres -c "CREATE DATABASE {{ test_db }};"
+      ignore_errors: true
+
+    - name: Simulate restore to test database
+      shell: >
+        zcat {{ backup_file }} | \
+        docker exec -i nexus-postgres psql -U postgres -d {{ test_db }}
+      register: restore_result
+      ignore_errors: true
+
+    - name: Check if restore was successful
+      command: >
+        docker exec nexus-postgres
+        psql -U postgres -d {{ test_db }} -c "\dt"
+      register: dt_check
+
+    - name: Clean up test database
+      command: >
+        docker exec nexus-postgres
+        psql -U postgres -c "DROP DATABASE {{ test_db }};"
+      always_run: true
+
+    - name: Send DR Drill results to Telegram
+      uri:
+        url: "https://api.telegram.org/bot{{ lookup('env','TELEGRAM_BOT_TOKEN') }}/sendMessage"
+        method: POST
+        body_format: json
+        body:
+          chat_id: "{{ lookup('env','TELEGRAM_CHAT_ID') }}"
+          text: |
+            🧪 NEXUS DR DRILL RESULTS
+            📅 {{ ansible_date_time.iso8601 }}
+            📁 Source: {{ backup_file }}
+            ✅ Restore: {{ 'SUCCESS' if restore_result.rc == 0 else 'FAILED' }}
+            📊 Tables found: {{ dt_check.stdout_lines | length - 3 if dt_check.rc == 0 else 0 }}

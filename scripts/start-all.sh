@@ -13,6 +13,17 @@ if [ "$(id -u)" = "0" ]; then
   exit 1
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+cd "$PROJECT_ROOT"
+
+COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-nexus-v2}"
+export COMPOSE_PROJECT_NAME
+
+compose_cmd() {
+  docker compose --project-directory "$PROJECT_ROOT" -p "$COMPOSE_PROJECT_NAME" "$@"
+}
+
 # export sensible defaults
 : "${POSTGRES_PASSWORD:=password}"
 : "${REDIS_PASSWORD:=password}"
@@ -34,13 +45,11 @@ for arg in "$@"; do
   esac
 done
 
-# if the rust microservice folder is missing (e.g. in this stripped-down
-# environment) then exclude that service to avoid build failures.
-# use a plain string so the script works under /bin/sh as well as bash.
+# production stack service list (non-profile services)
 if $include_app; then
-  services="nexus-app postgres postgres-ai redis traefik vaultwarden prometheus loki grafana wireguard telegram-notify uptime-kuma n8n node_exporter postgres_exporter redis_exporter crowdsec falco trivy-cron"
+  services="nexus-app postgres postgres-ai redis traefik vaultwarden prometheus blackbox-exporter pushgateway alertmanager loki grafana node_exporter postgres_exporter redis_exporter postgres-ai-exporter wireguard wireguard-exporter telegram-notify uptime-kuma n8n nginx-proxy-manager cadvisor portainer crowdsec falco trivy-cron lldap keycloak semaphore"
 else
-  services="postgres postgres-ai redis traefik vaultwarden prometheus loki grafana wireguard telegram-notify uptime-kuma n8n node_exporter postgres_exporter redis_exporter crowdsec falco trivy-cron"
+  services="postgres postgres-ai redis traefik vaultwarden prometheus blackbox-exporter pushgateway alertmanager loki grafana node_exporter postgres_exporter redis_exporter postgres-ai-exporter wireguard wireguard-exporter telegram-notify uptime-kuma n8n nginx-proxy-manager cadvisor portainer crowdsec falco trivy-cron lldap keycloak semaphore"
 fi
 
 if [ -d rust-agents/crates/service ]; then
@@ -53,13 +62,16 @@ else
 fi
 # shellcheck disable=SC2086
 echo "service list: $services" >&2
+
+compose_cmd config --quiet
+
 set -x
 # rebuild nexus-app image when --build-app is requested, then start everything
 if $include_app; then
-  docker compose up -d --build nexus-app
+  compose_cmd up -d --build --pull missing nexus-app
 fi
 # shellcheck disable=SC2086
-docker compose up -d $services
+compose_cmd up -d --pull missing $services
 
 # if we are skipping the app container, note that user must run dev server
 if ! $include_app; then

@@ -1,0 +1,12 @@
+{
+  "timestamp": "20260304_060000",
+  "baseline_dir": "_baselines/20260304_060000",
+  "contents": {
+    "all_workflows_export.json": "Complete export of all n8n workflows",
+    "fixed_ingress_workflow.json": "Full definition of sursBjK1ZGzMes8k (golden ingress)",
+    "docker_containers.json": "List of running containers at rollback time",
+    "git_status.txt": "Git status for code rollback",
+    "config_backups": "All docker-compose, prometheus, traefik, and env configs"
+  },
+  "instructions": "To rollback: (1) docker-compose down, (2) restore config files, (3) import all_workflows_export, (4) docker-compose up"
+}

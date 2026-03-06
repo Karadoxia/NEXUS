@@ -1,0 +1,54 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Loki log aggregator
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+
+  # Grafana (exposes /metrics natively)
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    metrics_path: '/metrics'
+
+  # Traefik reverse proxy (metrics enabled via --metrics.prometheus)
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    metrics_path: '/metrics'
+
+  # Uptime Kuma — /metrics endpoint requires Bearer token auth
+  - job_name: 'uptime-kuma'
+    static_configs:
+      - targets: ['uptime_kuma:3001']
+    metrics_path: '/metrics'
+    bearer_token: 'uk1__vSY59t4sNCupnB5VG17dO79AZ9JZ-V0oCqamFEp'
+
+  # Host machine metrics (CPU, RAM, disk, network) — prom/node-exporter
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']
+
+  # PostgreSQL metrics — prometheuscommunity/postgres-exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+
+  # Redis metrics — oliver006/redis_exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis_exporter:9121']
+
+  # Per-container Docker metrics — cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    metrics_path: '/metrics'

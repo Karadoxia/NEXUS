@@ -3,7 +3,7 @@ import type { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/src/lib/prisma';
-import { checkRateLimit } from '@/lib/rate-limit';
+import { checkRateLimitSimple } from '@/lib/rate-limit';
 import { getPrismaHR } from '@/src/lib/prisma-hr';
 
 // Note: PrismaAdapter is intentionally omitted because we use the JWT session
@@ -30,7 +30,8 @@ export const authOptions: AuthOptions = {
 
         console.log('[AUTH] Checking rate limit');
         // 5 login attempts per email per minute to slow brute-force / enumeration
-        if (!checkRateLimit(`auth:${credentials.email}`, 5, 60_000)) {
+        const rateLimitOk = await checkRateLimitSimple(`auth:${credentials.email}`, 5, 60_000);
+        if (!rateLimitOk) {
           throw new Error('Too many login attempts. Please wait a minute and try again.');
         }
 

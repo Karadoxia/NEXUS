@@ -1,0 +1,27 @@
+---
+- name: NEXUS — Update All Images & Rolling Restart
+  hosts: nexus-local
+  gather_facts: false
+
+  tasks:
+    - name: Pull latest images
+      command: "{{ compose_cmd }} pull"
+      register: pull_output
+
+    - name: Show pull status
+      debug:
+        var: pull_output.stdout_lines
+
+    - name: Up -d (Update changed containers)
+      command: "{{ compose_cmd }} up -d"
+      register: up_output
+
+    - name: Show up status
+      debug:
+        var: up_output.stdout_lines
+
+    - name: Prune old images
+      community.docker.docker_prune:
+        images: true
+        images_filters:
+          dangling: true

@@ -1,4 +1,23 @@
-# =============================================
+- rule: Nexus Shell Spawned
+  desc: Detect shell spawned in critical nexus containers
+  condition: spawned_process and container and container.name in (nexus-app, nexus-n8n, nexus-postgres, nexus-redis, nexus-vaultwarden, nexus-traefik) and proc.name in (bash, sh, zsh, dash)
+  output: "NEXUS shell spawned (container=%container.name proc=%proc.name cmdline=%proc.cmdline user=%user.name)"
+  priority: WARNING
+  tags: [nexus, shell, container]
+
+- rule: Nexus Docker Socket Access
+  desc: Detect docker socket reads/writes outside expected services
+  condition: container and fd.name=/var/run/docker.sock and not container.name in (nexus-traefik, nexus-portainer)
+  output: "NEXUS docker socket access (container=%container.name proc=%proc.name cmdline=%proc.cmdline)"
+  priority: CRITICAL
+  tags: [nexus, escape, docker]
+
+- rule: Nexus ACME File Write
+  desc: Detect writes to Traefik ACME storage
+  condition: container and evt.type in (open, openat, openat2, creat) and evt.is_open_write=true and fd.name contains /letsencrypt/acme.json and container.name!=nexus-traefik
+  output: "NEXUS acme.json tamper attempt (container=%container.name proc=%proc.name file=%fd.name)"
+  priority: CRITICAL
+  tags: [nexus, tls, tampering]# =============================================
 # NEXUS FALCO RULES v2 – DEEP CUSTOM (2026-03-03)
 # Tailored for Karadoxia/NEXUS exact stack
 # =============================================
@@ -69,6 +88,12 @@
 - macro: docker_socket_abuse
   condition: fd.name = /var/run/docker.sock and proc.name != traefik and proc.name != docker
 
+- macro: modify
+  condition: (evt.type in (open, openat, openat2, creat) and evt.is_open_write=true) or (evt.type in (rename, renameat, link, linkat, symlink, symlinkat))
+
+- macro: outbound
+  condition: evt.type = connect and fd.ip != 127.0.0.1
+
 # ==================== DEEP RULES ====================
 
 - rule: Shell in Production Container
@@ -94,7 +119,7 @@
 
 - rule: Rust Agent Unexpected Outbound
   desc: nexus_rust contacting non-AI / non-Stripe domains
-  condition: outbound and container.name = nexus_rust and not fd.name contains (api.groq.com, generativelanguage.googleapis.com, stripe.com)
+  condition: outbound and container.name = nexus_rust and not (fd.name contains "api.groq.com" or fd.name contains "generativelanguage.googleapis.com" or fd.name contains "stripe.com")
   output: "RUST AGENT SUSPICIOUS OUTBOUND (dest=%fd.name proc=%proc.name)"
   priority: WARNING
   tags: [nexus, rust-agent, exfiltration]
@@ -129,7 +154,7 @@
 
 - rule: AI Prompt Injection Pattern in n8n
   desc: Suspicious input to n8n that looks like prompt injection
-  condition: proc.cmdline contains (system, prompt, inject, jailbreak) and container.name = n8n
+  condition: (proc.cmdline contains "system" or proc.cmdline contains "prompt" or proc.cmdline contains "inject" or proc.cmdline contains "jailbreak") and container.name = n8n
   output: "POSSIBLE PROMPT INJECTION IN N8N (cmdline=%proc.cmdline)"
   priority: WARNING
   tags: [nexus, ai, injection]
@@ -143,7 +168,7 @@
 
 - rule: High CPU Mining in Any Nexus Container
   desc: Mining binaries or patterns in any nexus container
-  condition: proc.name in (xmrig, minerd, cpuminer) or proc.cmdline contains stratum and nexus_container
+  condition: (proc.name in (xmrig, minerd, cpuminer) or proc.cmdline contains "stratum") and nexus_container
   output: "CRYPTO MINER IN NEXUS CONTAINER (proc=%proc.name container=%container.name)"
   priority: CRITICAL
   tags: [nexus, malware]
@@ -157,7 +182,7 @@
 
 - rule: Reverse Shell Attempt in Nexus
   desc: Common reverse shell patterns inside any nexus container
-  condition: (proc.cmdline contains "bash -i >& /dev/tcp" or proc.cmdline contains "nc -e") and nexus_container
+  condition: (proc.cmdline contains "bash -i >& /dev/tcp" or proc.cmdline contains "nc -e" or proc.cmdline contains "netcat -e") and nexus_container
   output: "REVERSE SHELL ATTEMPT (container=%container.name cmdline=%proc.cmdline)"
   priority: CRITICAL
   tags: [nexus, rce]
@@ -171,7 +196,7 @@
 
 - rule: CrowdSec Bypass Attempt
   desc: Process trying to disable or tamper CrowdSec decisions
-  condition: proc.cmdline contains crowdsec and evt.type in (execve, open_write) and container.name != crowdsec
+  condition: proc.cmdline contains crowdsec and (evt.type = execve or open_write) and container.name != crowdsec
   output: "CROWDSEC TAMPERING ATTEMPT (proc=%proc.name)"
   priority: CRITICAL
   tags: [nexus, ips]
@@ -199,14 +224,14 @@
 
 - rule: Cadvisor / Node Exporter Abuse
   desc: High-privilege host access from monitoring containers
-  condition: (container.name in (cadvisor, node_exporter) and fd.directory startswith /rootfs) and evt.type = open_read
+  condition: (container.name in (cadvisor, node_exporter) and fd.directory startswith /rootfs) and open_read
   output: "HOST FILESYSTEM ABUSE FROM MONITORING (container=%container.name)"
   priority: NOTICE
   tags: [nexus, monitoring]
 
-- rule: High Failed Logins on Traefik / n8n
-  desc: Brute-force pattern on web services
-  condition: evt.type = connect and fd.sport in (80, 443, 5678) and evt.failed = true > 8
-  output: "BRUTE FORCE ON NEXUS SERVICES (container=%container.name)"
-  priority: WARNING
-  tags: [nexus, brute-force]
+# - rule: High Failed Logins on Traefik / n8n
+#   desc: Brute-force pattern on web services
+#   condition: evt.type = connect and fd.sport in (80, 443, 5678) and evt.failed = true > 8
+#   output: "BRUTE FORCE ON NEXUS SERVICES (container=%container.name)"
+#   priority: WARNING
+#   tags: [nexus, brute-force]

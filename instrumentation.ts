@@ -20,17 +20,26 @@ export async function register() {
     // serverless deployments — set RUN_MIGRATIONS=true only in controlled
     // environments (e.g. a dedicated migration init container).
     if (process.env.RUN_MIGRATIONS === 'true') {
+      // Use the async execFile (not the blocking execSync) to avoid stalling
+      // the Node.js event loop for the full duration of the migration run.
+      const { execFile } = require('child_process') as typeof import('child_process');
+      const { promisify } = require('util') as typeof import('util');
+      const execFileAsync = promisify(execFile);
+
       try {
         console.log('[startup] running prisma migrations');
-        // Use the async execFile (not the blocking execSync) to avoid stalling
-        // the Node.js event loop for the full duration of the migration run.
-        const { execFile } = require('child_process') as typeof import('child_process');
-        const { promisify } = require('util') as typeof import('util');
-        const execFileAsync = promisify(execFile);
         await execFileAsync('npx', ['prisma', 'migrate', 'deploy'], { cwd: process.cwd() });
-        console.log('[startup] migrations applied successfully');
+        console.log('[startup] primary db migrations applied successfully');
       } catch (merr) {
         console.warn('[startup] prisma migrate deploy encountered error', merr);
+      }
+
+      try {
+        console.log('[startup] pushing hr schema');
+        await execFileAsync('npx', ['prisma', 'db', 'push', '--schema=prisma/schema.hr.prisma'], { cwd: process.cwd() });
+        console.log('[startup] hr schema pushed successfully');
+      } catch (perr) {
+        console.warn('[startup] prisma db push encountered error', perr);
       }
     } else {
       console.log('[startup] skipping migrations (set RUN_MIGRATIONS=true to enable)');

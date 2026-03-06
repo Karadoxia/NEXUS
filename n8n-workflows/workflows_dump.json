@@ -1,0 +1,2166 @@
+[
+  {
+    "name": "\ud83d\udcac NEXUS - AI Support Ticket Router FULL",
+    "nodes": [
+      {
+        "name": "Support Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini Intent Classifier",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Route by Intent",
+        "type": "n8n-nodes-base.switch",
+        "credentials": null
+      },
+      {
+        "name": "Refund Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Fraud Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Shipping Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Product Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Default Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Reply to Frontend",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcac NEXUS - AI Support Ticket Router FULL",
+    "nodes": [
+      {
+        "name": "Support Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini Intent Classifier",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Route by Intent",
+        "type": "n8n-nodes-base.switch",
+        "credentials": null
+      },
+      {
+        "name": "Refund Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Fraud Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Shipping Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Product Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Default Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Reply to Frontend",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udd25 NEXUS - Global Error Notifier",
+    "nodes": [
+      {
+        "name": "Error Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Rust Error Analyzer",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Critical Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Admin Email Alert",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Daily Security Audit + Report",
+    "nodes": [
+      {
+        "name": "Daily 6AM",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "CrowdSec Decisions",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Falco Alerts",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Loki Security Logs",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Groq Summary",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Report",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\ude80 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
+    "nodes": [
+      {
+        "name": "Stripe Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "IF Payment Success",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Update Order \u2192 Paid",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Resend Confirmation",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Rust Fraud Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Gemini Personal Thank You",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcb0 NEXUS - Abandoned Order Recovery AI v3 FULL",
+    "nodes": [
+      {
+        "name": "Every 20min",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Find Abandoned Orders",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "SplitInBatches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Gemini Recovery Email",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Recovery",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Mark Notified",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Intrusion Responder",
+    "nodes": [
+      {
+        "name": "Security Alert Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcca NEXUS - Daily Sales Report + AI + Backup v3 FULL",
+    "nodes": [
+      {
+        "name": "Daily 23:00",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Daily Aggregate",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Gemini Summary",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Email Report",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Generate Backup CSV",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Security Incident Aggregator FULL",
+    "nodes": [
+      {
+        "name": "Security Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Rust Severity Analyzer",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF Critical (>70)",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Auto Block IP (Traefik)",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Admin Email",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83c\udfaf NEXUS - AI Product Upsell on New Order FULL",
+    "nodes": [
+      {
+        "name": "Every 5 Minutes",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Poll Recent Paid Orders",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "SplitInBatches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Get User & Products",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Gemini Upsell Copy",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Upsell Email",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Mark Upsell Sent",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Upsell Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udc33 NEXUS - Container Auto-Registration FIXED",
+    "nodes": [
+      {
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "IF Container Data Valid",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Register to API",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Set Variables",
+        "type": "n8n-nodes-base.set",
+        "credentials": null
+      },
+      {
+        "name": "Traefik Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Prometheus Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Grafana Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Kuma Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "WireGuard Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Loki Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Merge Results",
+        "type": "n8n-nodes-base.merge",
+        "credentials": null
+      },
+      {
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Notification",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udce6 NEXUS - AI Inventory Restock",
+    "nodes": [
+      {
+        "name": "Every 6 Hours",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Query Low Stock Products",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Split in Batches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate Email",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Email to Supplier",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Mark as Restocking",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Telegram: Alert Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\u2b50 NEXUS - AI Review Collector",
+    "nodes": [
+      {
+        "name": "Review Trigger Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Wait 7 Days",
+        "type": "n8n-nodes-base.wait",
+        "credentials": null
+      },
+      {
+        "name": "Send Review Request",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Review Submission Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Analyze Sentiment",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Save to Database",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "IF Negative Review",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Alert Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log Review Collected",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcca NEXUS - Performance Monitor + Auto-Optimize",
+    "nodes": [
+      {
+        "name": "Every Hour",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Fetch Prometheus Metrics",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Analyze Performance",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF Performance Issues",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Trigger Optimization",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Notify Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udce7 NEXUS - Newsletter Generator",
+    "nodes": [
+      {
+        "name": "Every Monday 9am UTC",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Get Active Subscribers",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Batch Process",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Generate Newsletter",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Newsletter",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Log Newsletter Send",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcbe NEXUS - Automated Backup + Offsite Upload",
+    "nodes": [
+      {
+        "name": "Every Day 2am UTC",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Trigger DB Backup",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Trigger Files Backup",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Upload to Offsite",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF Upload Successful",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Notify Success",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Alert Failure",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udd0d NEXUS - SEO Content Optimizer",
+    "nodes": [
+      {
+        "name": "New Product Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate SEO",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Update Product Meta",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Submit to Google",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Notify SEO Update",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Fraud Pattern Detector",
+    "nodes": [
+      {
+        "name": "Order Created Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Rust: Fraud Analysis",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF High Risk",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Block IP in Traefik",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Ban User",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Alert Fraud Team",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log Clean Order",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcf1 NEXUS - Social Media Auto-Poster",
+    "nodes": [
+      {
+        "name": "Feature Product Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate Copy",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "For Each Platform",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Post to Twitter",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Notify Posted",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcc9 NEXUS - Churn Predictor + Retention",
+    "nodes": [
+      {
+        "name": "First Day of Month",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Get Active Users",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Batch Users",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Predict Churn",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Extract Churn Risk",
+        "type": "n8n-nodes-base.set",
+        "credentials": null
+      },
+      {
+        "name": "IF High Churn Risk",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Send Retention Email",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Log Campaign",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83e\udd16 NEXUS - Full Site Audit Bot",
+    "nodes": [
+      {
+        "name": "Every Sunday 3am UTC",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Prepare Data",
+        "type": "n8n-nodes-base.set",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate Report",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Report",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "ZaV9ETWNjd8JTohJ",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Notify Completion",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83e\uddea Test Telegram",
+    "nodes": [
+      {
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udd25 NEXUS - Global Error Notifier",
+    "nodes": [
+      {
+        "name": "Error Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Rust Error Analyzer",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Critical Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Admin Email Alert",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Daily Security Audit + Report",
+    "nodes": [
+      {
+        "name": "Daily 6AM",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "CrowdSec Decisions",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Falco Alerts",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Loki Security Logs",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Groq Summary",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Report",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\ude80 NEXUS - Stripe Order Fulfillment v3 FULL POWER",
+    "nodes": [
+      {
+        "name": "Stripe Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "IF Payment Success",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Update Order \u2192 Paid",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Resend Confirmation",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Rust Fraud Agent",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Gemini Personal Thank You",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcb0 NEXUS - Abandoned Order Recovery AI v3 FULL",
+    "nodes": [
+      {
+        "name": "Every 20min",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Find Abandoned Orders",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "SplitInBatches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Gemini Recovery Email",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Recovery",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Mark Notified",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Intrusion Responder",
+    "nodes": [
+      {
+        "name": "Security Alert Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcca NEXUS - Daily Sales Report + AI + Backup v3 FULL",
+    "nodes": [
+      {
+        "name": "Daily 23:00",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Daily Aggregate",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Gemini Summary",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Email Report",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Generate Backup CSV",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Security Incident Aggregator FULL",
+    "nodes": [
+      {
+        "name": "Security Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Rust Severity Analyzer",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF Critical (>70)",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Auto Block IP (Traefik)",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Admin Email",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83c\udfaf NEXUS - AI Product Upsell on New Order FULL",
+    "nodes": [
+      {
+        "name": "Every 5 Minutes",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Poll Recent Paid Orders",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "SplitInBatches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Get User & Products",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Gemini Upsell Copy",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Upsell Email",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Mark Upsell Sent",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Log to Loki",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Upsell Alert",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udc33 NEXUS - Container Auto-Registration FIXED",
+    "nodes": [
+      {
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "IF Container Data Valid",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Register to API",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Set Variables",
+        "type": "n8n-nodes-base.set",
+        "credentials": null
+      },
+      {
+        "name": "Traefik Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Prometheus Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Grafana Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Kuma Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "WireGuard Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Loki Adapter",
+        "type": "n8n-nodes-base.code",
+        "credentials": null
+      },
+      {
+        "name": "Merge Results",
+        "type": "n8n-nodes-base.merge",
+        "credentials": null
+      },
+      {
+        "name": "Respond to Webhook",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "credentials": null
+      },
+      {
+        "name": "Telegram Notification",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udce6 NEXUS - AI Inventory Restock",
+    "nodes": [
+      {
+        "name": "Every 6 Hours",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Query Low Stock Products",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Split in Batches",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate Email",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Email to Supplier",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Mark as Restocking",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Telegram: Alert Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\u2b50 NEXUS - AI Review Collector",
+    "nodes": [
+      {
+        "name": "Review Trigger Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Wait 7 Days",
+        "type": "n8n-nodes-base.wait",
+        "credentials": null
+      },
+      {
+        "name": "Send Review Request",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Review Submission Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Analyze Sentiment",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Save to Database",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "IF Negative Review",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Alert Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log Review Collected",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcca NEXUS - Performance Monitor + Auto-Optimize",
+    "nodes": [
+      {
+        "name": "Every Hour",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Fetch Prometheus Metrics",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Analyze Performance",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF Performance Issues",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Trigger Optimization",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Notify Admin",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udce7 NEXUS - Newsletter Generator",
+    "nodes": [
+      {
+        "name": "Every Monday 9am UTC",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Get Active Subscribers",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Batch Process",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Generate Newsletter",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Newsletter",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Log Newsletter Send",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcbe NEXUS - Automated Backup + Offsite Upload",
+    "nodes": [
+      {
+        "name": "Every Day 2am UTC",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Trigger DB Backup",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Trigger Files Backup",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Upload to Offsite",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF Upload Successful",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Notify Success",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Alert Failure",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udd0d NEXUS - SEO Content Optimizer",
+    "nodes": [
+      {
+        "name": "New Product Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate SEO",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Update Product Meta",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Submit to Google",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Notify SEO Update",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udee1\ufe0f NEXUS - Fraud Pattern Detector",
+    "nodes": [
+      {
+        "name": "Order Created Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Rust: Fraud Analysis",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "IF High Risk",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Block IP in Traefik",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Ban User",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Alert Fraud Team",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      },
+      {
+        "name": "Log Clean Order",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcf1 NEXUS - Social Media Auto-Poster",
+    "nodes": [
+      {
+        "name": "Feature Product Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate Copy",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "For Each Platform",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Post to Twitter",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Notify Posted",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegram": {
+            "id": "telegram-nexus-1"
+          },
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83d\udcc9 NEXUS - Churn Predictor + Retention",
+    "nodes": [
+      {
+        "name": "First Day of Month",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Get Active Users",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      },
+      {
+        "name": "Batch Users",
+        "type": "n8n-nodes-base.splitInBatches",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Predict Churn",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Extract Churn Risk",
+        "type": "n8n-nodes-base.set",
+        "credentials": null
+      },
+      {
+        "name": "IF High Churn Risk",
+        "type": "n8n-nodes-base.if",
+        "credentials": null
+      },
+      {
+        "name": "Send Retention Email",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Log Campaign",
+        "type": "n8n-nodes-base.postgres",
+        "credentials": {
+          "postgres": {
+            "id": "U7D22mZSgaTMsiu8",
+            "name": "NEXUS Postgres"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83e\udd16 NEXUS - Full Site Audit Bot",
+    "nodes": [
+      {
+        "name": "Every Sunday 3am UTC",
+        "type": "n8n-nodes-base.cron",
+        "credentials": null
+      },
+      {
+        "name": "Prepare Data",
+        "type": "n8n-nodes-base.set",
+        "credentials": null
+      },
+      {
+        "name": "Gemini: Generate Report",
+        "type": "n8n-nodes-base.httpRequest",
+        "credentials": null
+      },
+      {
+        "name": "Send Report",
+        "type": "n8n-nodes-base.emailSend",
+        "credentials": {
+          "smtp": {
+            "id": "AhpoCKfSVc7RskIl",
+            "name": "Resend SMTP"
+          }
+        }
+      },
+      {
+        "name": "Notify Completion",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "name": "\ud83e\uddea Test Telegram",
+    "nodes": [
+      {
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "credentials": null
+      },
+      {
+        "name": "Telegram",
+        "type": "n8n-nodes-base.telegram",
+        "credentials": {
+          "telegramApi": {
+            "id": "P1JqNmgOzQhedrUg",
+            "name": "NEXUS Telegram Bot"
+          }
+        }
+      }
+    ]
+  }
+]
